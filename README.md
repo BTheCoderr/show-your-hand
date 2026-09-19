@@ -27,3 +27,5 @@ npm run dev
 ## Deploy
 
 This folder is the app root. Netlify should build with `npm run build` and publish `dist`.
+
+<!-- netlify redeploy: casino-table-ui -->
