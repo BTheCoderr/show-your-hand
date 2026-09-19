@@ -1,0 +1,4 @@
+show-your-hand casino-table-ui
+source: BTheCoderr/show-your-hand
+branch: main
+casino-table commit: 1eb13a3778853b5b521691021bd4ee48568d66fd
