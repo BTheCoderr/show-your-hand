@@ -23,14 +23,19 @@ function apply(state: GameState, action: Action): GameState {
 }
 
 function opponentSeatClass(index: number, total: number) {
-  if (total <= 1) return 'is-top'
-  if (total === 2) return index === 0 ? 'is-top-left' : 'is-top-right'
-  return ['is-left', 'is-top', 'is-right'][index] ?? 'is-top'
+  const layouts: Record<number, string[]> = {
+    1: ['is-top'],
+    2: ['is-top-left', 'is-top-right'],
+    3: ['is-left', 'is-top', 'is-right'],
+    4: ['is-left', 'is-top-left', 'is-top-right', 'is-right'],
+    5: ['is-left', 'is-top-left', 'is-top', 'is-top-right', 'is-right'],
+  }
+  return layouts[total]?.[index] ?? 'is-top'
 }
 
 export function App() {
   const saved = useMemo(() => loadMatch(), [])
-  const [menuCount, setMenuCount] = useState<1 | 2 | 3>(2)
+  const [menuCount, setMenuCount] = useState<1 | 2 | 3 | 4 | 5>(2)
   const [menuTest, setMenuTest] = useState(false)
   const [showStart, setShowStart] = useState(() => !saved || saved.phase.type === 'menu')
   const [state, setState] = useState<GameState>(() => saved ?? emptyMenuState())
@@ -141,7 +146,10 @@ export function App() {
                   >
                     <header>
                       <span>{player.name}</span>
-                      <b>{player.score} pts</b>
+                      <span className="syh-seat-meta">
+                        <b>{player.score} pts</b>
+                        {active ? <span className="syh-turn-chip">TURN</span> : null}
+                      </span>
                     </header>
                     <div className="syh-row">
                       {handCards(state, player.id).map((card) => (
@@ -217,7 +225,8 @@ export function App() {
             </div>
             <div className="syh-status">
               <p>
-                Turn: <b>{nameOf(state, currentPlayer(state).id)}</b>
+                <span className="syh-clockwise">↻ Clockwise</span>
+                <span> · Turn: <b>{nameOf(state, currentPlayer(state).id)}</b></span>
               </p>
               <ul>
                 {state.players.map((player) => (
@@ -276,12 +285,21 @@ export function App() {
             </section>
           ) : null}
 
-          <section className="syh-you">
+          <section
+            className={`syh-you ${
+              state.players[state.currentPlayerIndex].id === 'human' ? 'is-active' : ''
+            }`}
+          >
             <header>
               <span>You · {playerById(state, 'human').score} pts</span>
-              {scoreHand(handCards(state, 'human')) ? (
-                <em>Scoring hand ready</em>
-              ) : null}
+              <span className="syh-you-meta">
+                {scoreHand(handCards(state, 'human')) ? (
+                  <em>Scoring hand ready</em>
+                ) : null}
+                {state.players[state.currentPlayerIndex].id === 'human' ? (
+                  <span className="syh-turn-chip">YOUR TURN</span>
+                ) : null}
+              </span>
             </header>
             <div className="syh-row is-you">
               {handCards(state, 'human').map((card) => (

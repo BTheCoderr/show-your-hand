@@ -46,7 +46,7 @@ export function emptyMenuState(testMode = false): GameState {
   }
 }
 
-function makePlayers(opponentCount: 1 | 2 | 3): Player[] {
+function makePlayers(opponentCount: 1 | 2 | 3 | 4 | 5): Player[] {
   const players: Player[] = [{ id: 'human', name: 'You', isHuman: true, hand: [], score: 0 }]
   for (let i = 1; i <= opponentCount; i++) {
     players.push({
@@ -82,7 +82,7 @@ function dealRound(state: GameState, firstIndex: number): void {
 }
 
 function startMatch(
-  opponentCount: 1 | 2 | 3,
+  opponentCount: 1 | 2 | 3 | 4 | 5,
   testMode = false,
   seed?: number,
 ): GameState {

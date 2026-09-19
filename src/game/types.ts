@@ -102,7 +102,7 @@ export type GameState = {
 }
 
 export type Action =
-  | { type: 'START_MATCH'; opponentCount: 1 | 2 | 3; testMode?: boolean; seed?: number }
+  | { type: 'START_MATCH'; opponentCount: 1 | 2 | 3 | 4 | 5; testMode?: boolean; seed?: number }
   | { type: 'SELECT_CARD'; playerId: PlayerId; cardId: string }
   | { type: 'CANCEL_SELECTION' }
   | {
