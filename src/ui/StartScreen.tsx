@@ -1,8 +1,8 @@
 type Props = {
-  opponentCount: 1 | 2 | 3
+  opponentCount: 1 | 2 | 3 | 4 | 5
   testMode: boolean
   hasSave: boolean
-  onCount: (count: 1 | 2 | 3) => void
+  onCount: (count: 1 | 2 | 3 | 4 | 5) => void
   onTestMode: (value: boolean) => void
   onStart: () => void
   onResume: () => void
@@ -24,19 +24,19 @@ export function StartScreen({
       <p className="syh-kicker">Playable solo match</p>
       <h1>SHOW YOUR HAND</h1>
       <p className="syh-lede">
-        One human, one to three computer opponents. No account. First to 5 points wins.
+        One human, one to five computer opponents — 2 to 6 players around one table. No account. First to 5 points wins.
       </p>
       <fieldset>
-        <legend>Opponents</legend>
+        <legend>Players</legend>
         <div className="syh-count">
-          {([1, 2, 3] as const).map((count) => (
+          {([1, 2, 3, 4, 5] as const).map((count) => (
             <button
               key={count}
               type="button"
               className={opponentCount === count ? 'is-on' : ''}
               onClick={() => onCount(count)}
             >
-              {count}
+              {count + 1}
             </button>
           ))}
         </div>
