@@ -885,3 +885,172 @@ button:disabled {
     bottom: 0;
   }
 }
+
+
+/* Mobile poker-table refinement */
+@media (max-width: 820px) {
+  .syh-board {
+    height: clamp(540px, 66svh, 610px);
+    min-height: 0;
+    border-width: 8px;
+    border-radius: 48% / 24%;
+  }
+
+  .syh-board::before {
+    inset: 5px;
+  }
+
+  .syh-board::after {
+    inset: 23% 18%;
+  }
+
+  .syh-board .syh-seat {
+    width: 108px;
+  }
+
+  .syh-board .syh-seat.is-top {
+    top: 2.5%;
+  }
+
+  .syh-board .syh-seat.is-top-left {
+    top: 6%;
+    left: 3%;
+  }
+
+  .syh-board .syh-seat.is-top-right {
+    top: 6%;
+    right: 3%;
+  }
+
+  .syh-board .syh-seat.is-left {
+    top: 35%;
+    left: -1.5%;
+    transform: translateY(-50%) rotate(-6deg);
+  }
+
+  .syh-board .syh-seat.is-right {
+    top: 35%;
+    right: -1.5%;
+    transform: translateY(-50%) rotate(6deg);
+  }
+
+  .syh-board .syh-seat .syh-card.is-compact {
+    width: 36px;
+    height: 50px;
+  }
+
+  .syh-board .syh-seat .syh-card + .syh-card {
+    margin-left: -23px;
+  }
+
+  .syh-nameplate {
+    min-width: 84px;
+    max-width: 108px;
+    padding: 4px 6px;
+    font-size: 0.62rem;
+  }
+
+  .syh-board .syh-center {
+    top: 50%;
+    width: 154px;
+    gap: 6px;
+  }
+
+  .syh-table-mark {
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+  }
+
+  .syh-center-piles {
+    gap: 10px;
+  }
+
+  .syh-board .syh-center .syh-card {
+    width: 44px;
+    height: 62px;
+  }
+
+  .syh-pile {
+    font-size: 0.62rem;
+  }
+
+  .syh-status {
+    padding: 4px 7px;
+    font-size: 0.6rem;
+  }
+
+  .syh-board .syh-you {
+    bottom: 2.5%;
+    width: calc(100% - 24px);
+  }
+
+  .syh-board .syh-you .syh-nameplate {
+    margin-bottom: 3px !important;
+    font-size: 0.67rem;
+  }
+
+  .syh-board .syh-you .syh-card {
+    width: 53px;
+    height: 74px;
+  }
+
+  .syh-board .syh-you .syh-card + .syh-card {
+    margin-left: -18px;
+  }
+
+  .syh-board .syh-you-actions {
+    margin-top: 4px;
+    gap: 5px;
+  }
+
+  .syh-board .syh-you-actions button {
+    min-height: 29px;
+    padding: 5px 9px;
+    font-size: 0.68rem;
+  }
+
+  .syh-board .syh-chooser {
+    bottom: 26%;
+    width: calc(100% - 52px);
+  }
+
+  .syh-board[data-player-count="5"] .syh-seat,
+  .syh-board[data-player-count="6"] .syh-seat {
+    width: 96px;
+  }
+
+  .syh-board[data-player-count="5"] .syh-seat .syh-card.is-compact,
+  .syh-board[data-player-count="6"] .syh-seat .syh-card.is-compact {
+    width: 33px;
+    height: 46px;
+  }
+
+  .syh-board[data-player-count="5"] .syh-seat .syh-card + .syh-card,
+  .syh-board[data-player-count="6"] .syh-seat .syh-card + .syh-card {
+    margin-left: -21px;
+  }
+}
+
+@media (max-width: 420px) {
+  .syh-app {
+    padding-inline: 5px;
+  }
+
+  .syh-board {
+    height: clamp(525px, 64svh, 575px);
+    border-radius: 48% / 22%;
+  }
+
+  .syh-board .syh-seat.is-left,
+  .syh-board .syh-seat.is-right {
+    top: 34%;
+  }
+
+  .syh-board .syh-center {
+    top: 49%;
+  }
+
+  .syh-board .syh-you {
+    bottom: 2%;
+  }
+}
