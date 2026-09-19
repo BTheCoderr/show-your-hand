@@ -144,13 +144,6 @@ export function App() {
                     key={player.id}
                     className={`syh-seat ${opponentSeatClass(index, opponents.length)} ${active ? 'is-active' : ''}`}
                   >
-                    <header>
-                      <span>{player.name}</span>
-                      <span className="syh-seat-meta">
-                        <b>{player.score} pts</b>
-                        {active ? <span className="syh-turn-chip">TURN</span> : null}
-                      </span>
-                    </header>
                     <div className="syh-row">
                       {handCards(state, player.id).map((card) => (
                         <CardView
@@ -195,6 +188,13 @@ export function App() {
                         />
                       ))}
                     </div>
+                    <header className="syh-nameplate">
+                      <span>{player.name}</span>
+                      <span className="syh-seat-meta">
+                        <b>{player.score} pts</b>
+                        {active ? <span className="syh-turn-chip">TURN</span> : null}
+                      </span>
+                    </header>
                     {state.revealedUntilTurnEnd.includes(player.id) ? (
                       <p className="syh-tag">Hand revealed this turn</p>
                     ) : null}
@@ -208,33 +208,29 @@ export function App() {
           </section>
 
           <section className="syh-center">
-            <div className="syh-pile">
-              <CardView faceDown />
-              <span>Draw · {state.drawPile.length}</span>
+            <div className="syh-table-mark" aria-hidden="true">
+              SHOW YOUR HAND
             </div>
-            <div className="syh-pile">
-              <CardView
-                card={
-                  state.discardPile.length
-                    ? state.catalog[state.discardPile[state.discardPile.length - 1]]
-                    : undefined
-                }
-                faceDown={state.discardPile.length === 0}
-              />
-              <span>Discard · {state.discardPile.length}</span>
+            <div className="syh-center-piles">
+              <div className="syh-pile">
+                <CardView faceDown />
+                <span>Draw · {state.drawPile.length}</span>
+              </div>
+              <div className="syh-pile">
+                <CardView
+                  card={
+                    state.discardPile.length
+                      ? state.catalog[state.discardPile[state.discardPile.length - 1]]
+                      : undefined
+                  }
+                  faceDown={state.discardPile.length === 0}
+                />
+                <span>Discard · {state.discardPile.length}</span>
+              </div>
             </div>
             <div className="syh-status">
-              <p>
-                <span className="syh-clockwise">↻ Clockwise</span>
-                <span> · Turn: <b>{nameOf(state, currentPlayer(state).id)}</b></span>
-              </p>
-              <ul>
-                {state.players.map((player) => (
-                  <li key={player.id}>
-                    {player.name} · {player.score}
-                  </li>
-                ))}
-              </ul>
+              <span className="syh-clockwise">↻ Clockwise</span>
+              <span>Turn: <b>{nameOf(state, currentPlayer(state).id)}</b></span>
             </div>
           </section>
 
@@ -290,7 +286,7 @@ export function App() {
               state.players[state.currentPlayerIndex].id === 'human' ? 'is-active' : ''
             }`}
           >
-            <header>
+            <header className="syh-nameplate">
               <span>You · {playerById(state, 'human').score} pts</span>
               <span className="syh-you-meta">
                 {scoreHand(handCards(state, 'human')) ? (
