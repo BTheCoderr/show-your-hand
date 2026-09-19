@@ -22,6 +22,12 @@ function apply(state: GameState, action: Action): GameState {
   return advanceComputers(reduce(state, action))
 }
 
+function opponentSeatClass(index: number, total: number) {
+  if (total <= 1) return 'is-top'
+  if (total === 2) return index === 0 ? 'is-top-left' : 'is-top-right'
+  return ['is-left', 'is-top', 'is-right'][index] ?? 'is-top'
+}
+
 export function App() {
   const saved = useMemo(() => loadMatch(), [])
   const [menuCount, setMenuCount] = useState<1 | 2 | 3>(2)
@@ -64,6 +70,7 @@ export function App() {
     actorId(state) === 'human' &&
     (state.phase.type === 'choose_action' || state.phase.type === 'choose_targets')
   const waiting = Boolean(actorId(state) && actorId(state) !== 'human')
+  const opponents = state.players.filter((player) => !player.isHuman)
 
   return (
     <div className="syh-app">
@@ -121,17 +128,16 @@ export function App() {
             </p>
           ) : null}
 
+          <div className="syh-board" data-player-count={state.players.length}>
           <section className="syh-opponents">
-            {state.players
-              .filter((player) => !player.isHuman)
-              .map((player) => {
+            {opponents.map((player, index) => {
                 const reveal =
                   state.testMode || state.revealedUntilTurnEnd.includes(player.id)
                 const active = state.players[state.currentPlayerIndex].id === player.id
                 return (
                   <article
                     key={player.id}
-                    className={`syh-seat ${active ? 'is-active' : ''}`}
+                    className={`syh-seat ${opponentSeatClass(index, opponents.length)} ${active ? 'is-active' : ''}`}
                   >
                     <header>
                       <span>{player.name}</span>
@@ -323,6 +329,7 @@ export function App() {
               ) : null}
             </div>
           </section>
+          </div>
 
           {state.phase.type === 'await_defense' && state.phase.responderId === 'human' ? (
             <DefensePrompt
