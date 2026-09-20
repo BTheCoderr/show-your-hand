@@ -1154,3 +1154,67 @@ button:disabled {
     animation: none;
   }
 }
+
+
+/* Swipe / drag card controls */
+.syh-card.is-draggable {
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  will-change: transform;
+}
+
+.syh-card.is-draggable:active,
+.syh-card.is-dragging {
+  cursor: grabbing;
+}
+
+.syh-card.is-dragging {
+  box-shadow:
+    0 0 0 3px rgba(248, 112, 0, 0.82),
+    0 18px 30px rgba(0, 0, 0, 0.55);
+  opacity: 0.98;
+}
+
+.syh-center-piles {
+  transform: translateX(-18px);
+}
+
+.syh-status {
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.syh-turn-timer {
+  min-width: 62px;
+  padding: 2px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.26);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+.syh-turn-timer.is-low {
+  border-color: rgba(248, 112, 0, 0.7);
+  color: var(--orange);
+  box-shadow: 0 0 12px rgba(248, 112, 0, 0.32);
+}
+
+@media (max-width: 820px) {
+  .syh-center-piles {
+    transform: translateX(-11px);
+  }
+
+  .syh-turn-timer {
+    min-width: 52px;
+    padding: 2px 5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .syh-card.is-draggable {
+    transition: none;
+  }
+}
