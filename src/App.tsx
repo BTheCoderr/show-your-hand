@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { advanceComputers } from './game/ai'
 import {
   actorId,
@@ -17,6 +17,14 @@ import { COLORS } from './game/types'
 import { CardView } from './ui/CardView'
 import { RulesPanel } from './ui/RulesPanel'
 import { StartScreen } from './ui/StartScreen'
+
+const TURN_SECONDS = 120
+
+function formatTurnTime(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+}
 
 function apply(state: GameState, action: Action): GameState {
   return advanceComputers(reduce(state, action))
@@ -45,6 +53,7 @@ export function App() {
   const [claimedDropIds, setClaimedDropIds] = useState<string[]>([])
   const [trimIds, setTrimIds] = useState<string[]>([])
   const [dropColor, setDropColor] = useState<Color>('orange')
+  const [turnSeconds, setTurnSeconds] = useState(TURN_SECONDS)
   const lock = useRef(false)
 
   const dispatch = (action: Action) => {
@@ -74,6 +83,28 @@ export function App() {
     saveMatch(next)
     setShowStart(false)
   }
+
+  const activeActorId = actorId(state)
+
+  useEffect(() => {
+    setTurnSeconds(TURN_SECONDS)
+  }, [activeActorId, state.roundStarterIndex, showStart])
+
+  useEffect(() => {
+    if (
+      showStart ||
+      !activeActorId ||
+      state.phase.type === 'menu' ||
+      state.phase.type === 'round_over' ||
+      state.phase.type === 'match_over'
+    ) {
+      return
+    }
+    const timer = window.setInterval(() => {
+      setTurnSeconds((seconds) => Math.max(0, seconds - 1))
+    }, 1000)
+    return () => window.clearInterval(timer)
+  }, [activeActorId, showStart, state.phase.type])
 
   const humanTurn =
     actorId(state) === 'human' &&
@@ -231,12 +262,13 @@ export function App() {
                 <CardView
                   card={topDiscard}
                   faceDown={!topDiscard}
-                  label={canTakeDiscard ? 'Pick up top numbered discard' : undefined}
-                  onClick={
-                    canTakeDiscard
-                      ? () => dispatch({ type: 'TAKE_DISCARD', playerId: 'human' })
-                      : undefined
-                  }
+                  label={canTakeDiscard ? 'Drag the numbered discard down toward your hand' : undefined}
+                  gestureEnabled={Boolean(canTakeDiscard)}
+                  onSwipe={(direction) => {
+                    if (canTakeDiscard && direction === 'down') {
+                      dispatch({ type: 'TAKE_DISCARD', playerId: 'human' })
+                    }
+                  }}
                 />
                 <span>Discard · {state.discardPile.length}</span>
               </div>
@@ -244,6 +276,9 @@ export function App() {
             <div className="syh-status">
               <span className="syh-clockwise">↻ Clockwise</span>
               <span>Turn: <b>{nameOf(state, currentPlayer(state).id)}</b></span>
+              <span className={`syh-turn-timer ${turnSeconds <= 15 ? 'is-low' : ''}`}>
+                ⏱ {formatTurnTime(turnSeconds)}
+              </span>
             </div>
           </section>
 
@@ -402,11 +437,17 @@ export function App() {
                   card={card}
                   selected={state.selectedCardId === card.id}
                   disabled={!humanTurn}
-                  onClick={
+                  gestureEnabled={humanTurn && state.phase.type === 'choose_action'}
+                  label={
                     humanTurn && state.phase.type === 'choose_action'
-                      ? () => dispatch({ type: 'SELECT_CARD', playerId: 'human', cardId: card.id })
+                      ? 'Drag this card with your finger and swipe up to play it'
                       : undefined
                   }
+                  onSwipe={(direction) => {
+                    if (humanTurn && state.phase.type === 'choose_action' && direction === 'up') {
+                      dispatch({ type: 'SELECT_CARD', playerId: 'human', cardId: card.id })
+                    }
+                  }}
                 />
               ))}
             </div>
