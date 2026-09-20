@@ -53,7 +53,7 @@ describe('attacks and defenses', () => {
     expect(playerById(state, 'cpu-1').hand).not.toContain('blank-02')
   })
 
-  it('drops a named color and lets another Drop Color reverse once', () => {
+  it('drops a named color, lets the attacker claim cards, and supports a reverse', () => {
     let state = fixture({
       hands: {
         human: ['drop-color-1', 'skip-1', 'skip-2', 'blank-03', 'shuffle-1'],
@@ -73,9 +73,28 @@ describe('attacks and defenses', () => {
       playerId: 'cpu-1',
       response: 'accept',
     })
-    const cpu = playerById(state, 'cpu-1')
-    expect(cpu.hand.some((id) => state.catalog[id].kind === 'number' && state.catalog[id].kind === 'number' && (state.catalog[id] as { color?: string }).color === 'orange')).toBe(false)
-    expect(cpu.hand).toHaveLength(5)
+    expect(state.phase.type).toBe('claim_dropped')
+    if (state.phase.type === 'claim_dropped') {
+      expect(state.phase.claimantId).toBe('human')
+      expect(state.phase.cardIds).toEqual(expect.arrayContaining(['orange-1-a', 'orange-2-a']))
+    }
+
+    state = reduceStrict(state, {
+      type: 'CLAIM_DROPPED',
+      playerId: 'human',
+      cardIds: ['orange-1-a', 'orange-2-a'],
+    })
+    expect(state.phase.type).toBe('trim_hand')
+    state = reduceStrict(state, {
+      type: 'TRIM_HAND',
+      playerId: 'human',
+      cardIds: ['skip-1'],
+    })
+    expect(playerById(state, 'human').hand).toContain('orange-1-a')
+    expect(playerById(state, 'human').hand).toContain('orange-2-a')
+    expect(playerById(state, 'human').hand).toHaveLength(5)
+    expect(playerById(state, 'cpu-1').hand).toHaveLength(5)
+    assertConservation(state)
 
     state = fixture({
       hands: {
@@ -98,13 +117,22 @@ describe('attacks and defenses', () => {
       cardId: 'drop-color-3',
     })
     expect(state.phase.type).toBe('choose_reverse_color')
-    expect(playerById(state, 'cpu-1').hand.filter((id) => id.startsWith('blue-'))).toHaveLength(4)
     state = reduceStrict(state, { type: 'CHOOSE_REVERSE_COLOR', playerId: 'cpu-1', color: 'orange' })
     expect(state.phase.type).toBe('await_reverse_blank')
     state = reduceStrict(state, {
       type: 'RESPOND_REVERSE_BLANK',
       playerId: 'human',
       response: 'accept',
+    })
+    expect(state.phase.type).toBe('claim_dropped')
+    if (state.phase.type === 'claim_dropped') {
+      expect(state.phase.claimantId).toBe('cpu-1')
+      expect(state.phase.targetId).toBe('human')
+    }
+    state = reduceStrict(state, {
+      type: 'CLAIM_DROPPED',
+      playerId: 'cpu-1',
+      cardIds: [],
     })
     expect(
       playerById(state, 'human').hand.some((id) => {
@@ -114,7 +142,6 @@ describe('attacks and defenses', () => {
     ).toBe(false)
     expect(playerById(state, 'cpu-1').hand.filter((id) => id.startsWith('blue-')).length).toBeGreaterThan(0)
   })
-
   it('cancels Skip on Blank or counter and does not steal the turn', () => {
     let state = fixture({
       hands: {
@@ -222,6 +249,44 @@ describe('attacks and defenses', () => {
 })
 
 describe('table flow', () => {
+  it('lets the next player pick up only the top numbered discard before playing', () => {
+    let state = fixture({
+      hands: {
+        human: ['orange-1-a', 'blue-2-a', 'green-3-a', 'purple-4-a', 'blank-07'],
+        'cpu-1': ['blue-1-a', 'blue-2-b', 'blue-3-a', 'blue-4-a', 'blue-5-a'],
+      },
+      current: 'human',
+      discard: ['green-5-a'],
+    })
+    state = reduceStrict(state, { type: 'TAKE_DISCARD', playerId: 'human' })
+    expect(playerById(state, 'human').hand).toHaveLength(6)
+    expect(playerById(state, 'human').hand).toContain('green-5-a')
+    expect(state.discardPile).not.toContain('green-5-a')
+
+    state = reduceStrict(state, {
+      type: 'SELECT_CARD',
+      playerId: 'human',
+      cardId: 'blank-07',
+    })
+    expect(playerById(state, 'human').hand).toHaveLength(5)
+    expect(playerById(state, 'human').hand).toContain('green-5-a')
+    expect(state.players[state.currentPlayerIndex].id).toBe('cpu-1')
+    assertConservation(state)
+  })
+
+  it('does not allow a special card on top of the discard pile to be picked up', () => {
+    const state = fixture({
+      hands: {
+        human: ['orange-1-a', 'orange-2-a', 'orange-3-a', 'orange-4-a', 'orange-5-a'],
+        'cpu-1': ['blue-1-a', 'blue-2-a', 'blue-3-a', 'blue-4-a', 'blue-5-a'],
+      },
+      current: 'human',
+      discard: ['skip-1'],
+    })
+    expect(() => reduceStrict(state, { type: 'TAKE_DISCARD', playerId: 'human' })).toThrow(
+      'Only the top numbered discard can be picked up',
+    )
+  })
   it('recycles the discard pile instead of playing short', () => {
     const state0 = fixture({
       hands: {
@@ -352,6 +417,23 @@ describe('computer players', () => {
         if (actor === 'human') {
           if (canDeclare(state, 'human')) {
             state = reduceStrict(state, { type: 'DECLARE', playerId: 'human' })
+            continue
+          }
+          if (state.phase.type === 'claim_dropped') {
+            state = reduceStrict(state, {
+              type: 'CLAIM_DROPPED',
+              playerId: 'human',
+              cardIds: [],
+            })
+            continue
+          }
+          if (state.phase.type === 'trim_hand') {
+            const excess = playerById(state, 'human').hand.length - 5
+            state = reduceStrict(state, {
+              type: 'TRIM_HAND',
+              playerId: 'human',
+              cardIds: playerById(state, 'human').hand.slice(0, excess),
+            })
             continue
           }
           if (state.phase.type === 'await_defense') {
