@@ -42,6 +42,8 @@ export function App() {
   const [rulesOpen, setRulesOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [shuffleTargets, setShuffleTargets] = useState<string[]>([])
+  const [claimedDropIds, setClaimedDropIds] = useState<string[]>([])
+  const [trimIds, setTrimIds] = useState<string[]>([])
   const [dropColor, setDropColor] = useState<Color>('orange')
   const lock = useRef(false)
 
@@ -53,6 +55,8 @@ export function App() {
       setState(next)
       saveMatch(next)
       setShuffleTargets([])
+      setClaimedDropIds([])
+      setTrimIds([])
     } finally {
       window.setTimeout(() => {
         lock.current = false
@@ -76,6 +80,13 @@ export function App() {
     (state.phase.type === 'choose_action' || state.phase.type === 'choose_targets')
   const waiting = Boolean(actorId(state) && actorId(state) !== 'human')
   const opponents = state.players.filter((player) => !player.isHuman)
+  const topDiscardId = state.discardPile.at(-1)
+  const topDiscard = topDiscardId ? state.catalog[topDiscardId] : undefined
+  const canTakeDiscard =
+    state.phase.type === 'choose_action' &&
+    currentPlayer(state).id === 'human' &&
+    playerById(state, 'human').hand.length === 5 &&
+    topDiscard?.kind === 'number'
 
   return (
     <div className="syh-app">
@@ -216,14 +227,16 @@ export function App() {
                 <CardView faceDown />
                 <span>Draw · {state.drawPile.length}</span>
               </div>
-              <div className="syh-pile">
+              <div className={`syh-pile ${canTakeDiscard ? 'is-takeable' : ''}`}>
                 <CardView
-                  card={
-                    state.discardPile.length
-                      ? state.catalog[state.discardPile[state.discardPile.length - 1]]
+                  card={topDiscard}
+                  faceDown={!topDiscard}
+                  label={canTakeDiscard ? 'Pick up top numbered discard' : undefined}
+                  onClick={
+                    canTakeDiscard
+                      ? () => dispatch({ type: 'TAKE_DISCARD', playerId: 'human' })
                       : undefined
                   }
-                  faceDown={state.discardPile.length === 0}
                 />
                 <span>Discard · {state.discardPile.length}</span>
               </div>
@@ -278,6 +291,91 @@ export function App() {
                   Cancel
                 </button>
               )}
+            </section>
+          ) : null}
+
+          {state.phase.type === 'claim_dropped' && state.phase.claimantId === 'human' ? (
+            <section className="syh-chooser syh-claim-chooser">
+              <div className="syh-claim-cards">
+                {state.phase.cardIds.map((id) => {
+                  const card = state.catalog[id]
+                  const selected = claimedDropIds.includes(id)
+                  return (
+                    <CardView
+                      key={id}
+                      card={card}
+                      compact
+                      selected={selected}
+                      onClick={() =>
+                        setClaimedDropIds((current) =>
+                          current.includes(id)
+                            ? current.filter((item) => item !== id)
+                            : [...current, id],
+                        )
+                      }
+                    />
+                  )
+                })}
+              </div>
+              <div className="syh-shuffle-bar">
+                <button
+                  type="button"
+                  className="syh-primary"
+                  onClick={() =>
+                    dispatch({
+                      type: 'CLAIM_DROPPED',
+                      playerId: 'human',
+                      cardIds: claimedDropIds,
+                    })
+                  }
+                >
+                  {claimedDropIds.length ? `Claim ${claimedDropIds.length}` : 'Take none'}
+                </button>
+              </div>
+            </section>
+          ) : null}
+
+          {state.phase.type === 'trim_hand' && state.phase.playerId === 'human' ? (
+            <section className="syh-chooser syh-trim-chooser">
+              <div className="syh-claim-cards">
+                {handCards(state, 'human').map((card) => {
+                  const selected = trimIds.includes(card.id)
+                  const excess = playerById(state, 'human').hand.length - 5
+                  return (
+                    <CardView
+                      key={card.id}
+                      card={card}
+                      compact
+                      selected={selected}
+                      onClick={() =>
+                        setTrimIds((current) => {
+                          if (current.includes(card.id)) {
+                            return current.filter((id) => id !== card.id)
+                          }
+                          if (current.length >= excess) return current
+                          return [...current, card.id]
+                        })
+                      }
+                    />
+                  )
+                })}
+              </div>
+              <div className="syh-shuffle-bar">
+                <button
+                  type="button"
+                  className="syh-primary"
+                  disabled={trimIds.length !== playerById(state, 'human').hand.length - 5}
+                  onClick={() =>
+                    dispatch({
+                      type: 'TRIM_HAND',
+                      playerId: 'human',
+                      cardIds: trimIds,
+                    })
+                  }
+                >
+                  Discard extras
+                </button>
+              </div>
             </section>
           ) : null}
 
