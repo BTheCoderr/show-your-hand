@@ -8,6 +8,7 @@ on:
   push:
     branches:
       - main
+      - feature/pickups-drop-claim-turn-glow
     paths:
       - "src/**"
       - "public/**"
