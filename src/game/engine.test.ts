@@ -253,7 +253,7 @@ describe('table flow', () => {
     let state = fixture({
       hands: {
         human: ['orange-1-a', 'blue-1-b', 'green-3-a', 'purple-4-a', 'blank-07'],
-        'cpu-1': ['blue-2-a', 'blue-2-b', 'blue-3-a', 'blue-4-a', 'blue-5-a'],
+        'cpu-1': ['blue-2-a', 'orange-2-b', 'blue-3-a', 'green-4-a', 'purple-5-a'],
       },
       current: 'human',
       discard: ['green-5-a'],
