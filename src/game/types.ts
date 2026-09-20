@@ -71,6 +71,14 @@ export type Phase =
   | { type: 'choose_action' }
   | { type: 'choose_targets'; cardId: string }
   | { type: 'await_defense'; attack: PendingAttack; responderId: PlayerId }
+  | {
+      type: 'claim_dropped'
+      claimantId: PlayerId
+      targetId: PlayerId
+      color: Color
+      cardIds: string[]
+    }
+  | { type: 'trim_hand'; playerId: PlayerId }
   | { type: 'choose_reverse_color'; attack: PendingAttack; reverserId: PlayerId }
   | {
       type: 'await_reverse_blank'
@@ -104,6 +112,9 @@ export type GameState = {
 export type Action =
   | { type: 'START_MATCH'; opponentCount: 1 | 2 | 3 | 4 | 5; testMode?: boolean; seed?: number }
   | { type: 'SELECT_CARD'; playerId: PlayerId; cardId: string }
+  | { type: 'TAKE_DISCARD'; playerId: PlayerId }
+  | { type: 'CLAIM_DROPPED'; playerId: PlayerId; cardIds: string[] }
+  | { type: 'TRIM_HAND'; playerId: PlayerId; cardIds: string[] }
   | { type: 'CANCEL_SELECTION' }
   | {
       type: 'CONFIRM_ATTACK'
