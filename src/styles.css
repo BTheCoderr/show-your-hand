@@ -1054,3 +1054,103 @@ button:disabled {
     bottom: 2%;
   }
 }
+
+
+/* Pickup, claim, and active-turn feedback */
+@keyframes syh-turn-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px rgba(248, 112, 0, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 13px rgba(248, 112, 0, 0.95));
+  }
+}
+
+@keyframes syh-name-glow {
+  0%, 100% {
+    box-shadow:
+      0 0 0 2px rgba(248, 112, 0, 0.22),
+      0 7px 20px rgba(0, 0, 0, 0.38);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px rgba(248, 112, 0, 0.8),
+      0 0 20px rgba(248, 112, 0, 0.72),
+      0 7px 20px rgba(0, 0, 0, 0.38);
+  }
+}
+
+.syh-board .syh-seat.is-active .syh-row,
+.syh-board .syh-you.is-active .syh-row {
+  animation: syh-turn-glow 1.35s ease-in-out infinite;
+}
+
+.syh-board .syh-seat.is-active .syh-nameplate,
+.syh-board .syh-you.is-active .syh-nameplate {
+  animation: syh-name-glow 1.35s ease-in-out infinite;
+}
+
+.syh-pile.is-takeable .syh-card {
+  opacity: 1;
+  box-shadow:
+    0 0 0 2px rgba(248, 112, 0, 0.6),
+    0 0 16px rgba(248, 112, 0, 0.55);
+  animation: syh-name-glow 1.35s ease-in-out infinite;
+}
+
+.syh-pile.is-takeable span {
+  color: var(--orange);
+}
+
+.syh-claim-cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 7px;
+  margin-bottom: 9px;
+}
+
+.syh-claim-cards .syh-card {
+  width: 60px;
+  height: 84px;
+}
+
+.syh-claim-cards .syh-card.is-selected {
+  box-shadow:
+    0 0 0 3px var(--orange),
+    0 0 18px rgba(248, 112, 0, 0.62);
+}
+
+.syh-claim-chooser,
+.syh-trim-chooser {
+  bottom: 25%;
+}
+
+@media (max-width: 820px) {
+  .syh-claim-chooser,
+  .syh-trim-chooser {
+    bottom: 24%;
+    width: calc(100% - 34px);
+    padding: 8px;
+  }
+
+  .syh-claim-cards {
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+
+  .syh-claim-cards .syh-card {
+    width: 43px;
+    height: 60px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .syh-board .syh-seat.is-active .syh-row,
+  .syh-board .syh-you.is-active .syh-row,
+  .syh-board .syh-seat.is-active .syh-nameplate,
+  .syh-board .syh-you.is-active .syh-nameplate,
+  .syh-pile.is-takeable .syh-card {
+    animation: none;
+  }
+}

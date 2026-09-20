@@ -114,6 +114,17 @@ function pickTurn(state: GameState, playerId: PlayerId): Action {
 
   const view = publicView(state, playerId)
   const hand = view.hand
+
+  if (hand.length === 5 && view.discardTop) {
+    const top = state.catalog[view.discardTop]
+    if (top?.kind === 'number') {
+      const expanded = [...hand, top]
+      const worst = worstCardId(expanded)
+      if (worst !== top.id && keepValue(expanded, top.id) > keepValue(expanded, worst)) {
+        return { type: 'TAKE_DISCARD', playerId }
+      }
+    }
+  }
   const leaders = leadingOpponents(state, playerId)
   const discardId = worstCardId(hand)
   const discardCard = hand.find((card) => card.id === discardId)
@@ -206,6 +217,21 @@ export function chooseAiAction(state: GameState): Action {
     }
     case 'await_defense':
       return pickDefense(state, id)
+    case 'claim_dropped':
+      return {
+        type: 'CLAIM_DROPPED',
+        playerId: id,
+        cardIds: [...state.phase.cardIds],
+      }
+    case 'trim_hand': {
+      const cards = handCards(state, id)
+      const excess = Math.max(0, cards.length - 5)
+      const discardIds = [...cards]
+        .sort((a, b) => keepValue(cards, a.id) - keepValue(cards, b.id))
+        .slice(0, excess)
+        .map((card) => card.id)
+      return { type: 'TRIM_HAND', playerId: id, cardIds: discardIds }
+    }
     case 'choose_reverse_color':
       return {
         type: 'CHOOSE_REVERSE_COLOR',
