@@ -316,18 +316,32 @@ function resolveShuffle(state: GameState, attack: PendingAttack): void {
   }
 }
 
-function resolveDropColorSuccess(state: GameState, targetId: PlayerId, color: Color): void {
+function resolveDropColorSuccess(
+  state: GameState,
+  claimantId: PlayerId,
+  targetId: PlayerId,
+  color: Color,
+): void {
   const dropped = dropColorFromHand(state, targetId, color)
   if (dropped.length === 0) {
     log(state, `${nameOf(state, targetId)} had no ${color} number cards.`)
-  } else {
-    log(
-      state,
-      `${nameOf(state, targetId)} dropped ${dropped.length} ${color} card${dropped.length === 1 ? '' : 's'}.`,
-    )
+    afterActionResolved(state)
+    return
   }
-}
 
+  log(
+    state,
+    `${nameOf(state, targetId)} dropped ${dropped.length} ${color} card${dropped.length === 1 ? '' : 's'}.`,
+  )
+  state.phase = {
+    type: 'claim_dropped',
+    claimantId,
+    targetId,
+    color,
+    cardIds: dropped,
+  }
+  log(state, `${nameOf(state, claimantId)} may claim any of the dropped cards.`)
+}
 function resolveAttack(state: GameState, attack: PendingAttack): void {
   if (attack.kind === 'show-your-hand') {
     resolveShowYourHand(state, attack)
@@ -363,10 +377,73 @@ function resolveAttack(state: GameState, attack: PendingAttack): void {
     )
     return
   }
-  resolveDropColorSuccess(state, targetId, color)
+  resolveDropColorSuccess(state, attack.attackerId, targetId, color)
+}
+
+function takeDiscard(state: GameState, playerId: PlayerId): void {
+  if (state.phase.type !== 'choose_action') throw new Error('Cannot pick up the discard now')
+  if (currentPlayer(state).id !== playerId) throw new Error('Not your turn')
+  const player = playerById(state, playerId)
+  if (player.hand.length !== 5) throw new Error('You already picked up this turn')
+
+  const cardId = state.discardPile.at(-1)
+  if (!cardId) throw new Error('Discard pile is empty')
+  const card = state.catalog[cardId]
+  if (card.kind !== 'number') throw new Error('Only the top numbered discard can be picked up')
+
+  state.discardPile.pop()
+  player.hand.push(cardId)
+  log(state, `${nameOf(state, playerId)} picked up the ${card.color} ${card.number} from the discard pile.`)
+}
+
+function claimDropped(state: GameState, playerId: PlayerId, cardIds: string[]): void {
+  if (state.phase.type !== 'claim_dropped' || state.phase.claimantId !== playerId) {
+    throw new Error('No dropped cards to claim')
+  }
+
+  const allowed = new Set(state.phase.cardIds)
+  const unique = [...new Set(cardIds)]
+  if (unique.some((id) => !allowed.has(id))) throw new Error('That card was not dropped by this attack')
+
+  const player = playerById(state, playerId)
+  for (const id of unique) {
+    const discardIndex = state.discardPile.lastIndexOf(id)
+    if (discardIndex < 0) throw new Error('Dropped card is no longer available')
+    state.discardPile.splice(discardIndex, 1)
+    player.hand.push(id)
+  }
+
+  if (unique.length > 0) {
+    log(
+      state,
+      `${nameOf(state, playerId)} claimed ${unique.length} dropped card${unique.length === 1 ? '' : 's'}.`,
+    )
+  } else {
+    log(state, `${nameOf(state, playerId)} claimed none of the dropped cards.`)
+  }
+
+  if (player.hand.length > 5) {
+    state.phase = { type: 'trim_hand', playerId }
+    return
+  }
   afterActionResolved(state)
 }
 
+function trimHand(state: GameState, playerId: PlayerId, cardIds: string[]): void {
+  if (state.phase.type !== 'trim_hand' || state.phase.playerId !== playerId) {
+    throw new Error('No hand to trim')
+  }
+  const player = playerById(state, playerId)
+  const excess = player.hand.length - 5
+  const unique = [...new Set(cardIds)]
+  if (excess <= 0) throw new Error('Hand does not need trimming')
+  if (unique.length !== excess) throw new Error(`Choose exactly ${excess} card${excess === 1 ? '' : 's'} to discard`)
+  if (unique.some((id) => !player.hand.includes(id))) throw new Error('Trim cards must come from your hand')
+
+  for (const id of unique) spendFromHand(state, playerId, id)
+  log(state, `${nameOf(state, playerId)} discarded ${unique.length} extra card${unique.length === 1 ? '' : 's'} after claiming.`)
+  afterActionResolved(state)
+}
 function discardCard(state: GameState, playerId: PlayerId, cardId: string): void {
   if (currentPlayer(state).id !== playerId) throw new Error('Not your turn')
   if (state.phase.type !== 'choose_action' && state.phase.type !== 'choose_targets') {
@@ -455,7 +532,7 @@ function applyReverseBlank(
   if (state.phase.type !== 'await_reverse_blank' || state.phase.attack.attackerId !== playerId) {
     throw new Error('Not your blank window')
   }
-  const { attack, reverseColor } = state.phase
+  const { attack, reverserId, reverseColor } = state.phase
   if (choice === 'blank') {
     const id =
       cardId ??
@@ -464,7 +541,8 @@ function applyReverseBlank(
     spendFromHand(state, playerId, id)
     log(state, `${nameOf(state, playerId)} blocked the reverse Drop Color with Blank.`)
   } else {
-    resolveDropColorSuccess(state, playerId, reverseColor)
+    resolveDropColorSuccess(state, reverserId, playerId, reverseColor)
+    return
   }
   void attack
   afterActionResolved(state)
@@ -515,6 +593,15 @@ export function reduce(state: GameState, action: Action): GameState {
     switch (action.type) {
       case 'SELECT_CARD':
         selectCard(next, action.playerId, action.cardId)
+        break
+      case 'TAKE_DISCARD':
+        takeDiscard(next, action.playerId)
+        break
+      case 'CLAIM_DROPPED':
+        claimDropped(next, action.playerId, action.cardIds)
+        break
+      case 'TRIM_HAND':
+        trimHand(next, action.playerId, action.cardIds)
         break
       case 'CANCEL_SELECTION':
         next.selectedCardId = null
@@ -581,6 +668,10 @@ export function actorId(state: GameState): PlayerId | null {
       return currentPlayer(state).id
     case 'await_defense':
       return state.phase.responderId
+    case 'claim_dropped':
+      return state.phase.claimantId
+    case 'trim_hand':
+      return state.phase.playerId
     case 'choose_reverse_color':
       return state.phase.reverserId
     case 'await_reverse_blank':
@@ -629,6 +720,12 @@ export function instructionFor(state: GameState): string {
     }
     case 'await_defense':
       return `${nameOf(state, phase.responderId)} must respond to ${phase.attack.kind.replace(/-/g, ' ')}.`
+    case 'claim_dropped':
+      return `${nameOf(state, phase.claimantId)} may take any of the ${phase.color} cards that were dropped.`
+    case 'trim_hand': {
+      const excess = playerById(state, phase.playerId).hand.length - 5
+      return `${nameOf(state, phase.playerId)} must discard ${excess} extra card${excess === 1 ? '' : 's'} to return to five.`
+    }
     case 'choose_reverse_color':
       return `${nameOf(state, phase.reverserId)}: name a color for the reverse Drop Color.`
     case 'await_reverse_blank':
