@@ -252,7 +252,7 @@ describe('table flow', () => {
   it('lets the next player pick up only the top numbered discard before playing', () => {
     let state = fixture({
       hands: {
-        human: ['orange-1-a', 'blue-2-a', 'green-3-a', 'purple-4-a', 'blank-07'],
+        human: ['orange-1-a', 'blue-1-b', 'green-3-a', 'purple-4-a', 'blank-07'],
         'cpu-1': ['blue-1-a', 'blue-2-b', 'blue-3-a', 'blue-4-a', 'blue-5-a'],
       },
       current: 'human',
@@ -492,8 +492,15 @@ describe('computer players', () => {
           throw new Error(`Stuck in phase ${state.phase.type}`)
         }
         assertConservation(state)
-        if (
-          state.phase.type === 'choose_action' ||
+        if (state.phase.type === 'choose_action') {
+          const active = state.players[state.currentPlayerIndex]
+          expect(active.hand.length === 5 || active.hand.length === 6).toBe(true)
+          expect(
+            state.players
+              .filter((player) => player.id !== active.id)
+              .every((player) => player.hand.length === 5),
+          ).toBe(true)
+        } else if (
           state.phase.type === 'may_declare' ||
           state.phase.type === 'review_hands' ||
           state.phase.type === 'round_over' ||
