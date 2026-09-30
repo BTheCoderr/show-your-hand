@@ -10,6 +10,7 @@ type Props = {
   onResume: () => void
   onRules: () => void
   onTutorial: () => void
+  onOnline: () => void
 }
 
 export function StartScreen({
@@ -24,6 +25,7 @@ export function StartScreen({
   onResume,
   onRules,
   onTutorial,
+  onOnline,
 }: Props) {
   return (
     <section className="syh-start">
@@ -71,7 +73,11 @@ export function StartScreen({
       </label>
       <div className="syh-start-actions">
         <button type="button" className="syh-primary" data-testid="start-game" onClick={onStart}>
-          Start Game
+          Start Solo Game
+        </button>
+        <button type="button" className="syh-secondary syh-online-cta" onClick={onOnline}>
+          Play Online
+          <span>1v1 beta</span>
         </button>
         {hasSave ? (
           <button type="button" className="syh-secondary" onClick={onResume}>
