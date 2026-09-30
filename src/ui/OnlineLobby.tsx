@@ -245,22 +245,44 @@ export function OnlineLobby({
             ) : null}
 
             {room?.status === 'completed' ? (
-              <div className="syh-rematch-panel">
-                <h3>Run it back?</h3>
-                <p>
-                  {opponent?.rematchReady
-                    ? `${opponent.displayName} wants a rematch.`
-                    : 'Both players can stay at this table and rematch without a new code.'}
-                </p>
-                <button
-                  type="button"
-                  className={`syh-primary ${self?.rematchReady ? 'is-ready' : ''}`}
-                  disabled={busy}
-                  onClick={() => onRematch(!self?.rematchReady)}
-                >
-                  {self?.rematchReady ? 'Rematch requested ✓' : 'Rematch'}
-                </button>
-              </div>
+              <>
+                <div className="syh-match-results">
+                  <h3>Match stats</h3>
+                  <div className="syh-match-results-grid">
+                    {(room.players ?? []).map((player) => (
+                      <article key={player.id}>
+                        <header>
+                          <b>{player.displayName}</b>
+                          {player.gamePlayerId === session.gamePlayerId ? <em>You</em> : null}
+                        </header>
+                        <dl>
+                          <div><dt>Rounds won</dt><dd>{player.stats.roundsWon}</dd></div>
+                          <div><dt>Attacks</dt><dd>{player.stats.attacksPlayed}</dd></div>
+                          <div><dt>Defenses</dt><dd>{player.stats.defensesPlayed}</dd></div>
+                          <div><dt>Blank saves</dt><dd>{player.stats.blankDefenses}</dd></div>
+                        </dl>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="syh-rematch-panel">
+                  <h3>Run it back?</h3>
+                  <p>
+                    {opponent?.rematchReady
+                      ? `${opponent.displayName} wants a rematch.`
+                      : 'Both players can stay at this table and rematch without a new code.'}
+                  </p>
+                  <button
+                    type="button"
+                    className={`syh-primary ${self?.rematchReady ? 'is-ready' : ''}`}
+                    disabled={busy}
+                    onClick={() => onRematch(!self?.rematchReady)}
+                  >
+                    {self?.rematchReady ? 'Rematch requested ✓' : 'Rematch'}
+                  </button>
+                </div>
+              </>
             ) : null}
 
             {room?.status === 'abandoned' ? (
