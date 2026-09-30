@@ -1218,3 +1218,131 @@ button:disabled {
     transition: none;
   }
 }
+
+
+/* Opening shuffle + paced opponent move feedback */
+@keyframes syh-opening-shuffle-left {
+  0%, 100% { transform: translate3d(-34px, 6px, 0) rotate(-10deg); }
+  50% { transform: translate3d(22px, -8px, 0) rotate(7deg); }
+}
+
+@keyframes syh-opening-shuffle-right {
+  0%, 100% { transform: translate3d(34px, -5px, 0) rotate(10deg); }
+  50% { transform: translate3d(-22px, 8px, 0) rotate(-7deg); }
+}
+
+@keyframes syh-opening-shuffle-center {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-11px) scale(1.04); }
+}
+
+@keyframes syh-move-notice-in {
+  0% { opacity: 0; transform: translate(-50%, -8px) scale(0.96); }
+  18%, 82% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  100% { opacity: 0.96; transform: translate(-50%, 0) scale(1); }
+}
+
+.syh-opening-shuffle {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 8px;
+  padding: 24px;
+  background: rgba(3, 8, 5, 0.9);
+  backdrop-filter: blur(8px);
+  text-align: center;
+}
+
+.syh-opening-shuffle strong {
+  margin-top: 92px;
+  color: var(--orange);
+  font-family: 'DIN Condensed', 'Arial Narrow', sans-serif;
+  font-size: clamp(1.25rem, 5vw, 2rem);
+  letter-spacing: 0.1em;
+}
+
+.syh-opening-shuffle span {
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 0.88rem;
+}
+
+.syh-opening-shuffle-card {
+  position: absolute;
+  top: calc(50% - 78px);
+  left: calc(50% - 43px);
+  width: 86px;
+  height: 120px;
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  border-radius: 9px;
+  background: #111 url('/cards/back.png') center / cover no-repeat;
+  box-shadow: 0 18px 32px rgba(0, 0, 0, 0.48);
+  will-change: transform;
+}
+
+.syh-opening-card-one {
+  animation: syh-opening-shuffle-left 0.52s ease-in-out infinite;
+}
+
+.syh-opening-card-two {
+  animation: syh-opening-shuffle-right 0.52s ease-in-out infinite;
+}
+
+.syh-opening-card-three {
+  animation: syh-opening-shuffle-center 0.52s ease-in-out infinite;
+}
+
+.syh-move-notice {
+  position: fixed;
+  z-index: 80;
+  top: max(74px, calc(env(safe-area-inset-top) + 54px));
+  left: 50%;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  padding: 9px 14px;
+  transform: translateX(-50%);
+  border: 1px solid rgba(248, 112, 0, 0.58);
+  border-radius: 999px;
+  background: rgba(8, 9, 8, 0.94);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38);
+  color: #fff;
+  font-family: 'DIN Condensed', 'Arial Narrow', sans-serif;
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-align: center;
+  pointer-events: none;
+  animation: syh-move-notice-in 1.05s ease both;
+}
+
+.syh-table.is-locked .syh-seat.is-active .syh-row {
+  animation-duration: 0.86s;
+}
+
+@media (max-width: 820px) {
+  .syh-opening-shuffle-card {
+    top: calc(50% - 70px);
+    left: calc(50% - 36px);
+    width: 72px;
+    height: 101px;
+  }
+
+  .syh-opening-shuffle strong {
+    margin-top: 78px;
+  }
+
+  .syh-move-notice {
+    top: max(60px, calc(env(safe-area-inset-top) + 42px));
+    padding: 7px 11px;
+    font-size: 0.74rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .syh-opening-shuffle-card,
+  .syh-move-notice {
+    animation: none;
+  }
+}
