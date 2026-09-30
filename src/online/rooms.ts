@@ -71,6 +71,22 @@ type AuthoritativeResponse = {
 }
 
 const SESSION_KEY = 'show-your-hand:online-session:v2'
+const ONLINE_REQUEST_TIMEOUT_MS = 12000
+
+async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit): Promise<Response> {
+  const controller = new AbortController()
+  const timer = window.setTimeout(() => controller.abort(), ONLINE_REQUEST_TIMEOUT_MS)
+  try {
+    return await fetch(input, { ...init, signal: controller.signal })
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('Online request timed out. Check your connection and try again.')
+    }
+    throw error
+  } finally {
+    window.clearTimeout(timer)
+  }
+}
 
 function headers() {
   if (!SUPABASE_KEY) throw new Error('Online play is not configured yet.')
@@ -85,7 +101,7 @@ async function rpc<T>(name: string, body: Record<string, unknown>): Promise<T> {
     throw new Error('Online play is not configured yet.')
   }
 
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
+  const response = await fetchWithTimeout(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
     method: 'POST',
     headers: {
       ...headers(),
@@ -117,7 +133,7 @@ async function gameFunction<T>(body: Record<string, unknown>): Promise<T> {
     throw new Error('Online play is not configured yet.')
   }
 
-  const response = await fetch(`${SUPABASE_URL}/functions/v1/show-your-hand-game`, {
+  const response = await fetchWithTimeout(`${SUPABASE_URL}/functions/v1/show-your-hand-game`, {
     method: 'POST',
     headers: headers(),
     body: JSON.stringify(body),
