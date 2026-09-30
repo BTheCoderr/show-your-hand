@@ -1,5 +1,11 @@
 # SHOW YOUR HAND
 
+<!-- repo-intro:start -->
+**Project snapshot:** SHOW YOUR HAND is an original competitive card game being built as both a physical tabletop game and a polished browser game, with a custom 70-card deck, attack/defense mechanics, scoring, onboarding, and multiplayer-oriented product design.
+
+**What it demonstrates:** original game-system design · JavaScript/browser game architecture · touch/swipe UX · persistent state · tutorial/CPU gameplay.
+<!-- repo-intro:end -->
+
 > **DROP. PICK UP. ATTACK. DEFEND. BUT NEVER SHOW YOUR HAND.**
 
 [![Build Netlify Artifact](https://github.com/BTheCoderr/show-your-hand/actions/workflows/build-netlify-artifact.yml/badge.svg)](https://github.com/BTheCoderr/show-your-hand/actions/workflows/build-netlify-artifact.yml)
