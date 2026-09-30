@@ -33,6 +33,7 @@ The goal of the digital version is not just to reproduce the rules. It is built 
 - Scoring-hand declaration flow
 - Swipe-up card play and swipe-down discard pickup
 - Active-turn glow and turn timer
+- Interactive 2-minute How to Play tutorial with practice steps
 - **Animated opening-deck shuffle before the first deal**
 - **Paced CPU turns so opponent moves are visible instead of happening instantly**
 - **On-screen move notices showing what opponents just did**
@@ -113,7 +114,7 @@ Netlify builds the app with:
 
 The browser prototype is being expanded toward a more complete multiplayer card-game experience while keeping the tabletop rules as the source of truth.
 
-Current focus areas include animation quality, clearer opponent feedback, mobile table layout, multiplayer-ready game flow, and playtesting.
+Current focus areas include animation quality, clearer opponent feedback, tutorial/onboarding quality, mobile table layout, multiplayer-ready game flow, and playtesting.
 
 ---
 
