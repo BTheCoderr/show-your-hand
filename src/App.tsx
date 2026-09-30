@@ -14,15 +14,19 @@ import { clearMatch, loadMatch, saveMatch } from './game/persist'
 import { loadPreferences, savePreferences } from './game/preferences'
 import { scoreHand } from './game/scoring'
 import {
+  clearInviteFromLocation,
   createRoom,
   getRoom,
+  inviteCodeFromLocation,
   joinRoom,
   leaveRoom,
   loadOnlineSession,
   onlineConfigured,
+  requestRematch,
   saveOnlineSession,
+  setRoomReady,
   startRoom,
-  submitRoomState,
+  submitRoomAction,
   type OnlineRoom,
   type OnlineSession,
 } from './online/rooms'
@@ -171,6 +175,8 @@ export function App() {
   const saved = useMemo(() => loadMatch(), [])
   const initialPreferences = useMemo(() => loadPreferences(), [])
   const restoredOnlineSession = useMemo(() => loadOnlineSession(), [])
+  const initialInviteCode = useMemo(() => inviteCodeFromLocation(), [])
+  const [inviteCode, setInviteCode] = useState<string | null>(initialInviteCode)
   const [menuCount, setMenuCount] = useState<1 | 2 | 3 | 4 | 5>(2)
   const [menuTest, setMenuTest] = useState(false)
   const [showStart, setShowStart] = useState(
@@ -186,7 +192,9 @@ export function App() {
   const [beginnerMode, setBeginnerMode] = useState(initialPreferences.beginnerMode)
   const [onlineSession, setOnlineSession] = useState<OnlineSession | null>(restoredOnlineSession)
   const [onlineRoom, setOnlineRoom] = useState<OnlineRoom | null>(null)
-  const [onlineLobbyOpen, setOnlineLobbyOpen] = useState(Boolean(restoredOnlineSession))
+  const [onlineLobbyOpen, setOnlineLobbyOpen] = useState(
+    Boolean(restoredOnlineSession || initialInviteCode),
+  )
   const [onlineBusy, setOnlineBusy] = useState(false)
   const [onlineError, setOnlineError] = useState<string | null>(null)
   const [historyOpen, setHistoryOpen] = useState(false)
@@ -202,6 +210,7 @@ export function App() {
   const moveNoticeTimer = useRef<number | null>(null)
   const attackTimer = useRef<number | null>(null)
   const aiAttackTimer = useRef<number | null>(null)
+  const rematchAutoStart = useRef<number | null>(null)
 
   const localPlayerId = onlineSession?.gamePlayerId ?? 'human'
   const onlineInGame = Boolean(onlineSession && onlineRoom?.status === 'in_game')
@@ -237,39 +246,41 @@ export function App() {
   }
 
   const commitAction = async (source: GameState, action: Action) => {
-    const next = apply(source, action)
-    const blocked = next.history.at(-1)?.startsWith('Action blocked:')
-
-    if (onlineSession && onlineRoom?.status === 'in_game' && !blocked) {
+    if (onlineSession && onlineRoom?.status === 'in_game') {
       try {
-        const version = await submitRoomState(
-          onlineSession,
-          onlineSession.stateVersion,
-          next,
-        )
-        const nextSession = { ...onlineSession, stateVersion: version }
+        const result = await submitRoomAction(onlineSession, action)
+        const nextSession = { ...onlineSession, stateVersion: result.stateVersion }
         updateOnlineSession(nextSession)
         setOnlineRoom((room) =>
           room
             ? {
                 ...room,
-                gameState: next,
-                stateVersion: version,
-                status: next.phase.type === 'match_over' ? 'completed' : room.status,
+                gameState: result.gameState,
+                stateVersion: result.stateVersion,
+                status: result.status,
               }
             : room,
         )
+        setState(result.gameState)
+        setOnlineError(null)
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
-        setOnlineError(message === 'STALE_STATE' ? 'The table changed. Syncing the latest move…' : message)
+        setOnlineError(
+          message === 'STALE_STATE'
+            ? 'The table changed. Syncing the latest move…'
+            : message === 'NOT_YOUR_TURN'
+              ? 'That move is not yours to make. Syncing the table…'
+              : message,
+        )
         await refreshOnlineRoom(onlineSession)
         throw error
       }
-    } else if (!onlineSession) {
+    } else {
+      const next = apply(source, action)
       saveMatch(next)
+      setState(next)
     }
 
-    setState(next)
     setShuffleTargets([])
     setClaimedDropIds([])
     setTrimIds([])
@@ -349,6 +360,8 @@ export function App() {
       updateOnlineSession(session)
       const room = await getRoom(session)
       setOnlineRoom(room)
+      setInviteCode(null)
+      clearInviteFromLocation()
       setOnlineLobbyOpen(true)
     } catch (error) {
       setOnlineError(error instanceof Error ? error.message : String(error))
@@ -359,34 +372,64 @@ export function App() {
 
   const startOnlineMatch = async () => {
     if (!onlineSession || !onlineRoom || !onlineSession.isHost) return
-    if (onlineRoom.players.length !== 2) return
+    if (
+      onlineRoom.players.length !== 2 ||
+      !onlineRoom.players.every((player) => player.ready)
+    ) {
+      return
+    }
 
     setOnlineBusy(true)
     setOnlineError(null)
+    setOpeningShuffle(true)
     try {
-      const next = apply(emptyMenuState(false), {
-        type: 'START_MATCH',
-        opponentCount: 1,
-        testMode: false,
-      })
-      next.players = next.players.map((player, index) => ({
-        ...player,
-        name: onlineRoom.players[index]?.displayName ?? player.name,
-        isHuman: true,
-      }))
-
-      const version = await startRoom(onlineSession, next)
-      const nextSession = { ...onlineSession, stateVersion: version }
+      const result = await startRoom(onlineSession)
+      const nextSession = { ...onlineSession, stateVersion: result.stateVersion }
       updateOnlineSession(nextSession)
       setOnlineRoom({
         ...onlineRoom,
-        status: 'in_game',
-        gameState: next,
-        stateVersion: version,
+        status: result.status,
+        gameState: result.gameState,
+        stateVersion: result.stateVersion,
+        players: onlineRoom.players.map((player) => ({ ...player, ready: false })),
       })
-      setState(next)
+      setState(result.gameState)
       setShowStart(false)
       setOnlineLobbyOpen(false)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      setOnlineError(message)
+      if (message === 'STALE_STATE') await refreshOnlineRoom(onlineSession)
+    } finally {
+      setOpeningShuffle(false)
+      setOnlineBusy(false)
+    }
+  }
+
+  const setOnlineReady = async (ready: boolean) => {
+    if (!onlineSession) return
+    setOnlineBusy(true)
+    setOnlineError(null)
+    try {
+      await setRoomReady(onlineSession, ready)
+      await refreshOnlineRoom(onlineSession)
+    } catch (error) {
+      setOnlineError(error instanceof Error ? error.message : String(error))
+    } finally {
+      setOnlineBusy(false)
+    }
+  }
+
+  const toggleOnlineRematch = async () => {
+    if (!onlineSession || !onlineRoom || onlineRoom.status !== 'completed') return
+    const current = onlineRoom.players.find(
+      (player) => player.gamePlayerId === onlineSession.gamePlayerId,
+    )
+    setOnlineBusy(true)
+    setOnlineError(null)
+    try {
+      await requestRematch(onlineSession, !current?.rematchReady)
+      await refreshOnlineRoom(onlineSession)
     } catch (error) {
       setOnlineError(error instanceof Error ? error.message : String(error))
     } finally {
