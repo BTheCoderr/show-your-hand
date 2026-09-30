@@ -2838,3 +2838,13 @@ button:disabled {
     animation: none;
   }
 }
+
+
+.syh-online-game-error {
+  width: fit-content;
+  max-width: min(680px, 100%);
+  margin: 0 auto 10px;
+  padding: 7px 10px;
+  text-align: center;
+  font-size: 0.78rem;
+}
