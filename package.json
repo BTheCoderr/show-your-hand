@@ -1,14 +1,15 @@
 {
   "name": "show-your-hand",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "check:edge-sync": "node scripts/check-edge-sync.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
