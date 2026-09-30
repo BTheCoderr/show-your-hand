@@ -47,7 +47,7 @@ SHOW YOUR HAND is built as a stateful multiplayer product, not a static game dem
 
 **70 cards total**
 
-- 40 numbered cards — Green, Orange, Yellow, Red 1–5 × 2
+- 40 numbered cards — Orange, Blue, Green, Purple 1–5 × 2
 - 10 Blank
 - 5 Show Your Hand
 - 5 Drop Color
