@@ -4,10 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0a0a0a" />
+    <meta name="description" content="SHOW YOUR HAND — an original competitive card game with solo and private online play." />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="SHOW YOUR HAND" />
     <title>SHOW YOUR HAND</title>
     <link rel="icon" href="/cards/show-your-hand.png" />
+    <link rel="apple-touch-icon" href="/cards/show-your-hand.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
   </head>
   <body>
+    <form name="feedback" netlify hidden>
+      <input type="text" name="name" />
+      <textarea name="message"></textarea>
+      <input type="text" name="room-code" />
+    </form>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

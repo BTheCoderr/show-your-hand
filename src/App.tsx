@@ -10,19 +10,34 @@ import {
   validDefenseChoices,
 } from './game/engine'
 import { currentPlayer, handCards, nameOf, playerById } from './game/helpers'
+import {
+  feedbackKindForAction,
+  loadFeedbackEnabled,
+  playFeedback,
+  saveFeedbackEnabled,
+} from './game/feedback'
 import { clearMatch, loadMatch, saveMatch } from './game/persist'
 import { loadPreferences, savePreferences } from './game/preferences'
 import { scoreHand } from './game/scoring'
 import {
+  loadLocalStats,
+  recordLocalAction,
+  recordLocalOutcome,
+} from './game/stats'
+import {
   createRoom,
   getRoom,
+  joinCodeFromPath,
   joinRoom,
   leaveRoom,
   loadOnlineSession,
   onlineConfigured,
+  requestRematch,
   saveOnlineSession,
+  setReady,
+  setRoomOptions,
   startRoom,
-  submitRoomState,
+  submitAction,
   type OnlineRoom,
   type OnlineSession,
 } from './online/rooms'
@@ -36,6 +51,7 @@ import { StartScreen } from './ui/StartScreen'
 import { Tutorial } from './ui/Tutorial'
 
 const TURN_SECONDS = 120
+const APP_VERSION = 'Beta 0.1.0'
 
 type AttackSpotlight = {
   cardId: string
@@ -171,6 +187,10 @@ export function App() {
   const saved = useMemo(() => loadMatch(), [])
   const initialPreferences = useMemo(() => loadPreferences(), [])
   const restoredOnlineSession = useMemo(() => loadOnlineSession(), [])
+  const invitedCode = useMemo(
+    () => (typeof window === 'undefined' ? null : joinCodeFromPath(window.location.pathname)),
+    [],
+  )
   const [menuCount, setMenuCount] = useState<1 | 2 | 3 | 4 | 5>(2)
   const [menuTest, setMenuTest] = useState(false)
   const [showStart, setShowStart] = useState(
@@ -182,11 +202,17 @@ export function App() {
   const [rulesOpen, setRulesOpen] = useState(false)
   const [tutorialOpen, setTutorialOpen] = useState(false)
   const [tutorialPromptSeen, setTutorialPromptSeen] = useState(initialPreferences.tutorialPromptSeen)
-  const [firstVisitOpen, setFirstVisitOpen] = useState(!initialPreferences.tutorialPromptSeen)
+  const [firstVisitOpen, setFirstVisitOpen] = useState(
+    !initialPreferences.tutorialPromptSeen && !invitedCode,
+  )
   const [beginnerMode, setBeginnerMode] = useState(initialPreferences.beginnerMode)
+  const [feedbackEnabled, setFeedbackEnabled] = useState(() => loadFeedbackEnabled())
+  const [localStats, setLocalStats] = useState(() => loadLocalStats())
   const [onlineSession, setOnlineSession] = useState<OnlineSession | null>(restoredOnlineSession)
   const [onlineRoom, setOnlineRoom] = useState<OnlineRoom | null>(null)
-  const [onlineLobbyOpen, setOnlineLobbyOpen] = useState(Boolean(restoredOnlineSession))
+  const [onlineLobbyOpen, setOnlineLobbyOpen] = useState(
+    Boolean(restoredOnlineSession || invitedCode),
+  )
   const [onlineBusy, setOnlineBusy] = useState(false)
   const [onlineError, setOnlineError] = useState<string | null>(null)
   const [historyOpen, setHistoryOpen] = useState(false)
@@ -202,9 +228,20 @@ export function App() {
   const moveNoticeTimer = useRef<number | null>(null)
   const attackTimer = useRef<number | null>(null)
   const aiAttackTimer = useRef<number | null>(null)
+  const lastOutcomeRef = useRef<string | null>(null)
 
   const localPlayerId = onlineSession?.gamePlayerId ?? 'human'
   const onlineInGame = Boolean(onlineSession && onlineRoom?.status === 'in_game')
+  const onlineOpponent = onlineRoom?.players.find(
+    (player) => player.gamePlayerId !== onlineSession?.gamePlayerId,
+  )
+  const opponentDisconnected = Boolean(onlineInGame && onlineOpponent && !onlineOpponent.connected)
+  const disconnectSecondsRemaining = onlineOpponent
+    ? Math.max(
+        0,
+        60 - Math.floor((Date.now() - new Date(onlineOpponent.lastSeenAt).getTime()) / 1000),
+      )
+    : 60
 
   const updateOnlineSession = (session: OnlineSession | null) => {
     setOnlineSession(session)
@@ -219,6 +256,8 @@ export function App() {
         : { ...session, stateVersion: room.stateVersion }
     if (nextSession !== session) updateOnlineSession(nextSession)
 
+    setBeginnerMode(room.beginnerMode)
+
     if (room.gameState) {
       setState(room.gameState)
       setShowStart(false)
@@ -227,7 +266,13 @@ export function App() {
       }
     }
 
-    if (room.status === 'waiting') setOnlineLobbyOpen(true)
+    if (room.status === 'waiting') {
+      setShowStart(true)
+      setOnlineLobbyOpen(true)
+    }
+    if (room.status === 'abandoned') {
+      setOnlineLobbyOpen(true)
+    }
   }
 
   const refreshOnlineRoom = async (session = onlineSession) => {
@@ -237,39 +282,44 @@ export function App() {
   }
 
   const commitAction = async (source: GameState, action: Action) => {
-    const next = apply(source, action)
-    const blocked = next.history.at(-1)?.startsWith('Action blocked:')
-
-    if (onlineSession && onlineRoom?.status === 'in_game' && !blocked) {
+    if (onlineSession && onlineRoom?.status === 'in_game') {
       try {
-        const version = await submitRoomState(
+        const result = await submitAction(
           onlineSession,
           onlineSession.stateVersion,
-          next,
+          action,
         )
-        const nextSession = { ...onlineSession, stateVersion: version }
+        const nextSession = { ...onlineSession, stateVersion: result.stateVersion }
         updateOnlineSession(nextSession)
         setOnlineRoom((room) =>
           room
             ? {
                 ...room,
-                gameState: next,
-                stateVersion: version,
-                status: next.phase.type === 'match_over' ? 'completed' : room.status,
+                gameState: result.gameState,
+                stateVersion: result.stateVersion,
+                status: result.status,
               }
             : room,
         )
+        setState(result.gameState)
+        setOnlineError(null)
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
-        setOnlineError(message === 'STALE_STATE' ? 'The table changed. Syncing the latest move…' : message)
+        setOnlineError(
+          message === 'STALE_STATE'
+            ? 'The table changed first. Syncing the latest move…'
+            : message,
+        )
         await refreshOnlineRoom(onlineSession)
         throw error
       }
-    } else if (!onlineSession) {
-      saveMatch(next)
+    } else {
+      const next = apply(source, action)
+      const blocked = next.history.at(-1)?.startsWith('Action blocked:')
+      if (!blocked) saveMatch(next)
+      setState(next)
     }
 
-    setState(next)
     setShuffleTargets([])
     setClaimedDropIds([])
     setTrimIds([])
@@ -283,6 +333,8 @@ export function App() {
     const run = async () => {
       try {
         await commitAction(state, action)
+        setLocalStats((current) => recordLocalAction(current, state, action))
+        playFeedback(feedbackKindForAction(action.type), feedbackEnabled)
       } catch {
         // Online errors are surfaced in the lobby/status UI and the latest room is reloaded.
       } finally {
@@ -308,6 +360,12 @@ export function App() {
   const updateBeginnerMode = (value: boolean) => {
     setBeginnerMode(value)
     savePreferences({ tutorialPromptSeen, beginnerMode: value })
+  }
+
+  const updateFeedback = (value: boolean) => {
+    setFeedbackEnabled(value)
+    saveFeedbackEnabled(value)
+    if (value) playFeedback('card', true)
   }
 
   const openTutorial = () => {
@@ -359,34 +417,74 @@ export function App() {
 
   const startOnlineMatch = async () => {
     if (!onlineSession || !onlineRoom || !onlineSession.isHost) return
-    if (onlineRoom.players.length !== 2) return
+    if (onlineRoom.players.length !== 2 || !onlineRoom.players.every((player) => player.ready)) return
 
     setOnlineBusy(true)
     setOnlineError(null)
     try {
-      const next = apply(emptyMenuState(false), {
-        type: 'START_MATCH',
-        opponentCount: 1,
-        testMode: false,
-      })
-      next.players = next.players.map((player, index) => ({
-        ...player,
-        name: onlineRoom.players[index]?.displayName ?? player.name,
-        isHuman: true,
-      }))
-
-      const version = await startRoom(onlineSession, next)
-      const nextSession = { ...onlineSession, stateVersion: version }
+      lastOutcomeRef.current = null
+      const result = await startRoom(onlineSession)
+      const nextSession = { ...onlineSession, stateVersion: result.stateVersion }
       updateOnlineSession(nextSession)
       setOnlineRoom({
         ...onlineRoom,
-        status: 'in_game',
-        gameState: next,
-        stateVersion: version,
+        status: result.status,
+        gameState: result.gameState,
+        stateVersion: result.stateVersion,
       })
-      setState(next)
+      setState(result.gameState)
       setShowStart(false)
       setOnlineLobbyOpen(false)
+    } catch (error) {
+      setOnlineError(error instanceof Error ? error.message : String(error))
+    } finally {
+      setOnlineBusy(false)
+    }
+  }
+
+  const updateOnlineReady = async (ready: boolean) => {
+    if (!onlineSession) return
+    setOnlineBusy(true)
+    setOnlineError(null)
+    try {
+      await setReady(onlineSession, ready)
+      await refreshOnlineRoom(onlineSession)
+    } catch (error) {
+      setOnlineError(error instanceof Error ? error.message : String(error))
+    } finally {
+      setOnlineBusy(false)
+    }
+  }
+
+  const updateOnlineOptions = async (options: {
+    beginnerMode: boolean
+    mode: 'standard' | 'hardcore'
+  }) => {
+    if (!onlineSession?.isHost) return
+    setOnlineBusy(true)
+    setOnlineError(null)
+    try {
+      await setRoomOptions(onlineSession, options)
+      await refreshOnlineRoom(onlineSession)
+    } catch (error) {
+      setOnlineError(error instanceof Error ? error.message : String(error))
+    } finally {
+      setOnlineBusy(false)
+    }
+  }
+
+  const updateRematch = async (ready: boolean) => {
+    if (!onlineSession) return
+    setOnlineBusy(true)
+    setOnlineError(null)
+    try {
+      const reset = await requestRematch(onlineSession, ready)
+      const room = await getRoom(onlineSession)
+      syncOnlineRoom(room, onlineSession)
+      if (reset || room.status === 'waiting') {
+        setShowStart(true)
+        setOnlineLobbyOpen(true)
+      }
     } catch (error) {
       setOnlineError(error instanceof Error ? error.message : String(error))
     } finally {
@@ -415,6 +513,8 @@ export function App() {
 
   const start = () => {
     if (openingShuffle) return
+    lastOutcomeRef.current = null
+    playFeedback('shuffle', feedbackEnabled)
     setOpeningShuffle(true)
     window.setTimeout(() => {
       const next = apply(emptyMenuState(menuTest), {
@@ -516,6 +616,38 @@ export function App() {
   }, [activeActorId, state.roundStarterIndex, showStart])
 
   useEffect(() => {
+    if (state.phase.type !== 'round_over' && state.phase.type !== 'match_over') return
+
+    const winnerId = state.phase.winnerId
+    const winner = state.players.find((player) => player.id === winnerId)
+    const points =
+      state.phase.type === 'round_over'
+        ? state.phase.points
+        : winner
+          ? scoreHand(handCards(state, winner.id))?.points ?? 0
+          : 0
+    const key = [
+      state.phase.type,
+      winnerId,
+      state.history.length,
+      ...state.players.map((player) => player.score),
+    ].join(':')
+
+    if (lastOutcomeRef.current === key) return
+    lastOutcomeRef.current = key
+
+    setLocalStats((current) =>
+      recordLocalOutcome(current, {
+        points,
+        wonRound: winnerId === localPlayerId,
+        matchOver: state.phase.type === 'match_over',
+        wonMatch: state.phase.type === 'match_over' && winnerId === localPlayerId,
+      }),
+    )
+    playFeedback(state.phase.type === 'match_over' ? 'win' : 'score', feedbackEnabled)
+  }, [feedbackEnabled, localPlayerId, state])
+
+  useEffect(() => {
     if (
       showStart ||
       tutorialOpen ||
@@ -549,15 +681,28 @@ export function App() {
   return (
     <div className="syh-app">
       <header className="syh-top">
-        <strong>SHOW YOUR HAND</strong>
+        <div className="syh-brand-lockup">
+          <strong>SHOW YOUR HAND</strong>
+          <span>{APP_VERSION}</span>
+        </div>
         <nav>
           <button
             type="button"
             className={beginnerMode ? 'is-mode-on' : ''}
             aria-pressed={beginnerMode}
+            disabled={Boolean(onlineSession)}
             onClick={() => updateBeginnerMode(!beginnerMode)}
           >
             {beginnerMode ? 'Beginner on' : 'Beginner off'}
+          </button>
+          <button
+            type="button"
+            className={feedbackEnabled ? 'is-mode-on' : ''}
+            aria-pressed={feedbackEnabled}
+            onClick={() => updateFeedback(!feedbackEnabled)}
+            title="Sound and haptics"
+          >
+            {feedbackEnabled ? '🔊' : '🔇'}
           </button>
           <button type="button" onClick={openTutorial}>
             Tutorial
@@ -624,10 +769,14 @@ export function App() {
           opponentCount={menuCount}
           testMode={menuTest}
           beginnerMode={beginnerMode}
+          feedbackEnabled={feedbackEnabled}
+          version={APP_VERSION}
+          stats={localStats}
           hasSave={Boolean(saved && saved.phase.type !== 'menu')}
           onCount={setMenuCount}
           onTestMode={setMenuTest}
           onBeginnerMode={updateBeginnerMode}
+          onFeedback={updateFeedback}
           onStart={start}
           onResume={() => {
             if (saved) {
@@ -654,6 +803,16 @@ export function App() {
           {onlineInGame && onlineError ? (
             <p className="syh-online-error syh-online-game-error" role="alert">
               {onlineError}
+            </p>
+          ) : null}
+          {opponentDisconnected ? (
+            <p className="syh-disconnect-banner" role="status" aria-live="polite">
+              <b>Opponent disconnected</b>
+              <span>
+                Waiting for reconnect{disconnectSecondsRemaining > 0
+                  ? ` · ${disconnectSecondsRemaining}s grace window`
+                  : ' · you can leave the table safely'}
+              </span>
             </p>
           ) : null}
           {beginnerMode && beginnerHelp(state, localPlayerId) ? (
@@ -1069,10 +1228,10 @@ export function App() {
               state={state}
               winnerId={state.phase.winnerId}
               matchOver
-              actionLabel={onlineSession ? 'Return to menu' : 'Play again'}
+              actionLabel={onlineSession ? 'Results / Rematch' : 'Play again'}
               onContinue={() => {
                 if (onlineSession) {
-                  void leaveOnlineMatch()
+                  setOnlineLobbyOpen(true)
                   return
                 }
                 clearMatch()
@@ -1107,6 +1266,7 @@ export function App() {
         room={onlineRoom}
         busy={onlineBusy}
         error={onlineError}
+        initialCode={invitedCode}
         onClose={() => setOnlineLobbyOpen(false)}
         onCreate={(name) => {
           void createOnlineRoom(name)
@@ -1114,8 +1274,17 @@ export function App() {
         onJoin={(code, name) => {
           void joinOnlineRoom(code, name)
         }}
+        onReady={(ready) => {
+          void updateOnlineReady(ready)
+        }}
+        onOptions={(options) => {
+          void updateOnlineOptions(options)
+        }}
         onStart={() => {
           void startOnlineMatch()
+        }}
+        onRematch={(ready) => {
+          void updateRematch(ready)
         }}
         onLeave={() => {
           void leaveOnlineMatch()
