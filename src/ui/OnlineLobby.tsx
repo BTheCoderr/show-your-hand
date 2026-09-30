@@ -16,6 +16,7 @@ type Props = {
   onOptions: (options: { beginnerMode: boolean; mode: 'standard' | 'hardcore' }) => void
   onStart: () => void
   onRematch: (ready: boolean) => void
+  onNewOpponent: () => void
   onLeave: () => void
 }
 
@@ -34,6 +35,7 @@ export function OnlineLobby({
   onOptions,
   onStart,
   onRematch,
+  onNewOpponent,
   onLeave,
 }: Props) {
   const [name, setName] = useState('Player')
@@ -273,14 +275,24 @@ export function OnlineLobby({
                       ? `${opponent.displayName} wants a rematch.`
                       : 'Both players can stay at this table and rematch without a new code.'}
                   </p>
-                  <button
-                    type="button"
-                    className={`syh-primary ${self?.rematchReady ? 'is-ready' : ''}`}
-                    disabled={busy}
-                    onClick={() => onRematch(!self?.rematchReady)}
-                  >
-                    {self?.rematchReady ? 'Rematch requested ✓' : 'Rematch'}
-                  </button>
+                  <div className="syh-post-match-actions">
+                    <button
+                      type="button"
+                      className={`syh-primary ${self?.rematchReady ? 'is-ready' : ''}`}
+                      disabled={busy}
+                      onClick={() => onRematch(!self?.rematchReady)}
+                    >
+                      {self?.rematchReady ? 'Rematch requested ✓' : 'Rematch'}
+                    </button>
+                    <button
+                      type="button"
+                      className="syh-secondary"
+                      disabled={busy}
+                      onClick={onNewOpponent}
+                    >
+                      New opponent
+                    </button>
+                  </div>
                 </div>
               </>
             ) : null}
