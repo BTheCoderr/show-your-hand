@@ -737,7 +737,7 @@ export function App() {
                     <header className="syh-nameplate">
                       <span>{player.name}</span>
                       <span className="syh-seat-meta">
-                        <b>{player.score} pts</b>
+                        <b className="syh-score-chip">{player.score} pts</b>
                         {active ? <span className="syh-turn-chip">TURN</span> : null}
                       </span>
                     </header>
@@ -934,8 +934,9 @@ export function App() {
             }`}
           >
             <header className="syh-nameplate">
-              <span>You · {playerById(state, localPlayerId).score} pts</span>
+              <span>You</span>
               <span className="syh-you-meta">
+                <b className="syh-score-chip">{playerById(state, localPlayerId).score} pts</b>
                 {scoreHand(handCards(state, localPlayerId)) ? (
                   <em>Scoring hand ready</em>
                 ) : null}
