@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { FormEvent } from 'react'
 
 export type ProductPath = '/about' | '/privacy' | '/terms' | '/feedback'
 
@@ -99,7 +100,7 @@ export function ProductPage({ path }: { path: ProductPath }) {
 function FeedbackPage() {
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
 
-  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setStatus('sending')
     const form = event.currentTarget
@@ -108,7 +109,9 @@ function FeedbackPage() {
       await fetch('/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams(data as unknown as Record<string, string>).toString(),
+        body: new URLSearchParams(
+          Array.from(data.entries()).map(([key, value]) => [key, String(value)]),
+        ).toString(),
       })
       form.reset()
       setStatus('sent')
