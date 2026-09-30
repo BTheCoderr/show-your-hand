@@ -52,7 +52,7 @@ import { StartScreen } from './ui/StartScreen'
 import { Tutorial } from './ui/Tutorial'
 
 const TURN_SECONDS = 120
-const APP_VERSION = 'Beta 0.1.0'
+const APP_VERSION = 'Beta 0.1.1'
 
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -244,6 +244,7 @@ export function App() {
   const [moveNotice, setMoveNotice] = useState<string | null>(null)
   const [attackSpotlight, setAttackSpotlight] = useState<AttackSpotlight | null>(null)
   const lock = useRef(false)
+  const lockWatchdog = useRef<number | null>(null)
   const moveNoticeTimer = useRef<number | null>(null)
   const attackTimer = useRef<number | null>(null)
   const aiAttackTimer = useRef<number | null>(null)
@@ -375,10 +376,29 @@ export function App() {
     setTrimIds([])
   }
 
-  const dispatch = (action: Action) => {
-    if (lock.current) return
-    const presentation = attackPresentationFor(state, action)
+  const releaseInteractionLock = () => {
+    if (lockWatchdog.current) {
+      window.clearTimeout(lockWatchdog.current)
+      lockWatchdog.current = null
+    }
+    lock.current = false
+  }
+
+  const acquireInteractionLock = () => {
+    if (lock.current) return false
     lock.current = true
+    if (lockWatchdog.current) window.clearTimeout(lockWatchdog.current)
+    lockWatchdog.current = window.setTimeout(() => {
+      lock.current = false
+      lockWatchdog.current = null
+      setAttackSpotlight(null)
+    }, 15000)
+    return true
+  }
+
+  const dispatch = (action: Action) => {
+    if (!acquireInteractionLock()) return
+    const presentation = attackPresentationFor(state, action)
 
     const run = async () => {
       try {
@@ -390,7 +410,7 @@ export function App() {
       } finally {
         setAttackSpotlight(null)
         window.setTimeout(() => {
-          lock.current = false
+          releaseInteractionLock()
         }, 180)
       }
     }
@@ -422,7 +442,7 @@ export function App() {
     if (attackTimer.current) window.clearTimeout(attackTimer.current)
     if (aiAttackTimer.current) window.clearTimeout(aiAttackTimer.current)
     setAttackSpotlight(null)
-    lock.current = false
+    releaseInteractionLock()
     setTutorialOpen(true)
   }
 
