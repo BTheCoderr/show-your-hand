@@ -1,4 +1,4 @@
-import type { GameState } from '../game/types'
+import type { Action, GameState } from '../game/types'
 
 const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.replace(/\/$/, '')
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined
@@ -21,7 +21,10 @@ export type OnlineRoomPlayer = {
   seat: number
   gamePlayerId: string
   displayName: string
+  ready: boolean
+  rematchReady: boolean
   joinedAt: string
+  lastSeenAt: string
 }
 
 export type OnlineRoom = {
@@ -32,8 +35,15 @@ export type OnlineRoom = {
   stateVersion: number
   gameState: GameState | null
   players: OnlineRoomPlayer[]
+  rematchSequence: number
   createdAt: string
   expiresAt: string
+}
+
+export type OnlineGameResponse = {
+  stateVersion: number
+  status: 'in_game' | 'completed'
+  gameState: GameState
 }
 
 type JoinRow = {
@@ -48,28 +58,18 @@ type JoinRow = {
 
 const SESSION_KEY = 'show-your-hand:online-session:v1'
 
-function headers() {
+function apiHeaders() {
   if (!SUPABASE_KEY) throw new Error('Online play is not configured yet.')
   return {
     apikey: SUPABASE_KEY,
-    Authorization: `Bearer ${SUPABASE_KEY}`,
     'Content-Type': 'application/json',
   }
 }
 
-async function rpc<T>(name: string, body: Record<string, unknown>): Promise<T> {
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    throw new Error('Online play is not configured yet.')
-  }
-
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
-    method: 'POST',
-    headers: headers(),
-    body: JSON.stringify(body),
-  })
-
+async function parseResponse<T>(response: Response): Promise<T> {
   const text = await response.text()
   let parsed: unknown = null
+
   if (text) {
     try {
       parsed = JSON.parse(text)
@@ -84,6 +84,42 @@ async function rpc<T>(name: string, body: Record<string, unknown>): Promise<T> {
   }
 
   return parsed as T
+}
+
+async function rpc<T>(name: string, body: Record<string, unknown>): Promise<T> {
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    throw new Error('Online play is not configured yet.')
+  }
+
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
+    method: 'POST',
+    headers: apiHeaders(),
+    body: JSON.stringify(body),
+  })
+
+  return parseResponse<T>(response)
+}
+
+async function gameRequest(
+  session: OnlineSession,
+  body: { op: 'start' } | { op: 'action'; action: Action },
+): Promise<OnlineGameResponse> {
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    throw new Error('Online play is not configured yet.')
+  }
+
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/syh-game-action`, {
+    method: 'POST',
+    headers: apiHeaders(),
+    body: JSON.stringify({
+      ...body,
+      roomId: session.roomId,
+      playerToken: session.playerToken,
+      expectedVersion: session.stateVersion,
+    }),
+  })
+
+  return parseResponse<OnlineGameResponse>(response)
 }
 
 function sessionFrom(row: JoinRow): OnlineSession {
@@ -123,26 +159,34 @@ export async function getRoom(session: OnlineSession): Promise<OnlineRoom> {
   })
 }
 
-export async function startRoom(session: OnlineSession, gameState: GameState): Promise<number> {
-  return rpc<number>('syh_start_room', {
+export async function setRoomReady(session: OnlineSession, ready: boolean): Promise<void> {
+  await rpc<null>('syh_set_ready', {
     p_room_id: session.roomId,
     p_player_token: session.playerToken,
-    p_game_state: gameState,
+    p_ready: ready,
   })
 }
 
-export async function submitRoomState(
+export async function requestRematch(
   session: OnlineSession,
-  expectedVersion: number,
-  gameState: GameState,
-): Promise<number> {
-  return rpc<number>('syh_submit_state', {
+  ready: boolean,
+): Promise<{ reset: boolean }> {
+  return rpc<{ reset: boolean }>('syh_request_rematch', {
     p_room_id: session.roomId,
     p_player_token: session.playerToken,
-    p_expected_version: expectedVersion,
-    p_game_state: gameState,
-    p_status: gameState.phase.type === 'match_over' ? 'completed' : 'in_game',
+    p_ready: ready,
   })
+}
+
+export async function startRoom(session: OnlineSession): Promise<OnlineGameResponse> {
+  return gameRequest(session, { op: 'start' })
+}
+
+export async function submitRoomAction(
+  session: OnlineSession,
+  action: Action,
+): Promise<OnlineGameResponse> {
+  return gameRequest(session, { op: 'action', action })
 }
 
 export async function leaveRoom(session: OnlineSession): Promise<void> {
@@ -150,6 +194,30 @@ export async function leaveRoom(session: OnlineSession): Promise<void> {
     p_room_id: session.roomId,
     p_player_token: session.playerToken,
   })
+}
+
+export function onlineJoinUrl(code: string): string {
+  if (typeof window === 'undefined') return `/join/${code.trim().toUpperCase()}`
+  return `${window.location.origin}/join/${code.trim().toUpperCase()}`
+}
+
+export function inviteCodeFromLocation(): string | null {
+  if (typeof window === 'undefined') return null
+
+  const pathMatch = window.location.pathname.match(/^\/join\/([a-fA-F0-9]{6})\/?$/)
+  if (pathMatch) return pathMatch[1].toUpperCase()
+
+  const queryCode = new URLSearchParams(window.location.search).get('room')
+  if (queryCode && /^[a-fA-F0-9]{6}$/.test(queryCode)) return queryCode.toUpperCase()
+
+  return null
+}
+
+export function clearInviteFromLocation(): void {
+  if (typeof window === 'undefined') return
+  if (window.location.pathname.startsWith('/join/') || window.location.search.includes('room=')) {
+    window.history.replaceState({}, '', '/')
+  }
 }
 
 export function loadOnlineSession(): OnlineSession | null {
