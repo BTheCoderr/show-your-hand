@@ -16,6 +16,28 @@ SHOW YOUR HAND is an original competitive card game being developed as both a ph
 
 **Play:** https://show-your-hand.netlify.app
 
+## Product at a glance
+
+| Area | Current beta |
+| --- | --- |
+| **Game design** | Original 70-card ruleset with attack, defense, reversal, pickup, and scoring systems |
+| **Solo** | 1 human vs. 1–5 CPU opponents |
+| **Online** | Private server-authoritative 1v1 with ready state, reconnect, rematch, and QR/share links |
+| **Onboarding** | Interactive tutorial, Beginner Mode, action explanations |
+| **Mobile** | Touch/swipe controls, responsive table, haptics, installable PWA |
+| **Trust model** | Private room tokens, versioned canonical state, hidden-information projection |
+| **Testing** | Deterministic engine coverage plus production build checks |
+
+## Engineering highlights
+
+- **One rules engine across play modes:** the deterministic TypeScript game engine drives solo behavior and trusted online action resolution.
+- **Hidden-information multiplayer:** the server returns a player-specific projection instead of exposing the opponent's hand, future draw order, or RNG state.
+- **Versioned writes:** stale simultaneous online actions are rejected instead of silently overwriting canonical state.
+- **Reconnectable seats:** room credentials let a browser resume the same player seat after refresh or a temporary disconnect.
+- **Product beyond the table:** rules, tutorial, accessibility preferences, feedback, privacy/terms, local stats, and PWA support are part of the beta rather than afterthoughts.
+
+
+
 ## Beta 0.1.1
 
 This patch hardens mobile interaction: tutorial navigation can no longer trap the player, touch targets are reinforced, online requests time out cleanly, and the in-game interaction lock has a watchdog so a stalled request cannot leave the table frozen.
