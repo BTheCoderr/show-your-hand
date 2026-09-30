@@ -107,7 +107,7 @@ function beginnerHelp(state: GameState, viewerId: string): string | null {
     case 'may_declare':
       return phase.playerId === viewerId
         ? 'Your hand scores. Declare it to end the round and collect the points, or pass.'
-        : 'A computer player has a scoring hand and may declare.'
+        : `${nameOf(state, phase.playerId)} has a scoring hand and may declare.`
     case 'review_hands':
       return 'Take a moment to read the revealed hand, then press Continue.'
     case 'round_over':
@@ -647,6 +647,11 @@ export function App() {
               ONLINE · ROOM {onlineSession?.roomCode} · {waiting ? 'OPPONENT TURN' : 'YOUR TURN'}
             </p>
           ) : null}
+          {onlineInGame && onlineError ? (
+            <p className="syh-online-error syh-online-game-error" role="alert">
+              {onlineError}
+            </p>
+          ) : null}
           {beginnerMode && beginnerHelp(state, localPlayerId) ? (
             <p className="syh-beginner-help">
               <b>Beginner tip</b>
@@ -689,7 +694,7 @@ export function App() {
                           faceDown={!reveal}
                           compact
                           onClick={
-                            state.phase.type === 'choose_targets'
+                            humanTurn && state.phase.type === 'choose_targets'
                               ? () => {
                                   const selected = state.catalog[state.phase.type === 'choose_targets' ? state.phase.cardId : '']
                                   if (!selected) return
@@ -781,7 +786,7 @@ export function App() {
             </div>
           </section>
 
-          {state.phase.type === 'choose_targets' ? (
+          {state.phase.type === 'choose_targets' && activeActorId === localPlayerId ? (
             <section className="syh-chooser">
               {state.catalog[state.phase.cardId].kind === 'drop-color' ? (
                 <div className="syh-colors">
