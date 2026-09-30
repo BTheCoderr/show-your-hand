@@ -448,6 +448,8 @@ export function App() {
     } finally {
       updateOnlineSession(null)
       setOnlineRoom(null)
+      setInviteCode(null)
+      clearInviteFromLocation()
       setOnlineLobbyOpen(false)
       clearMatch()
       setState(emptyMenuState(menuTest))
@@ -553,6 +555,30 @@ export function App() {
       window.clearInterval(timer)
     }
   }, [onlineSession?.roomId, onlineSession?.playerToken, onlineSession?.stateVersion])
+
+  useEffect(() => {
+    if (
+      !onlineSession?.isHost ||
+      !onlineRoom ||
+      onlineRoom.status !== 'waiting' ||
+      onlineRoom.rematchSequence <= 0 ||
+      onlineBusy ||
+      onlineRoom.players.length !== 2 ||
+      !onlineRoom.players.every((player) => player.ready)
+    ) {
+      return
+    }
+
+    if (rematchAutoStart.current === onlineRoom.rematchSequence) return
+    rematchAutoStart.current = onlineRoom.rematchSequence
+    void startOnlineMatch()
+  }, [
+    onlineBusy,
+    onlineRoom?.players,
+    onlineRoom?.rematchSequence,
+    onlineRoom?.status,
+    onlineSession?.isHost,
+  ])
 
   useEffect(() => {
     setTurnSeconds(TURN_SECONDS)
@@ -1104,24 +1130,55 @@ export function App() {
 
           {state.phase.type === 'match_over' ? (
             <div className="syh-modal">
-              <div className="syh-modal-card">
+              <div className="syh-modal-card syh-match-over-card">
+                <p className="syh-kicker">Final score</p>
                 <h2>Match over</h2>
                 <p>{nameOf(state, state.phase.winnerId)} reached {state.matchPointGoal} points.</p>
-                <button
-                  type="button"
-                  className="syh-primary"
-                  onClick={() => {
-                    if (onlineSession) {
-                      void leaveOnlineMatch()
-                      return
-                    }
-                    clearMatch()
-                    setState(emptyMenuState(state.testMode))
-                    setShowStart(true)
-                  }}
-                >
-                  {onlineSession ? 'Return to menu' : 'Play again'}
-                </button>
+                {onlineSession ? (
+                  <>
+                    <p className="syh-rematch-status">
+                      {onlineRoom?.players.find(
+                        (player) => player.gamePlayerId === onlineSession.gamePlayerId,
+                      )?.rematchReady
+                        ? 'Rematch requested. Waiting for your opponent…'
+                        : 'Run it back with the same opponent and the same room code.'}
+                    </p>
+                    <div className="syh-match-over-actions">
+                      <button
+                        type="button"
+                        className="syh-primary"
+                        disabled={onlineBusy}
+                        onClick={() => void toggleOnlineRematch()}
+                      >
+                        {onlineRoom?.players.find(
+                          (player) => player.gamePlayerId === onlineSession.gamePlayerId,
+                        )?.rematchReady
+                          ? 'Rematch requested ✓'
+                          : 'Rematch'}
+                      </button>
+                      <button
+                        type="button"
+                        className="syh-secondary"
+                        disabled={onlineBusy}
+                        onClick={() => void leaveOnlineMatch()}
+                      >
+                        Leave table
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className="syh-primary"
+                    onClick={() => {
+                      clearMatch()
+                      setState(emptyMenuState(state.testMode))
+                      setShowStart(true)
+                    }}
+                  >
+                    Play again
+                  </button>
+                )}
               </div>
             </div>
           ) : null}
@@ -1147,6 +1204,7 @@ export function App() {
       <OnlineLobby
         open={onlineLobbyOpen}
         configured={onlineConfigured}
+        inviteCode={inviteCode}
         session={onlineSession}
         room={onlineRoom}
         busy={onlineBusy}
@@ -1157,6 +1215,9 @@ export function App() {
         }}
         onJoin={(code, name) => {
           void joinOnlineRoom(code, name)
+        }}
+        onReady={(ready) => {
+          void setOnlineReady(ready)
         }}
         onStart={() => {
           void startOnlineMatch()
