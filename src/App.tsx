@@ -757,6 +757,12 @@ export function App() {
             <div className="syh-table-mark" aria-hidden="true">
               SHOW YOUR HAND
             </div>
+            {state.phase.type === 'review_hands' && actorId(state) === localPlayerId ? (
+              <div className="syh-review-callout" role="status" aria-live="polite">
+                <strong>SHOW YOUR HAND ACTIVE</strong>
+                <span>The revealed cards are staying up so you can read them. Tap Continue Turn when you’re done.</span>
+              </div>
+            ) : null}
             <div className="syh-center-piles">
               <div className={`syh-pile syh-draw-pile ${openingShuffle ? 'is-shuffling' : ''}`}>
                 <CardView faceDown />
@@ -981,11 +987,11 @@ export function App() {
               {state.phase.type === 'review_hands' && actorId(state) === localPlayerId ? (
                 <button
                   type="button"
-                  className="syh-secondary"
+                  className="syh-primary syh-review-continue"
                   data-testid="continue-reveal"
                   onClick={() => dispatch({ type: 'CONTINUE' })}
                 >
-                  Continue
+                  Continue Turn
                 </button>
               ) : null}
             </div>
@@ -1045,42 +1051,34 @@ export function App() {
           ) : null}
 
           {state.phase.type === 'round_over' ? (
-            <div className="syh-modal">
-              <div className="syh-modal-card">
-                <h2>Round over</h2>
-                <p>
-                  {nameOf(state, state.phase.winnerId)} scored {state.phase.points} for{' '}
-                  {state.phase.label}.
-                </p>
-                <button type="button" className="syh-primary" data-testid="next-round" onClick={() => dispatch({ type: 'NEXT_ROUND' })}>
-                  Next round
-                </button>
-              </div>
-            </div>
+            <WinningHandPanel
+              state={state}
+              winnerId={state.phase.winnerId}
+              points={state.phase.points}
+              label={state.phase.label}
+              matchOver={false}
+              actionLabel="Next round"
+              actionTestId="next-round"
+              onContinue={() => dispatch({ type: 'NEXT_ROUND' })}
+            />
           ) : null}
 
           {state.phase.type === 'match_over' ? (
-            <div className="syh-modal">
-              <div className="syh-modal-card">
-                <h2>Match over</h2>
-                <p>{nameOf(state, state.phase.winnerId)} reached {state.matchPointGoal} points.</p>
-                <button
-                  type="button"
-                  className="syh-primary"
-                  onClick={() => {
-                    if (onlineSession) {
-                      void leaveOnlineMatch()
-                      return
-                    }
-                    clearMatch()
-                    setState(emptyMenuState(state.testMode))
-                    setShowStart(true)
-                  }}
-                >
-                  {onlineSession ? 'Return to menu' : 'Play again'}
-                </button>
-              </div>
-            </div>
+            <WinningHandPanel
+              state={state}
+              winnerId={state.phase.winnerId}
+              matchOver
+              actionLabel={onlineSession ? 'Return to menu' : 'Play again'}
+              onContinue={() => {
+                if (onlineSession) {
+                  void leaveOnlineMatch()
+                  return
+                }
+                clearMatch()
+                setState(emptyMenuState(state.testMode))
+                setShowStart(true)
+              }}
+            />
           ) : null}
 
           {historyOpen ? (
@@ -1125,6 +1123,74 @@ export function App() {
 
       <Tutorial open={tutorialOpen} onClose={() => setTutorialOpen(false)} />
       <RulesPanel open={rulesOpen} onClose={() => setRulesOpen(false)} />
+    </div>
+  )
+}
+
+function WinningHandPanel({
+  state,
+  winnerId,
+  points,
+  label,
+  matchOver,
+  actionLabel,
+  actionTestId,
+  onContinue,
+}: {
+  state: GameState
+  winnerId: string
+  points?: number
+  label?: string
+  matchOver: boolean
+  actionLabel: string
+  actionTestId?: string
+  onContinue: () => void
+}) {
+  const winner = playerById(state, winnerId)
+  const winningCards = handCards(state, winnerId)
+  const result = scoreHand(winningCards)
+  const awardedPoints = points ?? result?.points ?? 0
+  const reason = label ?? result?.label ?? 'Scoring five-card hand'
+
+  return (
+    <div className="syh-modal syh-win-modal">
+      <section className="syh-win-card" role="dialog" aria-modal="true" aria-labelledby="winning-hand-title">
+        <p className="syh-kicker">{matchOver ? 'MATCH WINNER' : 'ROUND WINNER'}</p>
+        <h2 id="winning-hand-title">{winner.name} won {matchOver ? 'the match' : 'the round'}</h2>
+
+        <div className="syh-winning-hand" aria-label={`Winning hand: ${reason}`}>
+          {winningCards.map((card) => (
+            <img
+              key={card.id}
+              src={card.art}
+              alt={card.kind === 'number' ? `${card.color} ${card.number}` : card.kind}
+            />
+          ))}
+        </div>
+
+        <div className="syh-win-reason">
+          <span>WHY THIS HAND WON</span>
+          <strong>{reason}</strong>
+        </div>
+
+        <div className="syh-points-award" aria-label={`${awardedPoints} points awarded`}>
+          <strong>+{awardedPoints}</strong>
+          <span>{awardedPoints === 1 ? 'POINT' : 'POINTS'}</span>
+        </div>
+
+        <p className="syh-win-total">
+          {winner.name}: <b>{winner.score}</b> / {state.matchPointGoal} match points
+        </p>
+
+        <button
+          type="button"
+          className="syh-primary syh-win-action"
+          data-testid={actionTestId}
+          onClick={onContinue}
+        >
+          {actionLabel}
+        </button>
+      </section>
     </div>
   )
 }
