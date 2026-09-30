@@ -52,7 +52,7 @@ import { StartScreen } from './ui/StartScreen'
 import { Tutorial } from './ui/Tutorial'
 
 const TURN_SECONDS = 120
-const APP_VERSION = 'Beta 0.1.1'
+const APP_VERSION = 'Beta 0.1.2'
 
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -256,12 +256,7 @@ export function App() {
     (player) => player.gamePlayerId !== onlineSession?.gamePlayerId,
   )
   const opponentDisconnected = Boolean(onlineInGame && onlineOpponent && !onlineOpponent.connected)
-  const disconnectSecondsRemaining = onlineOpponent
-    ? Math.max(
-        0,
-        60 - Math.floor((Date.now() - new Date(onlineOpponent.lastSeenAt).getTime()) / 1000),
-      )
-    : 60
+  const disconnectSecondsRemaining = onlineOpponent?.disconnectGraceSeconds ?? 60
 
   useEffect(() => {
     const captureInstallPrompt = (event: Event) => {
