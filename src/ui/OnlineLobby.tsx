@@ -50,7 +50,7 @@ export function OnlineLobby({
       <section className="syh-online-card">
         <header>
           <div>
-            <p className="syh-kicker">Supabase multiplayer beta</p>
+            <p className="syh-kicker">Private multiplayer beta</p>
             <h2 id="online-title">PLAY ONLINE · 1V1</h2>
           </div>
           {!session ? (
