@@ -17,6 +17,8 @@ type Props = {
   onRules: () => void
   onTutorial: () => void
   onOnline: () => void
+  onInstall: () => void
+  installed: boolean
 }
 
 export function StartScreen({
@@ -36,6 +38,8 @@ export function StartScreen({
   onRules,
   onTutorial,
   onOnline,
+  onInstall,
+  installed,
 }: Props) {
   return (
     <section className="syh-start">
@@ -135,6 +139,13 @@ export function StartScreen({
         <button type="button" className="syh-text-btn" onClick={onRules}>
           Rules
         </button>
+        {!installed ? (
+          <button type="button" className="syh-text-btn syh-install-button" onClick={onInstall}>
+            Install App
+          </button>
+        ) : (
+          <span className="syh-installed-chip">✓ Installed</span>
+        )}
       </div>
 
       <footer className="syh-product-footer">
