@@ -1,11 +1,17 @@
+import type { LocalStats } from '../game/stats'
+
 type Props = {
   opponentCount: 1 | 2 | 3 | 4 | 5
   testMode: boolean
   beginnerMode: boolean
+  feedbackEnabled: boolean
+  version: string
+  stats: LocalStats
   hasSave: boolean
   onCount: (count: 1 | 2 | 3 | 4 | 5) => void
   onTestMode: (value: boolean) => void
   onBeginnerMode: (value: boolean) => void
+  onFeedback: (value: boolean) => void
   onStart: () => void
   onResume: () => void
   onRules: () => void
@@ -17,10 +23,14 @@ export function StartScreen({
   opponentCount,
   testMode,
   beginnerMode,
+  feedbackEnabled,
+  version,
+  stats,
   hasSave,
   onCount,
   onTestMode,
   onBeginnerMode,
+  onFeedback,
   onStart,
   onResume,
   onRules,
@@ -29,11 +39,25 @@ export function StartScreen({
 }: Props) {
   return (
     <section className="syh-start">
-      <p className="syh-kicker">Solo + online 1v1</p>
-      <h1>SHOW YOUR HAND</h1>
+      <div className="syh-start-title-row">
+        <div>
+          <p className="syh-kicker">Solo + online 1v1</p>
+          <h1>SHOW YOUR HAND</h1>
+        </div>
+        <span className="syh-version">{version}</span>
+      </div>
       <p className="syh-lede">
         Play solo against one to five computer opponents, or open a private 1v1 room on two devices. First to 5 points wins.
       </p>
+
+      <div className="syh-local-stats" aria-label="Local player stats">
+        <div><span>Matches</span><b>{stats.matchesPlayed}</b></div>
+        <div><span>Wins</span><b>{stats.wins}</b></div>
+        <div><span>Rounds</span><b>{stats.roundsWon}</b></div>
+        <div><span>Attacks</span><b>{stats.attacksPlayed}</b></div>
+        <div><span>Best hand</span><b>{stats.bestHandPoints} pts</b></div>
+      </div>
+
       <fieldset>
         <legend>Players</legend>
         <div className="syh-count">
@@ -49,20 +73,39 @@ export function StartScreen({
           ))}
         </div>
       </fieldset>
-      <div className="syh-mode-card">
-        <div>
-          <strong>Beginner Mode</strong>
-          <span>No turn clock · slower CPU moves · extra guidance</span>
+
+      <div className="syh-start-settings">
+        <div className="syh-mode-card">
+          <div>
+            <strong>Beginner Mode</strong>
+            <span>No turn clock · slower CPU moves · extra guidance</span>
+          </div>
+          <button
+            type="button"
+            className={`syh-mode-toggle ${beginnerMode ? 'is-on' : ''}`}
+            aria-pressed={beginnerMode}
+            onClick={() => onBeginnerMode(!beginnerMode)}
+          >
+            {beginnerMode ? 'On' : 'Off'}
+          </button>
         </div>
-        <button
-          type="button"
-          className={`syh-mode-toggle ${beginnerMode ? 'is-on' : ''}`}
-          aria-pressed={beginnerMode}
-          onClick={() => onBeginnerMode(!beginnerMode)}
-        >
-          {beginnerMode ? 'On' : 'Off'}
-        </button>
+
+        <div className="syh-mode-card">
+          <div>
+            <strong>Sound + Haptics</strong>
+            <span>Card, attack, defense, scoring, and win feedback</span>
+          </div>
+          <button
+            type="button"
+            className={`syh-mode-toggle ${feedbackEnabled ? 'is-on' : ''}`}
+            aria-pressed={feedbackEnabled}
+            onClick={() => onFeedback(!feedbackEnabled)}
+          >
+            {feedbackEnabled ? 'On' : 'Off'}
+          </button>
+        </div>
       </div>
+
       <label className="syh-check">
         <input
           type="checkbox"
@@ -71,6 +114,7 @@ export function StartScreen({
         />
         Test mode — reveal all hands and show the 70-card count
       </label>
+
       <div className="syh-start-actions">
         <button type="button" className="syh-primary" data-testid="start-game" onClick={onStart}>
           Start Solo Game
@@ -92,6 +136,16 @@ export function StartScreen({
           Rules
         </button>
       </div>
+
+      <footer className="syh-product-footer">
+        <span>SHOW YOUR HAND · {version}</span>
+        <nav aria-label="Product links">
+          <a href="/about">About</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <a href="/feedback">Feedback</a>
+        </nav>
+      </footer>
     </section>
   )
 }
