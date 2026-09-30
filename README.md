@@ -8,7 +8,7 @@ SHOW YOUR HAND is an original competitive card game being developed as both a ph
 
 ## What this build is
 
-The current web build is a playable solo prototype: **1 human vs. 1–5 computer opponents** with the full 70-card deck, scoring system, attack/defense interactions, round flow, and persistent local game state.
+The current web build supports **solo play against 1–5 computer opponents** plus a **private online 1v1 beta** backed by Supabase. It includes the full 70-card deck, scoring system, attack/defense interactions, round flow, local persistence, and room-based two-device state sync.
 
 The goal of the digital version is not just to reproduce the rules. It is built to feel like a real card table: visible turn flow, touch-first interactions, readable opponent actions, and enough feedback that players can understand what happened without digging through a log.
 
@@ -22,6 +22,9 @@ The goal of the digital version is not just to reproduce the rules. It is built 
   - 5 Skip
   - 5 Shuffle
 - 1–5 CPU opponents
+- Private online 1v1 rooms with six-character invite codes
+- Two-device turn synchronization through Supabase RPCs
+- Reconnectable online room sessions stored locally on each device
 - Supabase-backed **online 1v1 beta** with private room codes and reconnectable room sessions
 - First-to-5 match scoring
 - Full attack and defense resolution
@@ -73,6 +76,20 @@ The browser version uses explicit rule-resolution defaults so every interaction 
 - Declaration priority starts with the active player, then continues clockwise.
 - CPU players use the same declaration windows as the human player.
 - The discard pile is recycled when the draw pile is exhausted so all 70 cards remain in play.
+
+## Online multiplayer architecture
+
+The 1v1 beta uses a dedicated Supabase project for room and match coordination.
+
+- Hosts create a private six-character room code.
+- A second device joins that room as Player 2.
+- Only the active player's room token can submit the next synchronized game state.
+- State versions reject stale writes when two devices race.
+- Room and player tables have RLS enabled with direct browser table access revoked.
+- The browser only calls narrow `SECURITY DEFINER` RPC functions for create, join, read, start, submit, and leave operations.
+- The UI polls the room during the beta so both phones stay synchronized without requiring accounts.
+
+This is currently a trusted-playtest multiplayer path. The synchronized game state still contains hidden-card information, so fully server-authoritative move validation and hidden-hand projection remain future hardening work before competitive public multiplayer.
 
 ## AI behavior
 
