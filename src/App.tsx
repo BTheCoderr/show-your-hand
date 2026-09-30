@@ -10,9 +10,20 @@ import {
   validDefenseChoices,
 } from './game/engine'
 import { currentPlayer, handCards, nameOf, playerById } from './game/helpers'
+import {
+  feedbackKindForAction,
+  loadFeedbackEnabled,
+  playFeedback,
+  saveFeedbackEnabled,
+} from './game/feedback'
 import { clearMatch, loadMatch, saveMatch } from './game/persist'
 import { loadPreferences, savePreferences } from './game/preferences'
 import { scoreHand } from './game/scoring'
+import {
+  loadLocalStats,
+  recordLocalAction,
+  recordLocalOutcome,
+} from './game/stats'
 import {
   createRoom,
   getRoom,
@@ -40,6 +51,7 @@ import { StartScreen } from './ui/StartScreen'
 import { Tutorial } from './ui/Tutorial'
 
 const TURN_SECONDS = 120
+const APP_VERSION = 'Beta 0.1.0'
 
 type AttackSpotlight = {
   cardId: string
@@ -194,6 +206,8 @@ export function App() {
     !initialPreferences.tutorialPromptSeen && !invitedCode,
   )
   const [beginnerMode, setBeginnerMode] = useState(initialPreferences.beginnerMode)
+  const [feedbackEnabled, setFeedbackEnabled] = useState(() => loadFeedbackEnabled())
+  const [localStats, setLocalStats] = useState(() => loadLocalStats())
   const [onlineSession, setOnlineSession] = useState<OnlineSession | null>(restoredOnlineSession)
   const [onlineRoom, setOnlineRoom] = useState<OnlineRoom | null>(null)
   const [onlineLobbyOpen, setOnlineLobbyOpen] = useState(
@@ -214,6 +228,7 @@ export function App() {
   const moveNoticeTimer = useRef<number | null>(null)
   const attackTimer = useRef<number | null>(null)
   const aiAttackTimer = useRef<number | null>(null)
+  const lastOutcomeRef = useRef<string | null>(null)
 
   const localPlayerId = onlineSession?.gamePlayerId ?? 'human'
   const onlineInGame = Boolean(onlineSession && onlineRoom?.status === 'in_game')
@@ -318,6 +333,8 @@ export function App() {
     const run = async () => {
       try {
         await commitAction(state, action)
+        setLocalStats((current) => recordLocalAction(current, state, action))
+        playFeedback(feedbackKindForAction(action.type), feedbackEnabled)
       } catch {
         // Online errors are surfaced in the lobby/status UI and the latest room is reloaded.
       } finally {
@@ -343,6 +360,12 @@ export function App() {
   const updateBeginnerMode = (value: boolean) => {
     setBeginnerMode(value)
     savePreferences({ tutorialPromptSeen, beginnerMode: value })
+  }
+
+  const updateFeedback = (value: boolean) => {
+    setFeedbackEnabled(value)
+    saveFeedbackEnabled(value)
+    if (value) playFeedback('card', true)
   }
 
   const openTutorial = () => {
@@ -399,6 +422,7 @@ export function App() {
     setOnlineBusy(true)
     setOnlineError(null)
     try {
+      lastOutcomeRef.current = null
       const result = await startRoom(onlineSession)
       const nextSession = { ...onlineSession, stateVersion: result.stateVersion }
       updateOnlineSession(nextSession)
@@ -489,6 +513,8 @@ export function App() {
 
   const start = () => {
     if (openingShuffle) return
+    lastOutcomeRef.current = null
+    playFeedback('shuffle', feedbackEnabled)
     setOpeningShuffle(true)
     window.setTimeout(() => {
       const next = apply(emptyMenuState(menuTest), {
@@ -590,6 +616,38 @@ export function App() {
   }, [activeActorId, state.roundStarterIndex, showStart])
 
   useEffect(() => {
+    if (state.phase.type !== 'round_over' && state.phase.type !== 'match_over') return
+
+    const winnerId = state.phase.winnerId
+    const winner = state.players.find((player) => player.id === winnerId)
+    const points =
+      state.phase.type === 'round_over'
+        ? state.phase.points
+        : winner
+          ? scoreHand(handCards(state, winner.id))?.points ?? 0
+          : 0
+    const key = [
+      state.phase.type,
+      winnerId,
+      state.history.length,
+      ...state.players.map((player) => player.score),
+    ].join(':')
+
+    if (lastOutcomeRef.current === key) return
+    lastOutcomeRef.current = key
+
+    setLocalStats((current) =>
+      recordLocalOutcome(current, {
+        points,
+        wonRound: winnerId === localPlayerId,
+        matchOver: state.phase.type === 'match_over',
+        wonMatch: state.phase.type === 'match_over' && winnerId === localPlayerId,
+      }),
+    )
+    playFeedback(state.phase.type === 'match_over' ? 'win' : 'score', feedbackEnabled)
+  }, [feedbackEnabled, localPlayerId, state])
+
+  useEffect(() => {
     if (
       showStart ||
       tutorialOpen ||
@@ -623,15 +681,28 @@ export function App() {
   return (
     <div className="syh-app">
       <header className="syh-top">
-        <strong>SHOW YOUR HAND</strong>
+        <div className="syh-brand-lockup">
+          <strong>SHOW YOUR HAND</strong>
+          <span>{APP_VERSION}</span>
+        </div>
         <nav>
           <button
             type="button"
             className={beginnerMode ? 'is-mode-on' : ''}
             aria-pressed={beginnerMode}
+            disabled={Boolean(onlineSession)}
             onClick={() => updateBeginnerMode(!beginnerMode)}
           >
             {beginnerMode ? 'Beginner on' : 'Beginner off'}
+          </button>
+          <button
+            type="button"
+            className={feedbackEnabled ? 'is-mode-on' : ''}
+            aria-pressed={feedbackEnabled}
+            onClick={() => updateFeedback(!feedbackEnabled)}
+            title="Sound and haptics"
+          >
+            {feedbackEnabled ? '🔊' : '🔇'}
           </button>
           <button type="button" onClick={openTutorial}>
             Tutorial
@@ -698,10 +769,14 @@ export function App() {
           opponentCount={menuCount}
           testMode={menuTest}
           beginnerMode={beginnerMode}
+          feedbackEnabled={feedbackEnabled}
+          version={APP_VERSION}
+          stats={localStats}
           hasSave={Boolean(saved && saved.phase.type !== 'menu')}
           onCount={setMenuCount}
           onTestMode={setMenuTest}
           onBeginnerMode={updateBeginnerMode}
+          onFeedback={updateFeedback}
           onStart={start}
           onResume={() => {
             if (saved) {
