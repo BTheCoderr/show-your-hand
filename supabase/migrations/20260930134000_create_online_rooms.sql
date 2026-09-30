@@ -118,12 +118,12 @@ declare
 begin
   v_name := left(trim(coalesce(nullif(p_display_name, ''), 'Player 2')), 24);
 
-  select *
+  select r.*
     into v_room
-  from public.syh_rooms
-  where code = upper(trim(p_code))
-    and status = 'waiting'
-    and expires_at > now()
+  from public.syh_rooms as r
+  where r.code = upper(trim(p_code))
+    and r.status = 'waiting'
+    and r.expires_at > now()
   for update;
 
   if not found then
@@ -131,8 +131,8 @@ begin
   end if;
 
   select count(*) into v_count
-  from public.syh_room_players
-  where room_id = v_room.id;
+  from public.syh_room_players as rp
+  where rp.room_id = v_room.id;
 
   if v_count >= v_room.max_players then
     raise exception 'Room is full';
