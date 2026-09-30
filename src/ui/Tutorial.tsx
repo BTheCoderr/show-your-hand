@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 
 type Props = {
   open: boolean
@@ -360,7 +361,7 @@ function TutorialStep({
   eyebrow: string
   title: string
   copy: string
-  children: React.ReactNode
+  children: ReactNode
 }) {
   return (
     <div className="syh-tutorial-step">
