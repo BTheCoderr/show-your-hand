@@ -258,11 +258,14 @@ export function OnlineLobby({
                           {player.gamePlayerId === session.gamePlayerId ? <em>You</em> : null}
                         </header>
                         <dl>
-                          <div><dt>Rounds won</dt><dd>{player.stats.roundsWon}</dd></div>
-                          <div><dt>Attacks</dt><dd>{player.stats.attacksPlayed}</dd></div>
-                          <div><dt>Defenses</dt><dd>{player.stats.defensesPlayed}</dd></div>
-                          <div><dt>Blank saves</dt><dd>{player.stats.blankDefenses}</dd></div>
+                          <div><dt>Rounds won</dt><dd>{player.matchStats.roundsWon}</dd></div>
+                          <div><dt>Attacks</dt><dd>{player.matchStats.attacksPlayed}</dd></div>
+                          <div><dt>Defenses</dt><dd>{player.matchStats.defensesPlayed}</dd></div>
+                          <div><dt>Blank saves</dt><dd>{player.matchStats.blankDefenses}</dd></div>
                         </dl>
+                        <small className="syh-session-stat">
+                          Session wins: {player.stats.matchWins}
+                        </small>
                       </article>
                     ))}
                   </div>
