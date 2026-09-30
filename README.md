@@ -10,7 +10,7 @@
 
 [![Build Netlify Artifact](https://github.com/BTheCoderr/show-your-hand/actions/workflows/build-netlify-artifact.yml/badge.svg)](https://github.com/BTheCoderr/show-your-hand/actions/workflows/build-netlify-artifact.yml)
 
-**Beta 0.1.1** · React + TypeScript · Supabase · Netlify
+**Beta 0.1.2** · React + TypeScript · Supabase · Netlify
 
 SHOW YOUR HAND is an original competitive card game being developed as both a physical tabletop game and a polished browser game.
 
@@ -38,7 +38,7 @@ SHOW YOUR HAND is an original competitive card game being developed as both a ph
 | **Onboarding** | Interactive tutorial, Beginner Mode, action explanations |
 | **Mobile** | Touch/swipe controls, responsive table, haptics, installable PWA |
 | **Trust model** | Private room tokens, versioned canonical state, hidden-information projection |
-| **Testing** | Deterministic engine coverage plus production build checks |
+| **Testing** | 33 Vitest checks across engine, UI, rooms, online protocol, and Edge protocol + production build checks |
 
 ## Engineering highlights
 
@@ -50,9 +50,22 @@ SHOW YOUR HAND is an original competitive card game being developed as both a ph
 
 
 
-## Beta 0.1.1
+## Beta 0.1.2
 
-This patch hardens mobile interaction: tutorial navigation can no longer trap the player, touch targets are reinforced, online requests time out cleanly, and the in-game interaction lock has a watchdog so a stalled request cannot leave the table frozen.
+This audit-hardening release closes the highest-impact multiplayer gaps found in production testing:
+
+- explicit online action allowlist by game phase; menu/control actions such as RESTART, START_MATCH, and TOGGLE_TEST_MODE are rejected server-side
+- two-player/table invariants are re-checked before every authoritative state commit
+- the active Edge Function now requires the Supabase `apikey` header in addition to the private room token
+- the superseded `syh-game-action` endpoint is retired behind JWT verification and a 410 tombstone
+- the 60-second reconnect grace window is enforced server-side; stale opponents transition the room to abandoned
+- per-match statistics are separated from cumulative room/session statistics, so rematches no longer erase historical wins
+- expired rooms are cleaned up hourly by a tracked database job
+- legacy browser-state submission RPCs were removed
+- browser/Edge engine source drift is blocked in CI
+- UI, room helper, online protocol, and Edge protocol regression tests were added
+
+The previous Beta 0.1.1 mobile-button and request-timeout fixes remain included.
 
 ## Product snapshot
 
@@ -270,7 +283,7 @@ public/
 
 ## Quality checks
 
-The rules engine has automated coverage for deck construction, card conservation, scoring, special-card resolution, declaration flow, and complete playthrough behavior.
+Automated coverage now includes deck construction, card conservation, scoring, special-card resolution, declaration flow, complete playthrough behavior, tutorial navigation, room URL handling, the online phase/action allowlist, Edge Function protocol rules, and a CI drift check that keeps the browser and Edge copies of the game engine/protocol synchronized.
 
 ```bash
 npm install
