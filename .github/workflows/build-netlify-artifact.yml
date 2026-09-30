@@ -8,6 +8,7 @@ on:
   push:
     branches:
       - main
+      - fix/beta-0.1.2-audit-hardening
     paths:
       - "src/**"
       - "public/**"
