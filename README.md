@@ -4,11 +4,15 @@
 
 [![Build Netlify Artifact](https://github.com/BTheCoderr/show-your-hand/actions/workflows/build-netlify-artifact.yml/badge.svg)](https://github.com/BTheCoderr/show-your-hand/actions/workflows/build-netlify-artifact.yml)
 
-**Beta 0.1.0** · React + TypeScript · Supabase · Netlify
+**Beta 0.1.1** · React + TypeScript · Supabase · Netlify
 
 SHOW YOUR HAND is an original competitive card game being developed as both a physical tabletop game and a polished browser game.
 
 **Play:** https://show-your-hand.netlify.app
+
+## Beta 0.1.1
+
+This patch hardens mobile interaction: tutorial navigation can no longer trap the player, touch targets are reinforced, online requests time out cleanly, and the in-game interaction lock has a watchdog so a stalled request cannot leave the table frozen.
 
 ## Product snapshot
 
