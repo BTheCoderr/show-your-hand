@@ -24,7 +24,7 @@ const SPECIALS: Special[] = [
     id: 'drop',
     image: '/cards/drop-color.png',
     name: 'Drop Color',
-    description: 'Choose a color. The target drops every numbered card they hold in that color.',
+    description: 'Choose a color. The target drops every numbered card they hold in that color, then you may claim dropped cards.',
   },
   {
     id: 'skip',
