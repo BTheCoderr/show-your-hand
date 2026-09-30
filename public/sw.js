@@ -1,4 +1,4 @@
-const CACHE = 'show-your-hand-beta-0.1.1'
+const CACHE = 'show-your-hand-beta-0.1.2'
 const CORE = [
   '/',
   '/index.html',
