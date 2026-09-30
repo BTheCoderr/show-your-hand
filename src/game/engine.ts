@@ -679,7 +679,7 @@ export function actorId(state: GameState): PlayerId | null {
     case 'may_declare':
       return state.phase.playerId
     case 'review_hands':
-      return state.players.find((player) => player.isHuman)?.id ?? currentPlayer(state).id
+      return currentPlayer(state).id
     default:
       return null
   }
@@ -698,42 +698,61 @@ export function canDeclare(state: GameState, playerId: PlayerId): boolean {
   return false
 }
 
-export function instructionFor(state: GameState): string {
+export function instructionFor(state: GameState, viewerId?: PlayerId): string {
   const phase = state.phase
   switch (phase.type) {
     case 'menu':
       return 'Choose how many computer opponents to face, then start the match.'
     case 'choose_action': {
-      const you = currentPlayer(state)
-      if (you.isHuman) {
-        return canDeclare(state, you.id)
+      const active = currentPlayer(state)
+      const viewerTurn = viewerId ? active.id === viewerId : active.isHuman
+      if (viewerTurn) {
+        return canDeclare(state, active.id)
           ? 'Your turn. Declare your hand, play a special, or discard a card.'
           : 'Your turn. Play one special or discard one card, then draw back to five.'
       }
-      return `${you.name} is thinking…`
+      return `${active.name} is thinking…`
     }
     case 'choose_targets': {
+      const active = currentPlayer(state)
+      if (viewerId && active.id !== viewerId) return `${active.name} is choosing a target…`
       const card = state.catalog[phase.cardId]
       if (card.kind === 'drop-color') return 'Choose a player and a color for Drop Color.'
       if (card.kind === 'shuffle') return 'Choose one or two opponents to shuffle, then confirm.'
       return 'Choose a player to reveal.'
     }
     case 'await_defense':
-      return `${nameOf(state, phase.responderId)} must respond to ${phase.attack.kind.replace(/-/g, ' ')}.`
+      return viewerId && phase.responderId !== viewerId
+        ? `${nameOf(state, phase.responderId)} is deciding how to defend…`
+        : `Respond to ${phase.attack.kind.replace(/-/g, ' ')}.`
     case 'claim_dropped':
-      return `${nameOf(state, phase.claimantId)} may take any of the ${phase.color} cards that were dropped.`
+      return viewerId && phase.claimantId !== viewerId
+        ? `${nameOf(state, phase.claimantId)} is choosing dropped cards…`
+        : `You may take any of the ${phase.color} cards that were dropped.`
     case 'trim_hand': {
       const excess = playerById(state, phase.playerId).hand.length - 5
-      return `${nameOf(state, phase.playerId)} must discard ${excess} extra card${excess === 1 ? '' : 's'} to return to five.`
+      return viewerId && phase.playerId !== viewerId
+        ? `${nameOf(state, phase.playerId)} is trimming their hand…`
+        : `Discard ${excess} extra card${excess === 1 ? '' : 's'} to return to five.`
     }
     case 'choose_reverse_color':
-      return `${nameOf(state, phase.reverserId)}: name a color for the reverse Drop Color.`
+      return viewerId && phase.reverserId !== viewerId
+        ? `${nameOf(state, phase.reverserId)} is choosing a reverse color…`
+        : 'Name a color for the reverse Drop Color.'
     case 'await_reverse_blank':
-      return `${nameOf(state, phase.attack.attackerId)}: Blank the reverse or accept it.`
+      return viewerId && phase.attack.attackerId !== viewerId
+        ? `${nameOf(state, phase.attack.attackerId)} is deciding whether to Blank the reverse…`
+        : 'Blank the reverse or accept it.'
     case 'may_declare':
-      return `${nameOf(state, phase.playerId)} may declare a winning hand, or pass.`
-    case 'review_hands':
-      return 'A hand is revealed until this turn ends. Continue when you have read it.'
+      return viewerId && phase.playerId !== viewerId
+        ? `${nameOf(state, phase.playerId)} is deciding whether to declare…`
+        : 'You may declare a winning hand, or pass.'
+    case 'review_hands': {
+      const active = currentPlayer(state)
+      return viewerId && active.id !== viewerId
+        ? `${active.name} is reviewing the revealed hand…`
+        : 'A hand is revealed until this turn ends. Continue when you have read it.'
+    }
     case 'round_over':
       return `${nameOf(state, phase.winnerId)} scored ${phase.points} (${phase.label}). Deal the next round.`
     case 'match_over':

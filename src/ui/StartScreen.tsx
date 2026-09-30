@@ -10,6 +10,7 @@ type Props = {
   onResume: () => void
   onRules: () => void
   onTutorial: () => void
+  onOnline: () => void
 }
 
 export function StartScreen({
@@ -24,13 +25,14 @@ export function StartScreen({
   onResume,
   onRules,
   onTutorial,
+  onOnline,
 }: Props) {
   return (
     <section className="syh-start">
-      <p className="syh-kicker">Playable solo match</p>
+      <p className="syh-kicker">Solo + online 1v1</p>
       <h1>SHOW YOUR HAND</h1>
       <p className="syh-lede">
-        One human, one to five computer opponents — 2 to 6 players around one table. No account. First to 5 points wins.
+        Play solo against one to five computer opponents, or open a private 1v1 room on two devices. First to 5 points wins.
       </p>
       <fieldset>
         <legend>Players</legend>
@@ -71,7 +73,11 @@ export function StartScreen({
       </label>
       <div className="syh-start-actions">
         <button type="button" className="syh-primary" data-testid="start-game" onClick={onStart}>
-          Start Game
+          Start Solo Game
+        </button>
+        <button type="button" className="syh-secondary syh-online-cta" onClick={onOnline}>
+          Play Online
+          <span>1v1 beta</span>
         </button>
         {hasSave ? (
           <button type="button" className="syh-secondary" onClick={onResume}>
