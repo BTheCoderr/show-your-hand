@@ -1,9 +1,18 @@
-import type { GameState } from '../game/types'
+import type { Action, GameState } from '../game/types'
 
 const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.replace(/\/$/, '')
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined
 
 export const onlineConfigured = Boolean(SUPABASE_URL && SUPABASE_KEY)
+
+export type OnlinePlayerStats = {
+  attacksPlayed: number
+  defensesPlayed: number
+  blankDefenses: number
+  roundsWon: number
+  specialsPlayed: number
+  matchWins: number
+}
 
 export type OnlineSession = {
   roomId: string
@@ -21,7 +30,12 @@ export type OnlineRoomPlayer = {
   seat: number
   gamePlayerId: string
   displayName: string
+  ready: boolean
+  rematchReady: boolean
   joinedAt: string
+  lastSeenAt: string
+  connected: boolean
+  stats: OnlinePlayerStats
 }
 
 export type OnlineRoom = {
@@ -32,6 +46,10 @@ export type OnlineRoom = {
   stateVersion: number
   gameState: GameState | null
   players: OnlineRoomPlayer[]
+  rematchSequence: number
+  mode: 'standard' | 'hardcore'
+  beginnerMode: boolean
+  matchStartedAt: string | null
   createdAt: string
   expiresAt: string
 }
@@ -46,13 +64,18 @@ type JoinRow = {
   state_version: number
 }
 
-const SESSION_KEY = 'show-your-hand:online-session:v1'
+type AuthoritativeResponse = {
+  stateVersion: number
+  status: OnlineRoom['status']
+  gameState: GameState
+}
+
+const SESSION_KEY = 'show-your-hand:online-session:v2'
 
 function headers() {
   if (!SUPABASE_KEY) throw new Error('Online play is not configured yet.')
   return {
     apikey: SUPABASE_KEY,
-    Authorization: `Bearer ${SUPABASE_KEY}`,
     'Content-Type': 'application/json',
   }
 }
@@ -64,7 +87,10 @@ async function rpc<T>(name: string, body: Record<string, unknown>): Promise<T> {
 
   const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
     method: 'POST',
-    headers: headers(),
+    headers: {
+      ...headers(),
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+    },
     body: JSON.stringify(body),
   })
 
@@ -86,6 +112,35 @@ async function rpc<T>(name: string, body: Record<string, unknown>): Promise<T> {
   return parsed as T
 }
 
+async function gameFunction<T>(body: Record<string, unknown>): Promise<T> {
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    throw new Error('Online play is not configured yet.')
+  }
+
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/show-your-hand-game`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify(body),
+  })
+
+  const text = await response.text()
+  let parsed: unknown = null
+  if (text) {
+    try {
+      parsed = JSON.parse(text)
+    } catch {
+      parsed = text
+    }
+  }
+
+  if (!response.ok) {
+    const payload = parsed as { error?: string; message?: string } | null
+    throw new Error(payload?.error || payload?.message || `Game server failed (${response.status})`)
+  }
+
+  return parsed as T
+}
+
 function sessionFrom(row: JoinRow): OnlineSession {
   return {
     roomId: row.room_id,
@@ -94,7 +149,7 @@ function sessionFrom(row: JoinRow): OnlineSession {
     playerToken: row.player_token,
     seat: row.seat,
     gamePlayerId: row.game_player_id,
-    stateVersion: row.state_version,
+    stateVersion: Number(row.state_version),
     isHost: row.seat === 0,
   }
 }
@@ -123,25 +178,54 @@ export async function getRoom(session: OnlineSession): Promise<OnlineRoom> {
   })
 }
 
-export async function startRoom(session: OnlineSession, gameState: GameState): Promise<number> {
-  return rpc<number>('syh_start_room', {
+export async function setReady(session: OnlineSession, ready: boolean): Promise<void> {
+  await rpc<null>('syh_set_ready', {
     p_room_id: session.roomId,
     p_player_token: session.playerToken,
-    p_game_state: gameState,
+    p_ready: ready,
   })
 }
 
-export async function submitRoomState(
+export async function setRoomOptions(
   session: OnlineSession,
-  expectedVersion: number,
-  gameState: GameState,
-): Promise<number> {
-  return rpc<number>('syh_submit_state', {
+  options: { beginnerMode: boolean; mode: 'standard' | 'hardcore' },
+): Promise<void> {
+  await rpc<null>('syh_set_room_options', {
     p_room_id: session.roomId,
     p_player_token: session.playerToken,
-    p_expected_version: expectedVersion,
-    p_game_state: gameState,
-    p_status: gameState.phase.type === 'match_over' ? 'completed' : 'in_game',
+    p_beginner_mode: options.beginnerMode,
+    p_mode: options.mode,
+  })
+}
+
+export async function requestRematch(session: OnlineSession, ready: boolean): Promise<boolean> {
+  const result = await rpc<{ reset?: boolean }>('syh_request_rematch', {
+    p_room_id: session.roomId,
+    p_player_token: session.playerToken,
+    p_ready: ready,
+  })
+  return Boolean(result?.reset)
+}
+
+export async function startRoom(session: OnlineSession): Promise<AuthoritativeResponse> {
+  return gameFunction<AuthoritativeResponse>({
+    op: 'start',
+    roomId: session.roomId,
+    playerToken: session.playerToken,
+  })
+}
+
+export async function submitAction(
+  session: OnlineSession,
+  expectedVersion: number,
+  action: Action,
+): Promise<AuthoritativeResponse> {
+  return gameFunction<AuthoritativeResponse>({
+    op: 'action',
+    roomId: session.roomId,
+    playerToken: session.playerToken,
+    expectedVersion,
+    action,
   })
 }
 
@@ -152,11 +236,27 @@ export async function leaveRoom(session: OnlineSession): Promise<void> {
   })
 }
 
+export function joinUrl(code: string): string {
+  if (typeof window === 'undefined') return `/join/${code}`
+  return `${window.location.origin}/join/${code}`
+}
+
+export function joinCodeFromPath(pathname: string): string | null {
+  const match = pathname.match(/^\/join\/([A-Fa-f0-9]{6})\/?$/)
+  return match ? match[1].toUpperCase() : null
+}
+
 export function loadOnlineSession(): OnlineSession | null {
   if (typeof window === 'undefined') return null
   try {
     const raw = window.localStorage.getItem(SESSION_KEY)
-    if (!raw) return null
+    if (!raw) {
+      const legacy = window.localStorage.getItem('show-your-hand:online-session:v1')
+      if (!legacy) return null
+      const parsedLegacy = JSON.parse(legacy) as OnlineSession
+      window.localStorage.setItem(SESSION_KEY, legacy)
+      return parsedLegacy
+    }
     const parsed = JSON.parse(raw) as OnlineSession
     if (!parsed.roomId || !parsed.roomCode || !parsed.playerToken || !parsed.gamePlayerId) {
       return null
@@ -172,6 +272,7 @@ export function saveOnlineSession(session: OnlineSession | null): void {
   try {
     if (!session) {
       window.localStorage.removeItem(SESSION_KEY)
+      window.localStorage.removeItem('show-your-hand:online-session:v1')
       return
     }
     window.localStorage.setItem(SESSION_KEY, JSON.stringify(session))
