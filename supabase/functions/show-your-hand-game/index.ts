@@ -1,12 +1,25 @@
-
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { actorId, emptyMenuState, reduce } from './game/engine.ts'
+import { onlineActionError, onlineStateInvariantError } from './protocol.ts'
 import type { Action, GameState } from './game/types.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+
+type StatsRow = {
+  room_id: string
+  rematch_sequence?: number
+  game_player_id: string
+  attacks_played: number
+  defenses_played: number
+  blank_defenses: number
+  rounds_won: number
+  specials_played: number
+  match_wins: number
+  updated_at?: string
 }
 
 function json(data: unknown, status = 200) {
@@ -64,33 +77,91 @@ function actionPlayerId(action: Action): string | null {
   return 'playerId' in action ? String(action.playerId) : null
 }
 
+function emptyStats(
+  roomId: string,
+  playerId: string,
+  rematchSequence?: number,
+): StatsRow {
+  return {
+    room_id: roomId,
+    ...(rematchSequence === undefined ? {} : { rematch_sequence: rematchSequence }),
+    game_player_id: playerId,
+    attacks_played: 0,
+    defenses_played: 0,
+    blank_defenses: 0,
+    rounds_won: 0,
+    specials_played: 0,
+    match_wins: 0,
+  }
+}
+
+async function loadStatsRow(
+  supabase: ReturnType<typeof adminClient>,
+  table: 'syh_room_player_stats' | 'syh_match_player_stats',
+  roomId: string,
+  playerId: string,
+  rematchSequence?: number,
+): Promise<StatsRow> {
+  let query = supabase
+    .from(table)
+    .select('*')
+    .eq('room_id', roomId)
+    .eq('game_player_id', playerId)
+
+  if (rematchSequence !== undefined) {
+    query = query.eq('rematch_sequence', rematchSequence)
+  }
+
+  const { data, error } = await query.maybeSingle()
+  if (error) throw error
+  return (data as StatsRow | null) ?? emptyStats(roomId, playerId, rematchSequence)
+}
+
+async function saveStatsRow(
+  supabase: ReturnType<typeof adminClient>,
+  table: 'syh_room_player_stats' | 'syh_match_player_stats',
+  row: StatsRow,
+) {
+  const { error } = await supabase.from(table).upsert({
+    ...row,
+    updated_at: new Date().toISOString(),
+  })
+  if (error) throw error
+}
+
+async function bumpStats(
+  supabase: ReturnType<typeof adminClient>,
+  roomId: string,
+  rematchSequence: number,
+  playerId: string,
+  mutate: (row: StatsRow) => void,
+) {
+  for (const target of [
+    { table: 'syh_room_player_stats' as const, sequence: undefined },
+    { table: 'syh_match_player_stats' as const, sequence: rematchSequence },
+  ]) {
+    const row = await loadStatsRow(
+      supabase,
+      target.table,
+      roomId,
+      playerId,
+      target.sequence,
+    )
+    mutate(row)
+    await saveStatsRow(supabase, target.table, row)
+  }
+}
+
 async function updateStats(
   supabase: ReturnType<typeof adminClient>,
   roomId: string,
+  rematchSequence: number,
   before: GameState,
   after: GameState,
   action: Action,
 ) {
   const actor = actionPlayerId(action) ?? actorId(before)
   if (actor) {
-    const { data: current } = await supabase
-      .from('syh_room_player_stats')
-      .select('*')
-      .eq('room_id', roomId)
-      .eq('game_player_id', actor)
-      .maybeSingle()
-
-    const row = current ?? {
-      room_id: roomId,
-      game_player_id: actor,
-      attacks_played: 0,
-      defenses_played: 0,
-      blank_defenses: 0,
-      rounds_won: 0,
-      specials_played: 0,
-      match_wins: 0,
-    }
-
     const playedAttack =
       action.type === 'CONFIRM_ATTACK' ||
       (action.type === 'SELECT_CARD' && before.catalog[action.cardId]?.kind === 'skip')
@@ -100,46 +171,25 @@ async function updateStats(
       (action.type === 'RESPOND_DEFENSE' && action.response === 'blank') ||
       (action.type === 'RESPOND_REVERSE_BLANK' && action.response === 'blank')
 
-    if (playedAttack) {
-      row.attacks_played += 1
-      row.specials_played += 1
+    if (playedAttack || defended || blankDefense) {
+      await bumpStats(supabase, roomId, rematchSequence, actor, (row) => {
+        if (playedAttack) {
+          row.attacks_played += 1
+          row.specials_played += 1
+        }
+        if (defended) row.defenses_played += 1
+        if (blankDefense) row.blank_defenses += 1
+      })
     }
-    if (defended) row.defenses_played += 1
-    if (blankDefense) row.blank_defenses += 1
-
-    await supabase.from('syh_room_player_stats').upsert({
-      ...row,
-      updated_at: new Date().toISOString(),
-    })
   }
 
   const beforeEnded = before.phase.type === 'round_over' || before.phase.type === 'match_over'
   const afterEnded = after.phase.type === 'round_over' || after.phase.type === 'match_over'
   if (!beforeEnded && afterEnded) {
     const winnerId = after.phase.winnerId
-    const { data: current } = await supabase
-      .from('syh_room_player_stats')
-      .select('*')
-      .eq('room_id', roomId)
-      .eq('game_player_id', winnerId)
-      .maybeSingle()
-
-    const row = current ?? {
-      room_id: roomId,
-      game_player_id: winnerId,
-      attacks_played: 0,
-      defenses_played: 0,
-      blank_defenses: 0,
-      rounds_won: 0,
-      specials_played: 0,
-      match_wins: 0,
-    }
-    row.rounds_won += 1
-    if (after.phase.type === 'match_over') row.match_wins += 1
-
-    await supabase.from('syh_room_player_stats').upsert({
-      ...row,
-      updated_at: new Date().toISOString(),
+    await bumpStats(supabase, roomId, rematchSequence, winnerId, (row) => {
+      row.rounds_won += 1
+      if (after.phase.type === 'match_over') row.match_wins += 1
     })
   }
 }
@@ -147,6 +197,7 @@ async function updateStats(
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
+  if (!req.headers.get('apikey')) return json({ error: 'Missing apikey' }, 401)
 
   try {
     const body = await req.json()
@@ -214,19 +265,27 @@ Deno.serve(async (req: Request) => {
         .eq('state_version', room.state_version)
       if (updateError) throw updateError
 
-      await supabase.from('syh_room_player_stats').upsert(
-        players.map((player) => ({
-          room_id: roomId,
-          game_player_id: player.game_player_id,
-          attacks_played: 0,
-          defenses_played: 0,
-          blank_defenses: 0,
-          rounds_won: 0,
-          specials_played: 0,
-          match_wins: 0,
-          updated_at: new Date().toISOString(),
-        })),
+      const cumulativeSeeds = players.map((player) =>
+        emptyStats(roomId, player.game_player_id),
       )
+      const matchSeeds = players.map((player) =>
+        emptyStats(roomId, player.game_player_id, Number(room.rematch_sequence ?? 0)),
+      )
+
+      const { error: cumulativeError } = await supabase
+        .from('syh_room_player_stats')
+        .upsert(cumulativeSeeds, {
+          onConflict: 'room_id,game_player_id',
+          ignoreDuplicates: true,
+        })
+      if (cumulativeError) throw cumulativeError
+
+      const { error: matchError } = await supabase
+        .from('syh_match_player_stats')
+        .upsert(matchSeeds, {
+          onConflict: 'room_id,rematch_sequence,game_player_id',
+        })
+      if (matchError) throw matchError
 
       return json({
         stateVersion: nextVersion,
@@ -255,11 +314,14 @@ Deno.serve(async (req: Request) => {
       }
 
       const before = room.game_state as GameState
+      const protocolError = onlineActionError(before, action)
+      if (protocolError) return json({ error: protocolError }, 400)
+
       const expectedActor = actorId(before)
-      if (before.phase.type === 'round_over') {
-        if (action.type !== 'NEXT_ROUND') return json({ error: 'NEXT_ROUND required' }, 409)
-      } else if (!expectedActor || expectedActor !== member.game_player_id) {
-        return json({ error: 'NOT_YOUR_TURN' }, 403)
+      if (before.phase.type !== 'round_over') {
+        if (!expectedActor || expectedActor !== member.game_player_id) {
+          return json({ error: 'NOT_YOUR_TURN' }, 403)
+        }
       }
 
       const claimedPlayer = actionPlayerId(action)
@@ -270,8 +332,13 @@ Deno.serve(async (req: Request) => {
       const after = reduce(before, action)
       const blocked = after.history.at(-1)?.startsWith('Action blocked:')
       if (blocked) {
-        return json({ error: after.history.at(-1)?.replace('Action blocked: ', '') ?? 'Illegal move' }, 400)
+        return json({
+          error: after.history.at(-1)?.replace('Action blocked: ', '') ?? 'Illegal move',
+        }, 400)
       }
+
+      const invariantError = onlineStateInvariantError(before, after)
+      if (invariantError) return json({ error: invariantError }, 409)
 
       const { data: nextVersion, error: commitError } = await supabase.rpc(
         'syh_commit_authoritative_state',
@@ -282,27 +349,33 @@ Deno.serve(async (req: Request) => {
         },
       )
       if (commitError) {
-        const message = commitError.message?.includes('STALE_STATE') ? 'STALE_STATE' : commitError.message
+        const message = commitError.message?.includes('STALE_STATE')
+          ? 'STALE_STATE'
+          : commitError.message
         return json({ error: message }, 409)
       }
 
-      await updateStats(supabase, roomId, before, after, action)
+      const rematchSequence = Number(room.rematch_sequence ?? 0)
+      await updateStats(
+        supabase,
+        roomId,
+        rematchSequence,
+        before,
+        after,
+        action,
+      )
 
       if (after.phase.type === 'match_over') {
         const winner = after.players.find((player) => player.id === after.phase.winnerId)
-        const { data: roomAfter } = await supabase
-          .from('syh_rooms')
-          .select('rematch_sequence')
-          .eq('id', roomId)
-          .single()
         const { data: stats } = await supabase
-          .from('syh_room_player_stats')
+          .from('syh_match_player_stats')
           .select('*')
           .eq('room_id', roomId)
+          .eq('rematch_sequence', rematchSequence)
 
         await supabase.from('syh_match_results').upsert({
           room_id: roomId,
-          rematch_sequence: Number(roomAfter?.rematch_sequence ?? 0),
+          rematch_sequence: rematchSequence,
           winner_game_player_id: winner?.id ?? after.phase.winnerId,
           winner_display_name: winner?.name ?? 'Winner',
           summary: {
