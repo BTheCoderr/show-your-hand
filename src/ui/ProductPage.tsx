@@ -18,19 +18,61 @@ export function ProductPage({ path }: { path: ProductPath }) {
       title: 'SHOW YOUR HAND',
       body: (
         <>
+          <p className="syh-product-lede">
+            SHOW YOUR HAND is an original competitive card game built around one rhythm:
+            <b> DROP → RESOLVE → PICK UP.</b> Build a scoring five-card hand while using specials
+            to attack, defend, disrupt, and force the table to react.
+          </p>
+
+          <div className="syh-about-actions">
+            <a href="/" className="syh-primary syh-link-button">Play now</a>
+            <a href="/?tutorial=1" className="syh-secondary syh-link-button">How to play</a>
+          </div>
+
+          <div className="syh-about-visual" aria-label="SHOW YOUR HAND card preview">
+            <img src="/cards/show-your-hand.png" alt="Show Your Hand special card" />
+            <img src="/cards/drop-color.png" alt="Drop Color special card" />
+            <img src="/cards/skip.png" alt="Skip special card" />
+            <img src="/cards/shuffle.png" alt="Shuffle special card" />
+            <img src="/cards/blank.png" alt="Blank defense card" />
+          </div>
+
+          <h2>Game modes</h2>
+          <div className="syh-mode-grid">
+            <article>
+              <span>SOLO</span>
+              <h3>1–5 CPU opponents</h3>
+              <p>Learn the rules, test strategies, and play complete matches with no account.</p>
+            </article>
+            <article>
+              <span>ONLINE BETA</span>
+              <h3>Private 1v1</h3>
+              <p>Create a room, share a link or QR code, ready up, reconnect, and rematch.</p>
+            </article>
+            <article>
+              <span>COMING NEXT</span>
+              <h3>Hardcore + larger tables</h3>
+              <p>Hardcore Mode, 2–6 real players, 2v2, and public/private table options.</p>
+            </article>
+          </div>
+
+          <h2>The special cards</h2>
+          <div className="syh-card-explainers">
+            <article><img src="/cards/show-your-hand.png" alt="" /><div><b>Show Your Hand</b><p>Force a target to reveal their hand for the turn.</p></div></article>
+            <article><img src="/cards/drop-color.png" alt="" /><div><b>Drop Color</b><p>Name a color and force the target to drop matching number cards.</p></div></article>
+            <article><img src="/cards/skip.png" alt="" /><div><b>Skip</b><p>Take the next player out of the upcoming turn unless they defend.</p></div></article>
+            <article><img src="/cards/shuffle.png" alt="" /><div><b>Shuffle</b><p>Send one or two hands back and deal fresh cards.</p></div></article>
+            <article><img src="/cards/blank.png" alt="" /><div><b>Blank</b><p>Cancel supported attacks without reversing them.</p></div></article>
+          </div>
+
+          <h2>Online beta</h2>
           <p>
-            SHOW YOUR HAND is an original competitive card game built around a simple rhythm:
-            <b> drop, resolve, pick up</b>. Number cards build scoring hands. Special cards attack,
-            disrupt, defend, and force players to react.
+            Online matches use a server-authoritative Supabase game service. The browser sends the
+            intended move, the server validates it against the canonical game state, and each player
+            only receives the hidden-information view they are allowed to see.
           </p>
           <p>
-            The browser edition supports solo play, guided onboarding, and a private online 1v1 beta.
-            The tabletop rules remain the source of truth while the digital version adds presentation,
-            matchmaking infrastructure, reconnect support, and playtest analytics.
-          </p>
-          <h2>Current beta</h2>
-          <p>
-            First to 5 points wins. Online rooms are private and invite-only. Competitive public
+            First to 5 points wins. Rooms are private and invite-only today; competitive public
             matchmaking and larger real-player tables are still in development.
           </p>
         </>
