@@ -7,6 +7,7 @@ type Props = {
   onStart: () => void
   onResume: () => void
   onRules: () => void
+  onTutorial: () => void
 }
 
 export function StartScreen({
@@ -18,6 +19,7 @@ export function StartScreen({
   onStart,
   onResume,
   onRules,
+  onTutorial,
 }: Props) {
   return (
     <section className="syh-start">
@@ -58,6 +60,10 @@ export function StartScreen({
             Resume match
           </button>
         ) : null}
+        <button type="button" className="syh-secondary syh-tutorial-cta" onClick={onTutorial}>
+          How to Play
+          <span>2 min</span>
+        </button>
         <button type="button" className="syh-text-btn" onClick={onRules}>
           Rules
         </button>
