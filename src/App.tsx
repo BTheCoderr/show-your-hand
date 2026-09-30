@@ -17,6 +17,7 @@ import { COLORS } from './game/types'
 import { CardView } from './ui/CardView'
 import { RulesPanel } from './ui/RulesPanel'
 import { StartScreen } from './ui/StartScreen'
+import { Tutorial } from './ui/Tutorial'
 
 const TURN_SECONDS = 120
 
@@ -84,6 +85,7 @@ export function App() {
   const [showStart, setShowStart] = useState(() => !saved || saved.phase.type === 'menu')
   const [state, setState] = useState<GameState>(() => saved ?? emptyMenuState())
   const [rulesOpen, setRulesOpen] = useState(false)
+  const [tutorialOpen, setTutorialOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [shuffleTargets, setShuffleTargets] = useState<string[]>([])
   const [claimedDropIds, setClaimedDropIds] = useState<string[]>([])
@@ -133,6 +135,7 @@ export function App() {
   useEffect(() => {
     if (
       showStart ||
+      tutorialOpen ||
       openingShuffle ||
       !activeActorId ||
       activeActorId === 'human' ||
@@ -159,7 +162,7 @@ export function App() {
     }, 900)
 
     return () => window.clearTimeout(timer)
-  }, [activeActorId, openingShuffle, showStart, state])
+  }, [activeActorId, openingShuffle, showStart, state, tutorialOpen])
 
   useEffect(() => {
     setTurnSeconds(TURN_SECONDS)
@@ -168,6 +171,7 @@ export function App() {
   useEffect(() => {
     if (
       showStart ||
+      tutorialOpen ||
       !activeActorId ||
       state.phase.type === 'menu' ||
       state.phase.type === 'round_over' ||
@@ -179,7 +183,7 @@ export function App() {
       setTurnSeconds((seconds) => Math.max(0, seconds - 1))
     }, 1000)
     return () => window.clearInterval(timer)
-  }, [activeActorId, showStart, state.phase.type])
+  }, [activeActorId, showStart, state.phase.type, tutorialOpen])
 
   const humanTurn =
     actorId(state) === 'human' &&
@@ -199,6 +203,9 @@ export function App() {
       <header className="syh-top">
         <strong>SHOW YOUR HAND</strong>
         <nav>
+          <button type="button" onClick={() => setTutorialOpen(true)}>
+            Tutorial
+          </button>
           <button type="button" onClick={() => setRulesOpen(true)}>
             Rules
           </button>
@@ -255,6 +262,7 @@ export function App() {
             }
           }}
           onRules={() => setRulesOpen(true)}
+          onTutorial={() => setTutorialOpen(true)}
         />
       ) : (
         <main className={`syh-table ${waiting ? 'is-locked' : ''}`}>
@@ -680,6 +688,7 @@ export function App() {
         </main>
       )}
 
+      <Tutorial open={tutorialOpen} onClose={() => setTutorialOpen(false)} />
       <RulesPanel open={rulesOpen} onClose={() => setRulesOpen(false)} />
     </div>
   )

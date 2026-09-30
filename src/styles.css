@@ -1346,3 +1346,584 @@ button:disabled {
     animation: none;
   }
 }
+
+
+/* Guided How to Play tutorial */
+.syh-tutorial-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.syh-tutorial-cta span {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(248, 112, 0, 0.16);
+  color: var(--orange);
+  font-family: 'DIN Condensed', 'Arial Narrow', sans-serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+}
+
+.syh-tutorial-modal {
+  z-index: 120;
+  overflow-y: auto;
+  background:
+    radial-gradient(circle at 50% 12%, rgba(248, 112, 0, 0.16), transparent 34%),
+    rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(9px);
+}
+
+.syh-tutorial {
+  width: min(760px, 100%);
+  max-height: min(92svh, 860px);
+  overflow: auto;
+  padding: clamp(18px, 4vw, 30px);
+  border: 1px solid rgba(248, 112, 0, 0.48);
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(30, 24, 18, 0.98), rgba(12, 12, 12, 0.98));
+  box-shadow:
+    0 26px 70px rgba(0, 0, 0, 0.58),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+}
+
+.syh-tutorial-header,
+.syh-tutorial-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.syh-tutorial-header h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(1.45rem, 5vw, 2.4rem);
+  letter-spacing: 0.08em;
+}
+
+.syh-tutorial-header .syh-kicker {
+  margin-bottom: 4px;
+}
+
+.syh-tutorial-progress {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 5px;
+  margin: 18px 0 22px;
+}
+
+.syh-tutorial-progress span {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  transition: background 180ms ease, transform 180ms ease;
+}
+
+.syh-tutorial-progress span.is-on {
+  background: var(--orange);
+  transform: scaleY(1.35);
+}
+
+.syh-tutorial-step {
+  min-height: 420px;
+}
+
+.syh-tutorial-step h3 {
+  margin: 0 0 8px;
+  font-size: clamp(1.3rem, 4vw, 2rem);
+  letter-spacing: 0.025em;
+}
+
+.syh-tutorial-copy,
+.syh-tutorial-tip,
+.syh-tutorial-check,
+.syh-tutorial-explainer,
+.syh-tutorial-pick,
+.syh-tutorial-special,
+.syh-tutorial-score-grid,
+.syh-tutorial-ready {
+  font-family: 'DIN Condensed', 'Arial Narrow', sans-serif;
+}
+
+.syh-tutorial-copy {
+  max-width: 660px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 1.02rem;
+  line-height: 1.45;
+}
+
+.syh-tutorial-stage {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.syh-tutorial-loop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(8px, 3vw, 18px);
+  width: min(560px, 100%);
+  padding: 24px 18px;
+  border: 1px solid rgba(248, 112, 0, 0.35);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at center, rgba(26, 86, 43, 0.56), rgba(5, 35, 17, 0.8));
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.32);
+}
+
+.syh-tutorial-loop b {
+  color: var(--orange);
+  font-size: clamp(1rem, 4vw, 1.5rem);
+  letter-spacing: 0.08em;
+}
+
+.syh-tutorial-loop span {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 1.4rem;
+}
+
+.syh-tutorial-tip {
+  margin: 0;
+  color: #e9dfd3;
+  text-align: center;
+}
+
+.syh-tutorial-hand {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  min-height: 172px;
+  padding: 18px 12px 12px;
+}
+
+.syh-tutorial-card,
+.syh-tutorial-special,
+.syh-tutorial-defense {
+  appearance: none;
+}
+
+.syh-tutorial-card {
+  width: 88px;
+  height: 123px;
+  margin-left: -14px;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  border-radius: 9px;
+  background: #050505;
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.34);
+  transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+}
+
+.syh-tutorial-card:first-child {
+  margin-left: 0;
+}
+
+.syh-tutorial-card:nth-child(1) { transform: rotate(-7deg) translateY(8px); }
+.syh-tutorial-card:nth-child(2) { transform: rotate(-3deg) translateY(2px); }
+.syh-tutorial-card:nth-child(3) { transform: translateY(0); }
+.syh-tutorial-card:nth-child(4) { transform: rotate(3deg) translateY(2px); }
+.syh-tutorial-card:nth-child(5) { transform: rotate(7deg) translateY(8px); }
+
+.syh-tutorial-card img,
+.syh-tutorial-pick img,
+.syh-tutorial-special img,
+.syh-tutorial-defense img,
+.syh-tutorial-score-example img,
+.syh-tutorial-ready img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@keyframes syh-tutorial-practice-glow {
+  0%, 100% {
+    box-shadow:
+      0 0 0 2px rgba(248, 112, 0, 0.45),
+      0 8px 18px rgba(0, 0, 0, 0.36);
+  }
+  50% {
+    box-shadow:
+      0 0 0 4px rgba(248, 112, 0, 0.94),
+      0 0 24px rgba(248, 112, 0, 0.7),
+      0 8px 18px rgba(0, 0, 0, 0.36);
+  }
+}
+
+.syh-tutorial-card.is-practice {
+  position: relative;
+  z-index: 3;
+  animation: syh-tutorial-practice-glow 1.05s ease-in-out infinite;
+}
+
+.syh-tutorial-card.is-practice:hover {
+  transform: rotate(-3deg) translateY(-10px);
+}
+
+.syh-tutorial-card.is-played {
+  opacity: 0.45;
+  transform: rotate(-3deg) translateY(-34px) scale(0.9);
+  animation: none;
+}
+
+.syh-tutorial-check {
+  margin: 0;
+  padding: 7px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  color: var(--muted);
+}
+
+.syh-tutorial-check.is-done {
+  border-color: rgba(48, 248, 40, 0.35);
+  color: #bff9bb;
+}
+
+.syh-tutorial-pickups {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) auto minmax(130px, 1fr);
+  align-items: center;
+  gap: 14px;
+  width: min(500px, 100%);
+}
+
+.syh-tutorial-pick {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  min-height: 196px;
+  padding: 14px;
+  border: 1px solid rgba(248, 112, 0, 0.32);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--ink);
+  text-align: center;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.syh-tutorial-pick:hover,
+.syh-tutorial-pick.is-done {
+  transform: translateY(-3px);
+  border-color: var(--orange);
+  background: rgba(248, 112, 0, 0.08);
+}
+
+.syh-tutorial-pick img {
+  width: 72px;
+  height: 101px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 7px;
+}
+
+.syh-tutorial-pick b {
+  font-size: 0.98rem;
+}
+
+.syh-tutorial-pick span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.syh-tutorial-or {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.82rem;
+}
+
+.syh-tutorial-specials {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(86px, 1fr));
+  gap: 9px;
+  width: 100%;
+}
+
+.syh-tutorial-special {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  padding: 9px 7px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--ink);
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.syh-tutorial-special:hover,
+.syh-tutorial-special.is-on {
+  transform: translateY(-4px);
+  border-color: var(--orange);
+  background: rgba(248, 112, 0, 0.08);
+}
+
+.syh-tutorial-special img {
+  width: 72px;
+  height: 101px;
+  border-radius: 7px;
+}
+
+.syh-tutorial-special span {
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.syh-tutorial-explainer {
+  display: grid;
+  gap: 3px;
+  width: min(560px, 100%);
+  min-height: 62px;
+  padding: 11px 13px;
+  border-left: 3px solid var(--orange);
+  background: rgba(248, 112, 0, 0.07);
+  color: var(--muted);
+}
+
+.syh-tutorial-explainer b {
+  color: var(--ink);
+}
+
+.syh-tutorial-defense {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border: 1px solid rgba(248, 112, 0, 0.34);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--ink);
+  font-family: 'DIN Condensed', 'Arial Narrow', sans-serif;
+}
+
+.syh-tutorial-defense img {
+  width: 92px;
+  height: 129px;
+  border-radius: 8px;
+}
+
+.syh-tutorial-defense.is-done {
+  border-color: rgba(48, 248, 40, 0.58);
+  background: rgba(48, 248, 40, 0.06);
+}
+
+.syh-tutorial-targets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+}
+
+.syh-tutorial-targets > button {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 12px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--ink);
+}
+
+.syh-tutorial-targets > button.is-on {
+  border-color: var(--orange);
+  background: rgba(248, 112, 0, 0.1);
+  box-shadow: 0 0 18px rgba(248, 112, 0, 0.18);
+}
+
+.syh-tutorial-cardbacks {
+  display: flex;
+  justify-content: center;
+  height: 58px;
+}
+
+.syh-tutorial-cardbacks img {
+  width: 39px;
+  height: 55px;
+  margin-left: -22px;
+  border-radius: 4px;
+  box-shadow: 0 4px 7px rgba(0, 0, 0, 0.35);
+}
+
+.syh-tutorial-cardbacks img:first-child {
+  margin-left: 0;
+}
+
+.syh-tutorial-score-example {
+  display: flex;
+  justify-content: center;
+}
+
+.syh-tutorial-score-example img {
+  width: 68px;
+  height: 95px;
+  margin-left: -14px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  box-shadow: 0 8px 13px rgba(0, 0, 0, 0.34);
+}
+
+.syh-tutorial-score-example img:first-child {
+  margin-left: 0;
+}
+
+.syh-tutorial-score-grid {
+  display: grid;
+  gap: 5px;
+  width: min(500px, 100%);
+}
+
+.syh-tutorial-score-grid > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+}
+
+.syh-tutorial-score-grid b {
+  color: var(--orange);
+  white-space: nowrap;
+}
+
+.syh-tutorial-ready {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  width: min(520px, 100%);
+  padding: 18px;
+  border: 1px solid rgba(248, 112, 0, 0.36);
+  border-radius: 18px;
+  background: rgba(248, 112, 0, 0.06);
+}
+
+.syh-tutorial-ready img {
+  width: 82px;
+  height: 115px;
+  flex: 0 0 auto;
+  border-radius: 7px;
+}
+
+.syh-tutorial-ready div {
+  display: grid;
+  gap: 6px;
+}
+
+.syh-tutorial-ready b {
+  color: var(--orange);
+  font-size: 1.05rem;
+}
+
+.syh-tutorial-ready span {
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.syh-tutorial-actions {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.syh-tutorial-actions > span {
+  color: var(--muted);
+  font-family: 'DIN Condensed', 'Arial Narrow', sans-serif;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 620px) {
+  .syh-tutorial {
+    max-height: 94svh;
+    border-radius: 18px;
+  }
+
+  .syh-tutorial-header {
+    align-items: flex-start;
+  }
+
+  .syh-tutorial-header .syh-text-btn {
+    padding: 5px 7px;
+    font-size: 0.68rem;
+  }
+
+  .syh-tutorial-step {
+    min-height: 390px;
+  }
+
+  .syh-tutorial-hand {
+    min-height: 138px;
+  }
+
+  .syh-tutorial-card {
+    width: 65px;
+    height: 91px;
+    margin-left: -12px;
+  }
+
+  .syh-tutorial-pickups {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .syh-tutorial-or {
+    display: none;
+  }
+
+  .syh-tutorial-pick {
+    min-height: 165px;
+    padding: 10px 7px;
+  }
+
+  .syh-tutorial-pick img {
+    width: 58px;
+    height: 81px;
+  }
+
+  .syh-tutorial-specials {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .syh-tutorial-special img {
+    width: 60px;
+    height: 84px;
+  }
+
+  .syh-tutorial-targets {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .syh-tutorial-targets > button {
+    padding-inline: 4px;
+    font-size: 0.72rem;
+  }
+
+  .syh-tutorial-score-example img {
+    width: 54px;
+    height: 76px;
+    margin-left: -12px;
+  }
+
+  .syh-tutorial-ready {
+    align-items: flex-start;
+    padding: 13px;
+  }
+
+  .syh-tutorial-ready img {
+    width: 62px;
+    height: 87px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .syh-tutorial-card.is-practice,
+  .syh-tutorial-progress span {
+    animation: none;
+    transition: none;
+  }
+}
