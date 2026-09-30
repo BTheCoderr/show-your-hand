@@ -16,6 +16,18 @@ SHOW YOUR HAND is an original competitive card game being developed as both a ph
 
 **Play:** https://show-your-hand.netlify.app
 
+<!-- portfolio-visuals:start -->
+### The deck, visually
+
+<p align="center">
+  <img src="./public/cards/show-your-hand.png" alt="Show Your Hand card" width="17%" />
+  <img src="./public/cards/drop-color.png" alt="Drop Color card" width="17%" />
+  <img src="./public/cards/skip.png" alt="Skip card" width="17%" />
+  <img src="./public/cards/shuffle.png" alt="Shuffle card" width="17%" />
+  <img src="./public/cards/blank.png" alt="Blank defense card" width="17%" />
+</p>
+<!-- portfolio-visuals:end -->
+
 ## Product at a glance
 
 | Area | Current beta |
