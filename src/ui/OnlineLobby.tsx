@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import type { OnlineRoom, OnlineSession } from '../online/rooms'
+import { useEffect, useMemo, useState } from 'react'
+import { joinUrl, type OnlineRoom, type OnlineSession } from '../online/rooms'
 
 type Props = {
   open: boolean
@@ -8,10 +8,14 @@ type Props = {
   room: OnlineRoom | null
   busy: boolean
   error: string | null
+  initialCode?: string | null
   onClose: () => void
   onCreate: (name: string) => void
   onJoin: (code: string, name: string) => void
+  onReady: (ready: boolean) => void
+  onOptions: (options: { beginnerMode: boolean; mode: 'standard' | 'hardcore' }) => void
   onStart: () => void
+  onRematch: (ready: boolean) => void
   onLeave: () => void
 }
 
@@ -22,28 +26,44 @@ export function OnlineLobby({
   room,
   busy,
   error,
+  initialCode,
   onClose,
   onCreate,
   onJoin,
+  onReady,
+  onOptions,
   onStart,
+  onRematch,
   onLeave,
 }: Props) {
   const [name, setName] = useState('Player')
-  const [code, setCode] = useState('')
-  const [copied, setCopied] = useState(false)
+  const [code, setCode] = useState(initialCode ?? '')
+  const [copied, setCopied] = useState<'code' | 'link' | null>(null)
+
+  useEffect(() => {
+    if (initialCode) setCode(initialCode)
+  }, [initialCode])
+
+  const shareLink = useMemo(() => (session ? joinUrl(session.roomCode) : ''), [session?.roomCode])
+  const qrSrc = shareLink
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=${encodeURIComponent(shareLink)}`
+    : ''
 
   if (!open) return null
 
-  const copyCode = async () => {
-    if (!session) return
+  const copy = async (kind: 'code' | 'link', value: string) => {
     try {
-      await navigator.clipboard.writeText(session.roomCode)
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 1200)
+      await navigator.clipboard.writeText(value)
+      setCopied(kind)
+      window.setTimeout(() => setCopied(null), 1400)
     } catch {
-      setCopied(false)
+      setCopied(null)
     }
   }
+
+  const self = room?.players.find((player) => player.gamePlayerId === session?.gamePlayerId)
+  const bothReady = Boolean(room && room.players.length === 2 && room.players.every((player) => player.ready))
+  const opponent = room?.players.find((player) => player.gamePlayerId !== session?.gamePlayerId)
 
   return (
     <div className="syh-modal syh-online-modal" role="dialog" aria-modal="true" aria-labelledby="online-title">
@@ -62,12 +82,18 @@ export function OnlineLobby({
 
         {!configured ? (
           <div className="syh-online-message">
-            Online play is connected in the codebase, but the production environment variables are not available in this build yet.
+            Online play is unavailable in this build.
           </div>
         ) : null}
 
         {configured && !session ? (
           <>
+            {initialCode ? (
+              <p className="syh-online-invite-banner">
+                You were invited to room <b>{initialCode}</b>. Enter your table name and join.
+              </p>
+            ) : null}
+
             <label className="syh-online-field">
               <span>Your table name</span>
               <input
@@ -82,7 +108,7 @@ export function OnlineLobby({
             <div className="syh-online-choice">
               <article>
                 <h3>Host a table</h3>
-                <p>Create a private six-character room code and send it to a friend.</p>
+                <p>Create a private room, send the invite link or QR code, then both players ready up.</p>
                 <button
                   type="button"
                   className="syh-primary"
@@ -95,7 +121,7 @@ export function OnlineLobby({
 
               <article>
                 <h3>Join a table</h3>
-                <p>Enter the code from the host. Online beta currently supports two real players.</p>
+                <p>Open an invite link or enter the host’s six-character code.</p>
                 <input
                   value={code}
                   maxLength={6}
@@ -123,17 +149,60 @@ export function OnlineLobby({
             <div className="syh-room-code">
               <span>ROOM CODE</span>
               <strong>{session.roomCode}</strong>
-              <button type="button" className="syh-text-btn" onClick={copyCode}>
-                {copied ? 'Copied' : 'Copy'}
+              <button type="button" className="syh-text-btn" onClick={() => void copy('code', session.roomCode)}>
+                {copied === 'code' ? 'Copied' : 'Copy code'}
               </button>
+            </div>
+
+            {room?.status === 'waiting' ? (
+              <div className="syh-invite-panel">
+                <div>
+                  <span>INVITE LINK</span>
+                  <b>{shareLink.replace(/^https?:\/\//, '')}</b>
+                  <button type="button" className="syh-secondary" onClick={() => void copy('link', shareLink)}>
+                    {copied === 'link' ? 'Link copied' : 'Copy invite link'}
+                  </button>
+                </div>
+                <img src={qrSrc} alt={`QR code to join room ${session.roomCode}`} />
+              </div>
+            ) : null}
+
+            <div className="syh-online-settings">
+              <div>
+                <span>MODE</span>
+                <strong>Standard</strong>
+                <small>Hardcore mode is next.</small>
+              </div>
+              <div>
+                <span>BEGINNER MODE</span>
+                <button
+                  type="button"
+                  className={`syh-mode-toggle ${room?.beginnerMode ? 'is-on' : ''}`}
+                  disabled={!session.isHost || room?.status !== 'waiting' || busy}
+                  onClick={() =>
+                    onOptions({
+                      beginnerMode: !room?.beginnerMode,
+                      mode: 'standard',
+                    })
+                  }
+                >
+                  {room?.beginnerMode ? 'On' : 'Off'}
+                </button>
+                <small>{session.isHost ? 'Host controls this setting.' : 'Set by host.'}</small>
+              </div>
             </div>
 
             <div className="syh-online-players">
               <h3>At the table</h3>
               {(room?.players ?? []).map((player) => (
-                <div key={player.id}>
+                <div key={player.id} className={!player.connected ? 'is-disconnected' : ''}>
                   <span className="syh-online-seat">{player.seat === 0 ? 'HOST' : 'GUEST'}</span>
                   <b>{player.displayName}</b>
+                  <span className={`syh-connection-dot ${player.connected ? 'is-online' : 'is-offline'}`}>
+                    {player.connected ? 'Connected' : 'Reconnecting…'}
+                  </span>
+                  {player.ready && room?.status === 'waiting' ? <em>READY</em> : null}
+                  {player.rematchReady && room?.status === 'completed' ? <em>REMATCH ✓</em> : null}
                   {player.gamePlayerId === session.gamePlayerId ? <em>You</em> : null}
                 </div>
               ))}
@@ -145,27 +214,63 @@ export function OnlineLobby({
               ) : null}
             </div>
 
-            {room?.status === 'waiting' && session.isHost ? (
-              <button
-                type="button"
-                className="syh-primary syh-online-start"
-                disabled={busy || room.players.length !== 2}
-                onClick={onStart}
-              >
-                {room.players.length === 2 ? 'Start online match' : 'Waiting for opponent'}
-              </button>
+            {room?.status === 'waiting' ? (
+              <>
+                <button
+                  type="button"
+                  className={`syh-secondary syh-ready-button ${self?.ready ? 'is-ready' : ''}`}
+                  disabled={busy}
+                  onClick={() => onReady(!self?.ready)}
+                >
+                  {self?.ready ? '✓ Ready' : 'I’m ready'}
+                </button>
+
+                {session.isHost ? (
+                  <button
+                    type="button"
+                    className="syh-primary syh-online-start"
+                    disabled={busy || !bothReady}
+                    onClick={onStart}
+                  >
+                    {bothReady ? 'Start online match' : 'Both players must be ready'}
+                  </button>
+                ) : (
+                  <p className="syh-online-message">
+                    {self?.ready
+                      ? 'Ready. Waiting for the host to start.'
+                      : 'Ready up when you’re set to play.'}
+                  </p>
+                )}
+              </>
             ) : null}
 
-            {room?.status === 'waiting' && !session.isHost ? (
-              <p className="syh-online-message">You’re in. The host will start the match.</p>
+            {room?.status === 'completed' ? (
+              <div className="syh-rematch-panel">
+                <h3>Run it back?</h3>
+                <p>
+                  {opponent?.rematchReady
+                    ? `${opponent.displayName} wants a rematch.`
+                    : 'Both players can stay at this table and rematch without a new code.'}
+                </p>
+                <button
+                  type="button"
+                  className={`syh-primary ${self?.rematchReady ? 'is-ready' : ''}`}
+                  disabled={busy}
+                  onClick={() => onRematch(!self?.rematchReady)}
+                >
+                  {self?.rematchReady ? 'Rematch requested ✓' : 'Rematch'}
+                </button>
+              </div>
             ) : null}
 
             {room?.status === 'abandoned' ? (
-              <p className="syh-online-message">This table was closed.</p>
+              <p className="syh-online-error">
+                Your opponent left the table. Return to the menu and start a new room.
+              </p>
             ) : null}
 
             <button type="button" className="syh-text-btn syh-online-leave" disabled={busy} onClick={onLeave}>
-              Leave room
+              {room?.status === 'completed' ? 'Leave table' : 'Leave room'}
             </button>
           </div>
         ) : null}
