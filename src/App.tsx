@@ -754,54 +754,64 @@ export function App() {
                 const reveal =
                   state.testMode || state.revealedUntilTurnEnd.includes(player.id)
                 const active = state.players[state.currentPlayerIndex].id === player.id
+                const targetOpponent =
+                  humanTurn && state.phase.type === 'choose_targets'
+                    ? () => {
+                        const selected = state.catalog[state.phase.cardId]
+                        if (!selected) return
+                        if (selected.kind === 'shuffle') {
+                          setShuffleTargets((current) => {
+                            if (current.includes(player.id)) {
+                              return current.filter((id) => id !== player.id)
+                            }
+                            if (current.length >= 2) return current
+                            return [...current, player.id]
+                          })
+                          return
+                        }
+                        if (selected.kind === 'drop-color') {
+                          dispatch({
+                            type: 'CONFIRM_ATTACK',
+                            playerId: localPlayerId,
+                            cardId: selected.id,
+                            targetIds: [player.id],
+                            color: dropColor,
+                          })
+                          return
+                        }
+                        dispatch({
+                          type: 'CONFIRM_ATTACK',
+                          playerId: localPlayerId,
+                          cardId: selected.id,
+                          targetIds: [player.id],
+                        })
+                      }
+                    : undefined
+
                 return (
                   <article
                     key={player.id}
                     className={`syh-seat ${opponentSeatClass(index, opponents.length)} ${active ? 'is-active' : ''}`}
                   >
                     <div className="syh-row">
-                      {handCards(state, player.id).map((card) => (
-                        <CardView
-                          key={card.id}
-                          card={card}
-                          faceDown={!reveal}
-                          compact
-                          onClick={
-                            humanTurn && state.phase.type === 'choose_targets'
-                              ? () => {
-                                  const selected = state.catalog[state.phase.type === 'choose_targets' ? state.phase.cardId : '']
-                                  if (!selected) return
-                                  if (selected.kind === 'shuffle') {
-                                    setShuffleTargets((current) => {
-                                      if (current.includes(player.id)) {
-                                        return current.filter((id) => id !== player.id)
-                                      }
-                                      if (current.length >= 2) return current
-                                      return [...current, player.id]
-                                    })
-                                    return
-                                  }
-                                  if (selected.kind === 'drop-color') {
-                                    dispatch({
-                                      type: 'CONFIRM_ATTACK',
-                                      playerId: localPlayerId,
-                                      cardId: selected.id,
-                                      targetIds: [player.id],
-                                      color: dropColor,
-                                    })
-                                    return
-                                  }
-                                  dispatch({
-                                    type: 'CONFIRM_ATTACK',
-                                    playerId: localPlayerId,
-                                    cardId: selected.id,
-                                    targetIds: [player.id],
-                                  })
-                                }
-                              : undefined
-                          }
-                        />
-                      ))}
+                      {onlineSession && !reveal
+                        ? player.hand.map((_, cardIndex) => (
+                            <CardView
+                              key={`${player.id}-hidden-${cardIndex}`}
+                              faceDown
+                              compact
+                              onClick={targetOpponent}
+                            />
+                          ))
+                        : handCards(state, player.id).map((card) => (
+                            <CardView
+                              key={card.id}
+                              card={card}
+                              faceDown={!reveal}
+                              compact
+                              onClick={targetOpponent}
+                            />
+                          ))}
                     </div>
                     <header className="syh-nameplate">
                       <span>{player.name}</span>
