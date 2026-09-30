@@ -755,10 +755,12 @@ export function App() {
                 const reveal =
                   state.testMode || state.revealedUntilTurnEnd.includes(player.id)
                 const active = state.players[state.currentPlayerIndex].id === player.id
+                const selectedTargetCardId =
+                  state.phase.type === 'choose_targets' ? state.phase.cardId : null
                 const targetOpponent =
-                  humanTurn && state.phase.type === 'choose_targets'
+                  humanTurn && selectedTargetCardId
                     ? () => {
-                        const selected = state.catalog[state.phase.cardId]
+                        const selected = state.catalog[selectedTargetCardId]
                         if (!selected) return
                         if (selected.kind === 'shuffle') {
                           setShuffleTargets((current) => {
