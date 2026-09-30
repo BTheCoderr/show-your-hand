@@ -33,10 +33,13 @@ The goal of the digital version is not just to reproduce the rules. It is built 
 - Scoring-hand declaration flow
 - Swipe-up card play and swipe-down discard pickup
 - Active-turn glow and turn timer
+- First-visit onboarding that offers the interactive 2-minute How to Play tutorial
+- Beginner Mode with no turn clock, slower CPU pacing, and contextual coaching
 - Interactive 2-minute How to Play tutorial with practice steps
 - **Animated opening-deck shuffle before the first deal**
 - **Paced CPU turns so opponent moves are visible instead of happening instantly**
 - **On-screen move notices showing what opponents just did**
+- **Center-table attack-card spotlight before special attacks resolve**
 - Action history
 - Rules panel
 - Local match persistence

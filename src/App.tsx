@@ -11,15 +11,97 @@ import {
 } from './game/engine'
 import { currentPlayer, handCards, nameOf, playerById } from './game/helpers'
 import { clearMatch, loadMatch, saveMatch } from './game/persist'
+import { loadPreferences, savePreferences } from './game/preferences'
 import { scoreHand } from './game/scoring'
 import type { Action, Color, GameState } from './game/types'
 import { COLORS } from './game/types'
 import { CardView } from './ui/CardView'
+import { FirstVisitPrompt } from './ui/FirstVisitPrompt'
 import { RulesPanel } from './ui/RulesPanel'
 import { StartScreen } from './ui/StartScreen'
 import { Tutorial } from './ui/Tutorial'
 
 const TURN_SECONDS = 120
+
+type AttackSpotlight = {
+  cardId: string
+  actor: string
+  label: string
+}
+
+function cardLabel(state: GameState, cardId: string): string {
+  const card = state.catalog[cardId]
+  if (!card) return 'Special card'
+  return card.kind === 'number'
+    ? `${card.color} ${card.number}`
+    : card.kind
+        .split('-')
+        .map((part) => part[0]?.toUpperCase() + part.slice(1))
+        .join(' ')
+}
+
+function attackPresentationFor(state: GameState, action: Action): AttackSpotlight | null {
+  if (action.type !== 'CONFIRM_ATTACK' && action.type !== 'SELECT_CARD') return null
+  const card = state.catalog[action.cardId]
+  if (!card || card.kind === 'number' || card.kind === 'blank') return null
+  if (action.type === 'SELECT_CARD' && card.kind !== 'skip') return null
+
+  return {
+    cardId: card.id,
+    actor: nameOf(state, action.playerId),
+    label: cardLabel(state, card.id),
+  }
+}
+
+function beginnerHelp(state: GameState): string | null {
+  const phase = state.phase
+  switch (phase.type) {
+    case 'choose_action':
+      if (!currentPlayer(state).isHuman) {
+        return 'Watch the glowing seat and the move banner. The computer will make one visible move at a time.'
+      }
+      return canDeclare(state, 'human')
+        ? 'You have a scoring hand. You can Declare now, or keep playing if you want to improve it.'
+        : 'Swipe one card upward. Number cards and Blank are discarded; attack cards will guide you to a target.'
+    case 'choose_targets': {
+      const card = state.catalog[phase.cardId]
+      if (card.kind === 'shuffle') return 'Tap one or two opponents, then press Confirm Shuffle.'
+      if (card.kind === 'drop-color') return 'Choose a color first, then tap the opponent you want to attack.'
+      return 'Tap the opponent whose hand you want revealed.'
+    }
+    case 'await_defense':
+      if (phase.responderId !== 'human') return 'The targeted player is deciding whether to defend.'
+      return 'Accept the attack, use Blank to cancel it, or use a matching special to counter when available.'
+    case 'claim_dropped':
+      return phase.claimantId === 'human'
+        ? 'Tap any dropped cards you want to keep. You may take none, some, or all of them.'
+        : 'The attacker may claim cards that were forced out by Drop Color.'
+    case 'trim_hand':
+      return phase.playerId === 'human'
+        ? 'You claimed extra cards. Choose enough cards to discard until your hand is back to five.'
+        : 'The computer is trimming its hand back to five cards.'
+    case 'choose_reverse_color':
+      return phase.reverserId === 'human'
+        ? 'Your matching Drop Color reversed the attack. Pick the color the original attacker must drop.'
+        : 'A Drop Color counter reversed the attack.'
+    case 'await_reverse_blank':
+      return phase.attack.attackerId === 'human'
+        ? 'You can spend a Blank to cancel the reversed Drop Color, or accept it.'
+        : 'The original attacker gets one chance to Blank the reversal.'
+    case 'may_declare':
+      return phase.playerId === 'human'
+        ? 'Your hand scores. Declare it to end the round and collect the points, or pass.'
+        : 'A computer player has a scoring hand and may declare.'
+    case 'review_hands':
+      return 'Take a moment to read the revealed hand, then press Continue.'
+    case 'round_over':
+      return 'The scoring hand ends the round. Press Next round to reshuffle and deal again.'
+    case 'match_over':
+      return 'The first player to 5 total points wins the match.'
+    default:
+      return null
+  }
+}
 
 function formatTurnTime(totalSeconds: number) {
   const minutes = Math.floor(totalSeconds / 60)
@@ -36,16 +118,7 @@ function actionLabel(state: GameState, action: Action): string {
   const playerName = playerId ? nameOf(state, playerId) : 'Opponent'
 
   if (action.type === 'SELECT_CARD' || action.type === 'CONFIRM_ATTACK') {
-    const card = state.catalog[action.cardId]
-    if (!card) return `${playerName} made a move`
-    const label =
-      card.kind === 'number'
-        ? `${card.color} ${card.number}`
-        : card.kind
-            .split('-')
-            .map((part) => part[0]?.toUpperCase() + part.slice(1))
-            .join(' ')
-    return `${playerName} plays ${label}`
+    return `${playerName} plays ${cardLabel(state, action.cardId)}`
   }
 
   if (action.type === 'TAKE_DISCARD') return `${playerName} takes the discard`
@@ -80,12 +153,16 @@ function opponentSeatClass(index: number, total: number) {
 
 export function App() {
   const saved = useMemo(() => loadMatch(), [])
+  const initialPreferences = useMemo(() => loadPreferences(), [])
   const [menuCount, setMenuCount] = useState<1 | 2 | 3 | 4 | 5>(2)
   const [menuTest, setMenuTest] = useState(false)
   const [showStart, setShowStart] = useState(() => !saved || saved.phase.type === 'menu')
   const [state, setState] = useState<GameState>(() => saved ?? emptyMenuState())
   const [rulesOpen, setRulesOpen] = useState(false)
   const [tutorialOpen, setTutorialOpen] = useState(false)
+  const [tutorialPromptSeen, setTutorialPromptSeen] = useState(initialPreferences.tutorialPromptSeen)
+  const [firstVisitOpen, setFirstVisitOpen] = useState(!initialPreferences.tutorialPromptSeen)
+  const [beginnerMode, setBeginnerMode] = useState(initialPreferences.beginnerMode)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [shuffleTargets, setShuffleTargets] = useState<string[]>([])
   const [claimedDropIds, setClaimedDropIds] = useState<string[]>([])
@@ -94,24 +171,65 @@ export function App() {
   const [turnSeconds, setTurnSeconds] = useState(TURN_SECONDS)
   const [openingShuffle, setOpeningShuffle] = useState(false)
   const [moveNotice, setMoveNotice] = useState<string | null>(null)
+  const [attackSpotlight, setAttackSpotlight] = useState<AttackSpotlight | null>(null)
   const lock = useRef(false)
   const moveNoticeTimer = useRef<number | null>(null)
+  const attackTimer = useRef<number | null>(null)
+  const aiAttackTimer = useRef<number | null>(null)
+
+  const commitAction = (source: GameState, action: Action) => {
+    const next = apply(source, action)
+    setState(next)
+    saveMatch(next)
+    setShuffleTargets([])
+    setClaimedDropIds([])
+    setTrimIds([])
+  }
 
   const dispatch = (action: Action) => {
     if (lock.current) return
+    const presentation = attackPresentationFor(state, action)
+
+    if (presentation) {
+      lock.current = true
+      setAttackSpotlight(presentation)
+      if (attackTimer.current) window.clearTimeout(attackTimer.current)
+      attackTimer.current = window.setTimeout(() => {
+        commitAction(state, action)
+        setAttackSpotlight(null)
+        lock.current = false
+      }, beginnerMode ? 900 : 650)
+      return
+    }
+
     lock.current = true
     try {
-      const next = apply(state, action)
-      setState(next)
-      saveMatch(next)
-      setShuffleTargets([])
-      setClaimedDropIds([])
-      setTrimIds([])
+      commitAction(state, action)
     } finally {
       window.setTimeout(() => {
         lock.current = false
       }, 180)
     }
+  }
+
+  const updateBeginnerMode = (value: boolean) => {
+    setBeginnerMode(value)
+    savePreferences({ tutorialPromptSeen, beginnerMode: value })
+  }
+
+  const openTutorial = () => {
+    if (attackTimer.current) window.clearTimeout(attackTimer.current)
+    if (aiAttackTimer.current) window.clearTimeout(aiAttackTimer.current)
+    setAttackSpotlight(null)
+    lock.current = false
+    setTutorialOpen(true)
+  }
+
+  const dismissFirstVisit = (shouldOpenTutorial: boolean) => {
+    setFirstVisitOpen(false)
+    setTutorialPromptSeen(true)
+    savePreferences({ tutorialPromptSeen: true, beginnerMode })
+    if (shouldOpenTutorial) openTutorial()
   }
 
   const start = () => {
@@ -150,19 +268,39 @@ export function App() {
       try {
         const action = chooseAiAction(state)
         setMoveNotice(actionLabel(state, action))
-        const next = reduce(state, action)
-        setState(next)
-        saveMatch(next)
+        const presentation = attackPresentationFor(state, action)
+
+        const resolveMove = () => {
+          const next = reduce(state, action)
+          setState(next)
+          saveMatch(next)
+          setAttackSpotlight(null)
+        }
+
+        if (presentation) {
+          setAttackSpotlight(presentation)
+          if (aiAttackTimer.current) window.clearTimeout(aiAttackTimer.current)
+          aiAttackTimer.current = window.setTimeout(resolveMove, beginnerMode ? 900 : 650)
+        } else {
+          resolveMove()
+        }
 
         if (moveNoticeTimer.current) window.clearTimeout(moveNoticeTimer.current)
-        moveNoticeTimer.current = window.setTimeout(() => setMoveNotice(null), 1100)
+        moveNoticeTimer.current = window.setTimeout(
+          () => setMoveNotice(null),
+          beginnerMode ? 1800 : 1100,
+        )
       } catch {
         setMoveNotice(null)
+        setAttackSpotlight(null)
       }
-    }, 900)
+    }, beginnerMode ? 1500 : 900)
 
-    return () => window.clearTimeout(timer)
-  }, [activeActorId, openingShuffle, showStart, state, tutorialOpen])
+    return () => {
+      window.clearTimeout(timer)
+      if (aiAttackTimer.current) window.clearTimeout(aiAttackTimer.current)
+    }
+  }, [activeActorId, beginnerMode, openingShuffle, showStart, state, tutorialOpen])
 
   useEffect(() => {
     setTurnSeconds(TURN_SECONDS)
@@ -172,6 +310,7 @@ export function App() {
     if (
       showStart ||
       tutorialOpen ||
+      beginnerMode ||
       !activeActorId ||
       state.phase.type === 'menu' ||
       state.phase.type === 'round_over' ||
@@ -183,7 +322,7 @@ export function App() {
       setTurnSeconds((seconds) => Math.max(0, seconds - 1))
     }, 1000)
     return () => window.clearInterval(timer)
-  }, [activeActorId, showStart, state.phase.type, tutorialOpen])
+  }, [activeActorId, beginnerMode, showStart, state.phase.type, tutorialOpen])
 
   const humanTurn =
     actorId(state) === 'human' &&
@@ -203,7 +342,15 @@ export function App() {
       <header className="syh-top">
         <strong>SHOW YOUR HAND</strong>
         <nav>
-          <button type="button" onClick={() => setTutorialOpen(true)}>
+          <button
+            type="button"
+            className={beginnerMode ? 'is-mode-on' : ''}
+            aria-pressed={beginnerMode}
+            onClick={() => updateBeginnerMode(!beginnerMode)}
+          >
+            {beginnerMode ? 'Beginner on' : 'Beginner off'}
+          </button>
+          <button type="button" onClick={openTutorial}>
             Tutorial
           </button>
           <button type="button" onClick={() => setRulesOpen(true)}>
@@ -247,13 +394,21 @@ export function App() {
         </div>
       ) : null}
 
+      <FirstVisitPrompt
+        open={firstVisitOpen}
+        onTutorial={() => dismissFirstVisit(true)}
+        onSkip={() => dismissFirstVisit(false)}
+      />
+
       {showStart || state.phase.type === 'menu' ? (
         <StartScreen
           opponentCount={menuCount}
           testMode={menuTest}
+          beginnerMode={beginnerMode}
           hasSave={Boolean(saved && saved.phase.type !== 'menu')}
           onCount={setMenuCount}
           onTestMode={setMenuTest}
+          onBeginnerMode={updateBeginnerMode}
           onStart={start}
           onResume={() => {
             if (saved) {
@@ -262,11 +417,17 @@ export function App() {
             }
           }}
           onRules={() => setRulesOpen(true)}
-          onTutorial={() => setTutorialOpen(true)}
+          onTutorial={openTutorial}
         />
       ) : (
         <main className={`syh-table ${waiting ? 'is-locked' : ''}`}>
           <p className="syh-instruction">{instructionFor(state)}</p>
+          {beginnerMode && beginnerHelp(state) ? (
+            <p className="syh-beginner-help">
+              <b>Beginner tip</b>
+              <span>{beginnerHelp(state)}</span>
+            </p>
+          ) : null}
           {state.testMode ? (
             <p className="syh-count-line">
               Cards in play: {countInPlay(state)} / 70 · Draw {state.drawPile.length} · Discard{' '}
@@ -275,6 +436,16 @@ export function App() {
           ) : null}
 
           <div className="syh-board" data-player-count={state.players.length}>
+          {attackSpotlight ? (
+            <div className="syh-attack-spotlight" role="status" aria-live="polite">
+              <span>{attackSpotlight.actor} plays</span>
+              <img
+                src={state.catalog[attackSpotlight.cardId]?.art}
+                alt={attackSpotlight.label}
+              />
+              <strong>{attackSpotlight.label}</strong>
+            </div>
+          ) : null}
           <section className="syh-opponents">
             {opponents.map((player, index) => {
                 const reveal =
@@ -375,9 +546,13 @@ export function App() {
             <div className="syh-status">
               <span className="syh-clockwise">↻ Clockwise</span>
               <span>Turn: <b>{nameOf(state, currentPlayer(state).id)}</b></span>
-              <span className={`syh-turn-timer ${turnSeconds <= 15 ? 'is-low' : ''}`}>
-                ⏱ {formatTurnTime(turnSeconds)}
-              </span>
+              {beginnerMode ? (
+                <span className="syh-beginner-chip">BEGINNER · NO CLOCK</span>
+              ) : (
+                <span className={`syh-turn-timer ${turnSeconds <= 15 ? 'is-low' : ''}`}>
+                  ⏱ {formatTurnTime(turnSeconds)}
+                </span>
+              )}
             </div>
           </section>
 

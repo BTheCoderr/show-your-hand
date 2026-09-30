@@ -1927,3 +1927,321 @@ button:disabled {
     transition: none;
   }
 }
+
+
+/* First-play onboarding, Beginner Mode, and attack presentation */
+.syh-top nav button.is-mode-on {
+  border-color: rgba(48, 248, 40, 0.48);
+  color: #bff9bb;
+  background: rgba(48, 248, 40, 0.07);
+}
+
+.syh-mode-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  width: min(520px, 100%);
+  margin: 18px 0 8px;
+  padding: 13px 14px;
+  border: 1px solid rgba(248, 112, 0, 0.28);
+  border-radius: 14px;
+  background: rgba(248, 112, 0, 0.055);
+  font-family: 'DIN Condensed', 'Arial Narrow', sans-serif;
+}
+
+.syh-mode-card > div {
+  display: grid;
+  gap: 3px;
+}
+
+.syh-mode-card strong {
+  color: var(--ink);
+  letter-spacing: 0.03em;
+}
+
+.syh-mode-card span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.syh-mode-toggle {
+  min-width: 60px;
+  padding: 7px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+}
+
+.syh-mode-toggle.is-on {
+  border-color: rgba(48, 248, 40, 0.5);
+  background: rgba(48, 248, 40, 0.09);
+  color: #bff9bb;
+  box-shadow: 0 0 14px rgba(48, 248, 40, 0.12);
+}
+
+.syh-beginner-help {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 8px;
+  width: fit-content;
+  max-width: min(720px, 100%);
+  margin: -2px auto 12px;
+  padding: 8px 11px;
+  border: 1px solid rgba(48, 248, 40, 0.2);
+  border-radius: 12px;
+  background: rgba(48, 248, 40, 0.055);
+  color: #dce9da;
+  font-family: 'DIN Condensed', 'Arial Narrow', sans-serif;
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.syh-beginner-help b {
+  flex: 0 0 auto;
+  color: #bff9bb;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.syh-beginner-chip {
+  min-width: 116px;
+  padding: 2px 7px;
+  border: 1px solid rgba(48, 248, 40, 0.28);
+  border-radius: 999px;
+  background: rgba(48, 248, 40, 0.06);
+  color: #bff9bb;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.syh-welcome-modal {
+  z-index: 140;
+  background:
+    radial-gradient(circle at 50% 26%, rgba(248, 112, 0, 0.16), transparent 38%),
+    rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(10px);
+}
+
+.syh-welcome-card {
+  width: min(520px, 100%);
+  padding: 28px 24px;
+  border: 1px solid rgba(248, 112, 0, 0.46);
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(29, 22, 16, 0.99), rgba(12, 12, 12, 0.99));
+  box-shadow: 0 26px 68px rgba(0, 0, 0, 0.6);
+  text-align: center;
+}
+
+.syh-welcome-card h2 {
+  margin: 0 auto 10px;
+  max-width: 420px;
+  font-size: clamp(1.45rem, 5vw, 2.25rem);
+  letter-spacing: 0.05em;
+}
+
+.syh-welcome-card > p:not(.syh-kicker) {
+  max-width: 420px;
+  margin: 0 auto 18px;
+  color: var(--muted);
+  font-family: 'DIN Condensed', 'Arial Narrow', sans-serif;
+  line-height: 1.42;
+}
+
+.syh-welcome-card small {
+  display: block;
+  margin-top: 13px;
+  color: rgba(255, 255, 255, 0.46);
+  font-family: 'DIN Condensed', 'Arial Narrow', sans-serif;
+}
+
+.syh-welcome-actions {
+  display: flex;
+  justify-content: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.syh-welcome-cards {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 126px;
+  margin-bottom: 14px;
+}
+
+.syh-welcome-cards img {
+  width: 74px;
+  height: 104px;
+  margin-left: -25px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 7px;
+  object-fit: cover;
+  box-shadow: 0 13px 22px rgba(0, 0, 0, 0.38);
+}
+
+.syh-welcome-cards img:first-child {
+  margin-left: 0;
+  transform: rotate(-9deg) translateY(7px);
+}
+
+.syh-welcome-cards img:nth-child(2) {
+  position: relative;
+  z-index: 2;
+  transform: translateY(-6px);
+}
+
+.syh-welcome-cards img:nth-child(3) {
+  transform: rotate(9deg) translateY(7px);
+}
+
+@keyframes syh-attack-card-in {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.55) rotate(-8deg);
+  }
+  34% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.1) rotate(2deg);
+  }
+  78% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) rotate(0);
+  }
+  100% {
+    opacity: 0.98;
+    transform: translate(-50%, -50%) scale(1) rotate(0);
+  }
+}
+
+@keyframes syh-attack-ring {
+  0% { transform: scale(0.7); opacity: 0; }
+  38% { opacity: 0.72; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+
+.syh-attack-spotlight {
+  position: absolute;
+  z-index: 24;
+  top: 48%;
+  left: 50%;
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  width: 142px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  animation: syh-attack-card-in 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.syh-attack-spotlight::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 24px 8px 42px;
+  border: 2px solid rgba(248, 112, 0, 0.64);
+  border-radius: 50%;
+  box-shadow: 0 0 34px rgba(248, 112, 0, 0.38);
+  animation: syh-attack-ring 720ms ease-out both;
+}
+
+.syh-attack-spotlight img {
+  width: 92px;
+  height: 129px;
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  border-radius: 9px;
+  object-fit: cover;
+  box-shadow:
+    0 0 0 3px rgba(248, 112, 0, 0.48),
+    0 18px 34px rgba(0, 0, 0, 0.58);
+}
+
+.syh-attack-spotlight span,
+.syh-attack-spotlight strong {
+  max-width: 180px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(5, 5, 5, 0.88);
+  font-family: 'DIN Condensed', 'Arial Narrow', sans-serif;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.syh-attack-spotlight span {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.72rem;
+}
+
+.syh-attack-spotlight strong {
+  color: var(--orange);
+  font-size: 0.84rem;
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 620px) {
+  .syh-mode-card {
+    gap: 10px;
+    padding: 11px 12px;
+  }
+
+  .syh-mode-card span {
+    font-size: 0.75rem;
+  }
+
+  .syh-beginner-help {
+    gap: 5px;
+    margin-bottom: 9px;
+    padding: 6px 8px;
+    font-size: 0.74rem;
+  }
+
+  .syh-beginner-help b {
+    display: none;
+  }
+
+  .syh-beginner-chip {
+    min-width: 98px;
+    font-size: 0.58rem;
+  }
+
+  .syh-welcome-card {
+    padding: 22px 17px;
+  }
+
+  .syh-welcome-cards {
+    height: 108px;
+  }
+
+  .syh-welcome-cards img {
+    width: 62px;
+    height: 87px;
+  }
+
+  .syh-attack-spotlight {
+    top: 49%;
+    width: 116px;
+  }
+
+  .syh-attack-spotlight img {
+    width: 72px;
+    height: 101px;
+  }
+
+  .syh-attack-spotlight span {
+    font-size: 0.64rem;
+  }
+
+  .syh-attack-spotlight strong {
+    font-size: 0.74rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .syh-attack-spotlight,
+  .syh-attack-spotlight::before {
+    animation: none;
+  }
+}

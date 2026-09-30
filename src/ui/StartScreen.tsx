@@ -1,9 +1,11 @@
 type Props = {
   opponentCount: 1 | 2 | 3 | 4 | 5
   testMode: boolean
+  beginnerMode: boolean
   hasSave: boolean
   onCount: (count: 1 | 2 | 3 | 4 | 5) => void
   onTestMode: (value: boolean) => void
+  onBeginnerMode: (value: boolean) => void
   onStart: () => void
   onResume: () => void
   onRules: () => void
@@ -13,9 +15,11 @@ type Props = {
 export function StartScreen({
   opponentCount,
   testMode,
+  beginnerMode,
   hasSave,
   onCount,
   onTestMode,
+  onBeginnerMode,
   onStart,
   onResume,
   onRules,
@@ -43,6 +47,20 @@ export function StartScreen({
           ))}
         </div>
       </fieldset>
+      <div className="syh-mode-card">
+        <div>
+          <strong>Beginner Mode</strong>
+          <span>No turn clock · slower CPU moves · extra guidance</span>
+        </div>
+        <button
+          type="button"
+          className={`syh-mode-toggle ${beginnerMode ? 'is-on' : ''}`}
+          aria-pressed={beginnerMode}
+          onClick={() => onBeginnerMode(!beginnerMode)}
+        >
+          {beginnerMode ? 'On' : 'Off'}
+        </button>
+      </div>
       <label className="syh-check">
         <input
           type="checkbox"
