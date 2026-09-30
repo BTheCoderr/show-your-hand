@@ -175,6 +175,7 @@ export function App() {
   const lock = useRef(false)
   const moveNoticeTimer = useRef<number | null>(null)
   const attackTimer = useRef<number | null>(null)
+  const aiAttackTimer = useRef<number | null>(null)
 
   const commitAction = (source: GameState, action: Action) => {
     const next = apply(source, action)
@@ -216,11 +217,19 @@ export function App() {
     savePreferences({ tutorialPromptSeen, beginnerMode: value })
   }
 
-  const dismissFirstVisit = (openTutorial: boolean) => {
+  const openTutorial = () => {
+    if (attackTimer.current) window.clearTimeout(attackTimer.current)
+    if (aiAttackTimer.current) window.clearTimeout(aiAttackTimer.current)
+    setAttackSpotlight(null)
+    lock.current = false
+    setTutorialOpen(true)
+  }
+
+  const dismissFirstVisit = (shouldOpenTutorial: boolean) => {
     setFirstVisitOpen(false)
     setTutorialPromptSeen(true)
     savePreferences({ tutorialPromptSeen: true, beginnerMode })
-    if (openTutorial) setTutorialOpen(true)
+    if (shouldOpenTutorial) openTutorial()
   }
 
   const start = () => {
@@ -270,8 +279,8 @@ export function App() {
 
         if (presentation) {
           setAttackSpotlight(presentation)
-          if (attackTimer.current) window.clearTimeout(attackTimer.current)
-          attackTimer.current = window.setTimeout(resolveMove, beginnerMode ? 900 : 650)
+          if (aiAttackTimer.current) window.clearTimeout(aiAttackTimer.current)
+          aiAttackTimer.current = window.setTimeout(resolveMove, beginnerMode ? 900 : 650)
         } else {
           resolveMove()
         }
@@ -287,7 +296,10 @@ export function App() {
       }
     }, beginnerMode ? 1500 : 900)
 
-    return () => window.clearTimeout(timer)
+    return () => {
+      window.clearTimeout(timer)
+      if (aiAttackTimer.current) window.clearTimeout(aiAttackTimer.current)
+    }
   }, [activeActorId, beginnerMode, openingShuffle, showStart, state, tutorialOpen])
 
   useEffect(() => {
@@ -338,7 +350,7 @@ export function App() {
           >
             {beginnerMode ? 'Beginner on' : 'Beginner off'}
           </button>
-          <button type="button" onClick={() => setTutorialOpen(true)}>
+          <button type="button" onClick={openTutorial}>
             Tutorial
           </button>
           <button type="button" onClick={() => setRulesOpen(true)}>
@@ -405,7 +417,7 @@ export function App() {
             }
           }}
           onRules={() => setRulesOpen(true)}
-          onTutorial={() => setTutorialOpen(true)}
+          onTutorial={openTutorial}
         />
       ) : (
         <main className={`syh-table ${waiting ? 'is-locked' : ''}`}>
