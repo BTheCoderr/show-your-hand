@@ -22,10 +22,13 @@ The goal of the digital version is not just to reproduce the rules. It is built 
   - 5 Skip
   - 5 Shuffle
 - 1–5 CPU opponents
-- Private online 1v1 rooms with six-character invite codes
-- Two-device turn synchronization through Supabase RPCs
-- Reconnectable online room sessions stored locally on each device
-- Supabase-backed **online 1v1 beta** with private room codes and reconnectable room sessions
+- Private online 1v1 rooms with six-character room codes
+- Shareable `/join/CODE` invite links and QR codes
+- READY state before the host can start
+- Reconnectable room sessions with live connection presence
+- One-tap rematches that keep the same table and room code
+- Server-authoritative online moves through a Supabase Edge Function
+- Per-player hidden-hand projection so browsers do not receive an opponent's unrevealed cards or draw order
 - First-to-5 match scoring
 - Full attack and defense resolution
 - Show Your Hand reveal flow
@@ -79,17 +82,20 @@ The browser version uses explicit rule-resolution defaults so every interaction 
 
 ## Online multiplayer architecture
 
-The 1v1 beta uses a dedicated Supabase project for room and match coordination.
+The 1v1 beta uses a dedicated Supabase project for room coordination and an Edge Function for authoritative game actions.
 
-- Hosts create a private six-character room code.
-- A second device joins that room as Player 2.
-- Only the active player's room token can submit the next synchronized game state.
+- Hosts create a private six-character room code plus a shareable join link and QR code.
+- Both players explicitly ready up before the host can start.
+- The server creates the shuffled match state; the host no longer supplies the deck.
+- During play, browsers send **actions**, not replacement game states.
+- The Edge Function verifies the room token, active player, state version, and game rule before committing the next state.
 - State versions reject stale writes when two devices race.
-- Room and player tables have RLS enabled with direct browser table access revoked.
-- The browser only calls narrow `SECURITY DEFINER` RPC functions for create, join, read, start, submit, and leave operations.
-- The UI polls the room during the beta so both phones stay synchronized without requiring accounts.
+- Each room read is projected for the requesting player: their own hand remains visible, legally revealed hands remain visible, opponent hidden hands are replaced with placeholders, the draw order is replaced with placeholders, and the RNG state is removed.
+- Direct browser table access remains revoked under RLS. Public access is limited to capability-token room RPCs for create/join/read/ready/rematch/leave, while gameplay mutation happens server-side.
+- Each device keeps its room token locally so refresh/reconnect returns it to the same seat.
+- Completed games can rematch in the same room; both players opting in resets the table and the host automatically starts the new deal.
 
-This is currently a trusted-playtest multiplayer path. The synchronized game state still contains hidden-card information, so fully server-authoritative move validation and hidden-hand projection remain future hardening work before competitive public multiplayer.
+The current beta still uses short-interval room polling rather than a persistent realtime channel, but hidden cards, draw order, and rule execution no longer need to be trusted to the opponent's browser.
 
 ## AI behavior
 
@@ -99,11 +105,11 @@ Their turns are intentionally paced in the UI so players can follow each action 
 
 ## Online multiplayer beta
 
-The online path is intentionally separate from solo play. A host creates a six-character room code, a second player joins from another device, and the host starts a two-player match. Each browser keeps only its room token locally and polls the shared room for new state, so a refresh can reconnect to an active table.
+The online path is intentionally separate from solo play. A host creates a room, shares the code/link/QR, both players ready up, and the host starts the match. The same room supports reconnects and rematches without exchanging a new code.
 
-Supabase tables have RLS enabled and direct `anon` / `authenticated` table access is revoked. The browser can only use the narrowly scoped room RPCs for create, join, read, start, submit, and leave operations. State updates use a monotonically increasing version so stale clients cannot overwrite a newer move.
+The authoritative game reducer is deployed as `syh-game-action` in Supabase Edge Functions. Online clients send an action and their room capability token; the server applies the same game rules used by solo play, commits the canonical state with optimistic versioning, and returns only the caller's projected view.
 
-This is still a **beta synchronization model** rather than a hardened competitive anti-cheat architecture: the shared game state currently reaches both room members so each client can run the existing TypeScript game engine. Moving rule execution and hidden-hand filtering fully server-side is the next security step before ranked or prize-based online play.
+This is substantially stronger than the original synchronized-state beta. It is still a beta product: room tokens are capability credentials rather than full user accounts, and polling is used for synchronization, so public matchmaking, rankings, moderation, and abuse controls remain future work.
 
 Local development uses:
 
@@ -119,7 +125,8 @@ Then set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. Production val
 - TypeScript
 - Vite
 - Vitest
-- Supabase Postgres + RPC room backend
+- Supabase Postgres + capability-token room RPCs
+- Supabase Edge Functions for authoritative online gameplay
 - CSS animations and touch/pointer gestures
 - Browser local storage
 - Netlify
@@ -153,7 +160,7 @@ Netlify builds the app with:
 
 The browser prototype is being expanded toward a more complete multiplayer card-game experience while keeping the tabletop rules as the source of truth.
 
-Current focus areas include online 1v1 playtesting, server-authoritative multiplayer hardening, animation quality, clearer opponent feedback, tutorial/onboarding quality, and mobile table layout.
+Current focus areas include two-device 1v1 playtesting, realtime transport, multiplayer abuse/rate controls, animation quality, clearer opponent feedback, tutorial/onboarding quality, and mobile table layout.
 
 ---
 
