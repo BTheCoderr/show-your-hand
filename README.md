@@ -1,55 +1,64 @@
 # SHOW YOUR HAND
 
-**DROP. PICK UP. ATTACK. DEFEND. BUT NEVER SHOW YOUR HAND.**
+> **DROP. PICK UP. ATTACK. DEFEND. BUT NEVER SHOW YOUR HAND.**
 
-SHOW YOUR HAND is an original competitive card game being developed as both a physical tabletop game and a polished browser experience.
+[![Build Netlify Artifact](https://github.com/BTheCoderr/show-your-hand/actions/workflows/build-netlify-artifact.yml/badge.svg)](https://github.com/BTheCoderr/show-your-hand/actions/workflows/build-netlify-artifact.yml)
 
-**Live demo:** https://show-your-hand.netlify.app
+**Beta 0.1.0** · React + TypeScript · Supabase · Netlify
 
-## What this build is
+SHOW YOUR HAND is an original competitive card game being developed as both a physical tabletop game and a polished browser game.
 
-The current web build supports **solo play against 1–5 computer opponents** plus a **private online 1v1 beta** backed by Supabase. It includes the full 70-card deck, scoring system, attack/defense interactions, round flow, local persistence, and room-based two-device state sync.
+**Play:** https://show-your-hand.netlify.app
 
-The goal of the digital version is not just to reproduce the rules. It is built to feel like a real card table: visible turn flow, touch-first interactions, readable opponent actions, and enough feedback that players can understand what happened without digging through a log.
+## Product snapshot
 
-## Current features
+The browser edition now has two distinct play paths:
 
-- Full **70-card deck**
-  - 40 numbered cards
-  - 10 Blank
-  - 5 Show Your Hand
-  - 5 Drop Color
-  - 5 Skip
-  - 5 Shuffle
-- 1–5 CPU opponents
-- Private online 1v1 rooms with six-character invite codes
-- Two-device turn synchronization through Supabase RPCs
-- Reconnectable online room sessions stored locally on each device
-- Supabase-backed **online 1v1 beta** with private room codes and reconnectable room sessions
-- First-to-5 match scoring
-- Full attack and defense resolution
-- Show Your Hand reveal flow
-- Drop Color selection and dropped-card claiming
-- Skip and counter behavior
-- One- or two-player Shuffle targeting
-- Discard-pile pickup for the next eligible player
-- Hand refill and trimming back to five cards
-- Scoring-hand declaration flow
-- Swipe-up card play and swipe-down discard pickup
-- Active-turn glow and turn timer
-- First-visit onboarding that offers the interactive 2-minute How to Play tutorial
-- Beginner Mode with no turn clock, slower CPU pacing, and contextual coaching
-- Interactive 2-minute How to Play tutorial with practice steps
-- **Animated opening-deck shuffle before the first deal**
-- **Paced CPU turns so opponent moves are visible instead of happening instantly**
-- **On-screen move notices showing what opponents just did**
-- **Center-table attack-card spotlight before special attacks resolve**
-- Action history
-- Rules panel
-- Local match persistence
-- Online room state versioning to reject stale simultaneous updates
-- Test mode for validating card conservation and game state
-- Reduced-motion support
+| Area | Current beta |
+| --- | --- |
+| Solo | 1 human vs. 1–5 CPU opponents |
+| Online | Private server-authoritative 1v1 |
+| Onboarding | Interactive 2-minute tutorial + Beginner Mode |
+| Match flow | First to 5 points, round winner presentation, rematch |
+| Mobile | Touch gestures, responsive table, installable PWA |
+| Persistence | Solo saves, online reconnect, local no-account stats |
+| Product shell | About, Privacy, Beta Terms, Feedback |
+| Accessibility | Reduced-motion support, readable action feedback |
+
+## Why this project is more than a card-game UI
+
+SHOW YOUR HAND is built as a stateful multiplayer product, not a static game demo. The current beta includes:
+
+- a deterministic 70-card rules engine
+- touch-first card interactions
+- paced CPU decision presentation
+- hidden-information multiplayer
+- versioned online state
+- server-side action validation
+- private room credentials
+- reconnectable player seats
+- ready/rematch state machines
+- player and match statistics
+- PWA/offline solo support
+- product/legal/feedback pages
+- automated engine tests and production builds
+
+## The deck
+
+**70 cards total**
+
+- 40 numbered cards — Green, Orange, Yellow, Red 1–5 × 2
+- 10 Blank
+- 5 Show Your Hand
+- 5 Drop Color
+- 5 Skip
+- 5 Shuffle
+
+## Core turn loop
+
+**DROP → RESOLVE → PICK UP**
+
+Players work back toward five cards while building a scoring hand and disrupting opponents.
 
 ## Scoring
 
@@ -62,98 +71,208 @@ The goal of the digital version is not just to reproduce the rules. It is built 
 
 First player to **5 points** wins the match.
 
+## Player experience
+
+The current UI includes:
+
+- opening deck-shuffle animation
+- active-turn glow and move notices
+- center-table special-card presentation
+- swipe-up card play
+- swipe-down eligible discard pickup
+- visible defense/reversal flows
+- enlarged winning-hand reveal
+- “Why this hand won” explanation
+- prominent +1 / +2 / +3 / +4 scoring moment
+- sound + haptic feedback toggle
+- no-clock Beginner Mode
+- action history
+- full rules panel
+- interactive tutorial
+- local player statistics
+
+## Online 1v1 beta
+
+A host can create a private room and invite Player 2 with:
+
+- a six-character room code
+- a shareable `/join/CODE` link
+- a scannable QR code
+
+Before the match, both players appear in a real pre-game room with connection state, READY controls, host-controlled Beginner Mode, and a visible Standard ruleset.
+
+During play:
+
+- each browser keeps only its private room token locally
+- refreshes resume the same seat
+- connection heartbeats expose reconnect state
+- a disconnected opponent gets a visible grace-window message
+- stale simultaneous writes are rejected
+- completed matches keep player stats
+- both players can request a rematch without creating another room
+
+## Multiplayer security model
+
+Online gameplay is now **server-authoritative**.
+
+The browser does **not** submit a replacement game state. It submits the player's intended action to the `show-your-hand-game` Supabase Edge Function. The server loads the canonical state, verifies the room token and active actor, runs the same TypeScript rules engine, commits the new version, updates stats, and returns only that player's projected view.
+
+```mermaid
+flowchart LR
+    A[Player browser] -->|room token + action| B[Supabase Edge Function]
+    B --> C[Canonical game state]
+    C --> D[TypeScript rules engine]
+    D --> E[Versioned state commit]
+    E --> F[Hidden-state projection]
+    F --> A
+    E --> G[Opponent polling]
+    G --> H[Opponent projected view]
+```
+
+### Hidden information
+
+For online rooms:
+
+- your own hand is visible to your browser
+- opponent hands are replaced with opaque card placeholders
+- future draw order is replaced with placeholders
+- RNG state is removed from projected state
+- Show Your Hand temporarily exposes the legally revealed hand
+- round/match winner projection exposes the scoring hand so both players can see why it won
+
+Direct `anon` / `authenticated` table access is revoked on the game tables. Legacy client-side state-submission RPCs are no longer executable by public browser roles.
+
+## Match results and stats
+
+The beta tracks match-level and player-level information without requiring accounts.
+
+Online room statistics include:
+
+- rounds won
+- attacks played
+- defenses played
+- Blank defenses
+- specials played
+- match wins
+
+The browser also keeps lightweight local stats for the current device.
+
+## Installable web app
+
+SHOW YOUR HAND includes:
+
+- web app manifest
+- standalone display metadata
+- Apple mobile web app metadata
+- service-worker caching
+- offline fallback for previously loaded solo play assets
+- runtime caching for same-origin game assets
+
+This makes the browser beta usable like an app before a native App Store release.
+
+## Product pages
+
+The app includes:
+
+- `/about`
+- `/privacy`
+- `/terms`
+- `/feedback`
+
+Feedback posts through a Netlify form so playtest reports can be collected without adding another backend.
+
 ## Digital playtest rules
 
-The browser version uses explicit rule-resolution defaults so every interaction is deterministic and testable.
+The digital implementation keeps rule resolution deterministic:
 
-- Show Your Hand reveals the target's hand until the current turn ends.
+- Show Your Hand reveals the target until the current turn ends.
 - Blank cancels supported attacks but does not reverse them.
-- Matching attack cards can counter supported attacks.
-- Targeted defenders resolve clockwise from the attacker.
-- Two-target Shuffle collects all responses before any affected hand changes.
-- Spent attack and defense cards are excluded from hands returned by Shuffle.
-- Effects finish and hands refill to five before declarations are checked.
-- Declaration priority starts with the active player, then continues clockwise.
-- CPU players use the same declaration windows as the human player.
-- The discard pile is recycled when the draw pile is exhausted so all 70 cards remain in play.
+- Matching supported attack cards can counter.
+- Targeted defenders resolve clockwise.
+- Two-target Shuffle collects responses before hand replacement.
+- Spent attack/defense cards stay out of returned Shuffle hands.
+- Effects finish and players refill before declaration windows.
+- Declaration priority starts with the active player and continues clockwise.
+- The discard pile recycles when the draw pile is exhausted.
 
-## Online multiplayer architecture
+## Tech stack
 
-The 1v1 beta uses a dedicated Supabase project for room and match coordination.
+- **Frontend:** React 18, TypeScript, Vite
+- **Game engine:** deterministic TypeScript reducer
+- **Backend:** Supabase Postgres, RPCs, Edge Functions
+- **Security:** RLS, revoked direct table access, private room tokens, projected hidden state
+- **Testing:** Vitest + automated build workflow
+- **Hosting:** Netlify
+- **Persistence:** localStorage + Supabase room state
+- **PWA:** manifest + service worker
 
-- Hosts create a private six-character room code.
-- A second device joins that room as Player 2.
-- Only the active player's room token can submit the next synchronized game state.
-- State versions reject stale writes when two devices race.
-- Room and player tables have RLS enabled with direct browser table access revoked.
-- The browser only calls narrow `SECURITY DEFINER` RPC functions for create, join, read, start, submit, and leave operations.
-- The UI polls the room during the beta so both phones stay synchronized without requiring accounts.
+## Repository structure
 
-This is currently a trusted-playtest multiplayer path. The synchronized game state still contains hidden-card information, so fully server-authoritative move validation and hidden-hand projection remain future hardening work before competitive public multiplayer.
+```text
+src/
+  game/          deterministic rules engine, scoring, persistence, feedback, stats
+  online/        browser room client
+  ui/            table, tutorial, lobby, product pages
+supabase/
+  migrations/    database schema + room security
+  functions/
+    show-your-hand-game/
+                  authoritative online game server
+public/
+  cards/         card art
+  manifest.webmanifest
+  sw.js
+```
 
-## AI behavior
+## Quality checks
 
-Computer players operate from a restricted public view of the match. They can use their own hand, scores, the discard pile, and hands that have been legally revealed, but they do not get access to hidden opponent hands or the future draw order.
+The rules engine has automated coverage for deck construction, card conservation, scoring, special-card resolution, declaration flow, and complete playthrough behavior.
 
-Their turns are intentionally paced in the UI so players can follow each action instead of seeing multiple CPU decisions collapse into one instant state change.
+```bash
+npm install
+npm test
+npm run build
+```
 
-## Online multiplayer beta
-
-The online path is intentionally separate from solo play. A host creates a six-character room code, a second player joins from another device, and the host starts a two-player match. Each browser keeps only its room token locally and polls the shared room for new state, so a refresh can reconnect to an active table.
-
-Supabase tables have RLS enabled and direct `anon` / `authenticated` table access is revoked. The browser can only use the narrowly scoped room RPCs for create, join, read, start, submit, and leave operations. State updates use a monotonically increasing version so stale clients cannot overwrite a newer move.
-
-This is still a **beta synchronization model** rather than a hardened competitive anti-cheat architecture: the shared game state currently reaches both room members so each client can run the existing TypeScript game engine. Moving rule execution and hidden-hand filtering fully server-side is the next security step before ranked or prize-based online play.
-
-Local development uses:
+For local online play:
 
 ```bash
 cp .env.example .env.local
 ```
 
-Then set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. Production values are configured in Netlify.
-
-## Tech stack
-
-- React
-- TypeScript
-- Vite
-- Vitest
-- Supabase Postgres + RPC room backend
-- CSS animations and touch/pointer gestures
-- Browser local storage
-- Netlify
-
-## Quality checks
-
-The game engine is covered by automated tests for deck construction, scoring, special-card resolution, turn flow, card conservation, and full playthrough behavior.
-
-Run the project locally:
-
-```bash
-npm install
-npm test
-npm run dev
-```
-
-Production build:
-
-```bash
-npm run build
-```
+Then set the browser-safe Supabase URL and publishable key.
 
 ## Deployment
 
-Netlify builds the app with:
+Netlify:
 
 - Build command: `npm run build`
 - Publish directory: `dist`
+- Node: 24
 
-## Project direction
+Supabase migrations and the authoritative Edge Function are tracked in this repository.
 
-The browser prototype is being expanded toward a more complete multiplayer card-game experience while keeping the tabletop rules as the source of truth.
+## Roadmap
 
-Current focus areas include online 1v1 playtesting, server-authoritative multiplayer hardening, animation quality, clearer opponent feedback, tutorial/onboarding quality, and mobile table layout.
+### Beta hardening
+- real-device multiplayer playtesting
+- reconnect edge cases
+- mobile install/onboarding refinement
+- sound tuning
+- richer post-match recap
+
+### Next game modes
+- 2–6 real players
+- 2v2 with teammate seated across
+- Hardcore Mode
+- public/private tables
+- matchmaking
+
+### Later
+- optional accounts
+- cross-device player profiles
+- rankings/seasonal play
+- native mobile packaging if the web beta proves the loop
 
 ---
 
