@@ -173,8 +173,12 @@ export function App() {
   const restoredOnlineSession = useMemo(() => loadOnlineSession(), [])
   const [menuCount, setMenuCount] = useState<1 | 2 | 3 | 4 | 5>(2)
   const [menuTest, setMenuTest] = useState(false)
-  const [showStart, setShowStart] = useState(() => !saved || saved.phase.type === 'menu')
-  const [state, setState] = useState<GameState>(() => saved ?? emptyMenuState())
+  const [showStart, setShowStart] = useState(
+    () => Boolean(restoredOnlineSession) || !saved || saved.phase.type === 'menu',
+  )
+  const [state, setState] = useState<GameState>(() =>
+    restoredOnlineSession ? emptyMenuState() : saved ?? emptyMenuState(),
+  )
   const [rulesOpen, setRulesOpen] = useState(false)
   const [tutorialOpen, setTutorialOpen] = useState(false)
   const [tutorialPromptSeen, setTutorialPromptSeen] = useState(initialPreferences.tutorialPromptSeen)
