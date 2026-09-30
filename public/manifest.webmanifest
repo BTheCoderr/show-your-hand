@@ -1,0 +1,19 @@
+{
+  "name": "SHOW YOUR HAND",
+  "short_name": "SYH",
+  "description": "DROP. PICK UP. ATTACK. DEFEND. BUT NEVER SHOW YOUR HAND.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/cards/show-your-hand.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
