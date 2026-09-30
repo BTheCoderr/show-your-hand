@@ -45,6 +45,7 @@ import type { Action, Color, GameState } from './game/types'
 import { COLORS } from './game/types'
 import { CardView } from './ui/CardView'
 import { FirstVisitPrompt } from './ui/FirstVisitPrompt'
+import { InstallHelp } from './ui/InstallHelp'
 import { OnlineLobby } from './ui/OnlineLobby'
 import { RulesPanel } from './ui/RulesPanel'
 import { StartScreen } from './ui/StartScreen'
@@ -52,6 +53,11 @@ import { Tutorial } from './ui/Tutorial'
 
 const TURN_SECONDS = 120
 const APP_VERSION = 'Beta 0.1.0'
+
+type InstallPromptEvent = Event & {
+  prompt: () => Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
+}
 
 type AttackSpotlight = {
   cardId: string
@@ -191,6 +197,12 @@ export function App() {
     () => (typeof window === 'undefined' ? null : joinCodeFromPath(window.location.pathname)),
     [],
   )
+  const tutorialRequested = useMemo(
+    () =>
+      typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.search).get('tutorial') === '1',
+    [],
+  )
   const [menuCount, setMenuCount] = useState<1 | 2 | 3 | 4 | 5>(2)
   const [menuTest, setMenuTest] = useState(false)
   const [showStart, setShowStart] = useState(
@@ -200,10 +212,17 @@ export function App() {
     restoredOnlineSession ? emptyMenuState() : saved ?? emptyMenuState(),
   )
   const [rulesOpen, setRulesOpen] = useState(false)
-  const [tutorialOpen, setTutorialOpen] = useState(false)
+  const [tutorialOpen, setTutorialOpen] = useState(tutorialRequested)
+  const [installHelpOpen, setInstallHelpOpen] = useState(false)
+  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null)
+  const [installed, setInstalled] = useState(() => {
+    if (typeof window === 'undefined') return false
+    const nav = navigator as Navigator & { standalone?: boolean }
+    return window.matchMedia('(display-mode: standalone)').matches || nav.standalone === true
+  })
   const [tutorialPromptSeen, setTutorialPromptSeen] = useState(initialPreferences.tutorialPromptSeen)
   const [firstVisitOpen, setFirstVisitOpen] = useState(
-    !initialPreferences.tutorialPromptSeen && !invitedCode,
+    !initialPreferences.tutorialPromptSeen && !invitedCode && !tutorialRequested,
   )
   const [beginnerMode, setBeginnerMode] = useState(initialPreferences.beginnerMode)
   const [feedbackEnabled, setFeedbackEnabled] = useState(() => loadFeedbackEnabled())
@@ -242,6 +261,37 @@ export function App() {
         60 - Math.floor((Date.now() - new Date(onlineOpponent.lastSeenAt).getTime()) / 1000),
       )
     : 60
+
+  useEffect(() => {
+    const captureInstallPrompt = (event: Event) => {
+      event.preventDefault()
+      setInstallPrompt(event as InstallPromptEvent)
+    }
+    const markInstalled = () => {
+      setInstalled(true)
+      setInstallPrompt(null)
+      setInstallHelpOpen(false)
+    }
+
+    window.addEventListener('beforeinstallprompt', captureInstallPrompt)
+    window.addEventListener('appinstalled', markInstalled)
+    return () => {
+      window.removeEventListener('beforeinstallprompt', captureInstallPrompt)
+      window.removeEventListener('appinstalled', markInstalled)
+    }
+  }, [])
+
+  const handleInstall = async () => {
+    if (!installPrompt) {
+      setInstallHelpOpen(true)
+      return
+    }
+
+    await installPrompt.prompt()
+    const choice = await installPrompt.userChoice
+    if (choice.outcome === 'accepted') setInstalled(true)
+    setInstallPrompt(null)
+  }
 
   const updateOnlineSession = (session: OnlineSession | null) => {
     setOnlineSession(session)
@@ -790,6 +840,10 @@ export function App() {
             setOnlineError(null)
             setOnlineLobbyOpen(true)
           }}
+          onInstall={() => {
+            void handleInstall()
+          }}
+          installed={installed}
         />
       ) : (
         <main className={`syh-table ${waiting ? 'is-locked' : ''}`}>
@@ -1291,6 +1345,7 @@ export function App() {
         }}
       />
 
+      <InstallHelp open={installHelpOpen} onClose={() => setInstallHelpOpen(false)} />
       <Tutorial open={tutorialOpen} onClose={() => setTutorialOpen(false)} />
       <RulesPanel open={rulesOpen} onClose={() => setRulesOpen(false)} />
     </div>
