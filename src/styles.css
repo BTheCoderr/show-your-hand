@@ -3140,3 +3140,186 @@ button:disabled {
     animation: none;
   }
 }
+
+/* Official online room flow */
+.syh-online-invite-banner {
+  display: grid;
+  gap: 3px;
+  margin: 0 0 16px;
+  padding: 11px 13px;
+  border: 1px solid rgba(48, 248, 40, 0.28);
+  border-radius: 12px;
+  background: rgba(48, 248, 40, 0.055);
+  font-family: 'DIN Condensed', 'Arial Narrow', sans-serif;
+}
+
+.syh-online-invite-banner b {
+  color: #bff9bb;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.syh-online-invite-banner span {
+  color: var(--muted);
+}
+
+.syh-online-choice article.is-invite-join {
+  grid-column: 1 / -1;
+  width: min(430px, 100%);
+  justify-self: center;
+}
+
+.syh-invite-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.syh-invite-copy {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.syh-invite-copy > span {
+  color: var(--muted);
+  font-family: 'DIN Condensed', 'Arial Narrow', sans-serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+}
+
+.syh-invite-copy code {
+  display: block;
+  overflow: hidden;
+  color: #dce9da;
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.syh-invite-copy > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.syh-room-qr {
+  width: 112px;
+  height: 112px;
+  border: 6px solid #fff;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.syh-online-players > div:not(.syh-online-waiting) {
+  grid-template-columns: 58px 10px minmax(0, 1fr) auto auto auto;
+}
+
+.syh-connection-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.syh-connection-dot.is-connected {
+  background: var(--green);
+  box-shadow: 0 0 9px rgba(48, 248, 40, 0.45);
+}
+
+.syh-connection-dot.is-reconnecting {
+  background: var(--orange);
+  box-shadow: 0 0 9px rgba(248, 112, 0, 0.35);
+}
+
+.syh-online-presence {
+  color: var(--muted);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.syh-ready-badge {
+  padding: 2px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.64rem;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.syh-ready-badge.is-ready {
+  border-color: rgba(48, 248, 40, 0.35);
+  background: rgba(48, 248, 40, 0.07);
+  color: #bff9bb;
+}
+
+.syh-ready-button {
+  width: 100%;
+  border-color: rgba(48, 248, 40, 0.32);
+}
+
+.syh-ready-button.is-ready {
+  border-color: rgba(48, 248, 40, 0.62);
+  background: rgba(48, 248, 40, 0.1);
+  color: #bff9bb;
+}
+
+.syh-match-over-card {
+  width: min(440px, calc(100vw - 28px));
+}
+
+.syh-rematch-status {
+  color: var(--muted);
+  font-family: 'DIN Condensed', 'Arial Narrow', sans-serif;
+  line-height: 1.4;
+}
+
+.syh-match-over-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+@media (max-width: 620px) {
+  .syh-invite-tools {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .syh-invite-copy {
+    width: 100%;
+  }
+
+  .syh-room-qr {
+    width: 132px;
+    height: 132px;
+  }
+
+  .syh-online-players > div:not(.syh-online-waiting) {
+    grid-template-columns: 50px 8px minmax(0, 1fr) auto;
+    gap: 6px;
+  }
+
+  .syh-online-presence {
+    grid-column: 3;
+    font-size: 0.62rem;
+  }
+
+  .syh-ready-badge {
+    grid-column: 4;
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
+
+  .syh-online-players em {
+    display: none;
+  }
+}
