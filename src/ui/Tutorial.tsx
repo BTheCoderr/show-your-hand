@@ -74,12 +74,14 @@ export function Tutorial({ open, onClose }: Props) {
 
   if (!open) return null
 
+  const canContinue = step === 0 || step === 7 || practiceDone
+
   const next = () => {
     if (step >= 7) {
       onClose()
       return
     }
-    setStep((current) => current + 1)
+    setStep((current) => Math.min(7, current + 1))
   }
 
   const previous = () => setStep((current) => Math.max(0, current - 1))
@@ -338,14 +340,24 @@ export function Tutorial({ open, onClose }: Props) {
             Back
           </button>
           <span>{step + 1} / 8</span>
-          <button
-            type="button"
-            className="syh-primary"
-            onClick={next}
-            disabled={!practiceDone}
-          >
-            {step === 7 ? 'Finish tutorial' : 'Next'}
-          </button>
+          <div className="syh-tutorial-next-wrap">
+            {!canContinue ? (
+              <span className="syh-tutorial-requirement">Try the highlighted action first — or skip this step.</span>
+            ) : null}
+            <button
+              type="button"
+              className="syh-primary syh-tutorial-next"
+              onClick={next}
+              aria-describedby={!canContinue ? 'tutorial-step-help' : undefined}
+            >
+              {step === 7 ? 'Finish tutorial' : canContinue ? 'Next' : 'Skip step'}
+            </button>
+            {!canContinue ? (
+              <span id="tutorial-step-help" className="sr-only">
+                The practice action is optional. This button skips to the next tutorial step.
+              </span>
+            ) : null}
+          </div>
         </footer>
       </section>
     </div>
