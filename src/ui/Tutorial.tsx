@@ -47,6 +47,10 @@ const SCORE_ROWS = [
   ['Same-color 1–5', '4 points'],
 ]
 
+export function tutorialCanContinue(step: number, practiceDone: boolean): boolean {
+  return step === 0 || step === 7 || practiceDone
+}
+
 export function Tutorial({ open, onClose }: Props) {
   const [step, setStep] = useState(0)
   const [practiceDone, setPracticeDone] = useState(false)
@@ -74,7 +78,7 @@ export function Tutorial({ open, onClose }: Props) {
 
   if (!open) return null
 
-  const canContinue = step === 0 || step === 7 || practiceDone
+  const canContinue = tutorialCanContinue(step, practiceDone)
 
   const next = () => {
     if (step >= 7) {
