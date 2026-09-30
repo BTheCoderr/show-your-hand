@@ -542,6 +542,35 @@ export function App() {
     }
   }
 
+  const findNewOpponent = async () => {
+    if (!onlineSession) return
+    const currentName =
+      onlineRoom?.players.find((player) => player.gamePlayerId === onlineSession.gamePlayerId)
+        ?.displayName ?? 'Player'
+
+    setOnlineBusy(true)
+    setOnlineError(null)
+    try {
+      try {
+        await leaveRoom(onlineSession)
+      } catch {
+        // A finished/expired room should not block creating a fresh table.
+      }
+
+      const session = await createRoom(currentName)
+      updateOnlineSession(session)
+      const room = await getRoom(session)
+      setOnlineRoom(room)
+      setState(emptyMenuState(false))
+      setShowStart(true)
+      setOnlineLobbyOpen(true)
+    } catch (error) {
+      setOnlineError(error instanceof Error ? error.message : String(error))
+    } finally {
+      setOnlineBusy(false)
+    }
+  }
+
   const leaveOnlineMatch = async () => {
     const session = onlineSession
     setOnlineBusy(true)
@@ -1339,6 +1368,9 @@ export function App() {
         }}
         onRematch={(ready) => {
           void updateRematch(ready)
+        }}
+        onNewOpponent={() => {
+          void findNewOpponent()
         }}
         onLeave={() => {
           void leaveOnlineMatch()
