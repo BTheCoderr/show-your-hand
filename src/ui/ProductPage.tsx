@@ -127,7 +127,7 @@ export function ProductPage({ path }: { path: ProductPath }) {
     <main className="syh-product-page">
       <header>
         <a href="/" className="syh-product-back">← Back to game</a>
-        <span>Beta 0.1.1</span>
+        <span>Beta 0.1.2</span>
       </header>
       <article>
         <p className="syh-kicker">{content.kicker}</p>
@@ -166,7 +166,7 @@ function FeedbackPage() {
     <main className="syh-product-page">
       <header>
         <a href="/" className="syh-product-back">← Back to game</a>
-        <span>Beta 0.1.1</span>
+        <span>Beta 0.1.2</span>
       </header>
       <article>
         <p className="syh-kicker">Playtest feedback</p>
