@@ -35,7 +35,9 @@ export type OnlineRoomPlayer = {
   joinedAt: string
   lastSeenAt: string
   connected: boolean
+  disconnectGraceSeconds: number
   stats: OnlinePlayerStats
+  matchStats: OnlinePlayerStats
 }
 
 export type OnlineRoom = {
