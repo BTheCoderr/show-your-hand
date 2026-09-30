@@ -679,7 +679,7 @@ export function actorId(state: GameState): PlayerId | null {
     case 'may_declare':
       return state.phase.playerId
     case 'review_hands':
-      return state.players.find((player) => player.isHuman)?.id ?? currentPlayer(state).id
+      return currentPlayer(state).id
     default:
       return null
   }
@@ -698,19 +698,20 @@ export function canDeclare(state: GameState, playerId: PlayerId): boolean {
   return false
 }
 
-export function instructionFor(state: GameState): string {
+export function instructionFor(state: GameState, viewerId?: PlayerId): string {
   const phase = state.phase
   switch (phase.type) {
     case 'menu':
       return 'Choose how many computer opponents to face, then start the match.'
     case 'choose_action': {
-      const you = currentPlayer(state)
-      if (you.isHuman) {
-        return canDeclare(state, you.id)
+      const active = currentPlayer(state)
+      const viewerTurn = viewerId ? active.id === viewerId : active.isHuman
+      if (viewerTurn) {
+        return canDeclare(state, active.id)
           ? 'Your turn. Declare your hand, play a special, or discard a card.'
           : 'Your turn. Play one special or discard one card, then draw back to five.'
       }
-      return `${you.name} is thinking…`
+      return `${active.name} is thinking…`
     }
     case 'choose_targets': {
       const card = state.catalog[phase.cardId]
