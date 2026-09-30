@@ -3799,3 +3799,107 @@ button:disabled {
     width: 100%;
   }
 }
+
+
+/* Beta 0.1.1 mobile interaction hardening */
+button,
+[role="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(248, 112, 0, 0.18);
+}
+
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.syh-tutorial-modal {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.syh-tutorial {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.syh-tutorial-actions {
+  position: sticky;
+  z-index: 30;
+  bottom: -1px;
+  margin: 20px -2px -2px;
+  padding: 16px 2px max(4px, env(safe-area-inset-bottom));
+  background:
+    linear-gradient(180deg, rgba(12, 12, 12, 0), rgba(12, 12, 12, 0.94) 20%, rgba(12, 12, 12, 1) 48%);
+}
+
+.syh-tutorial-actions > button,
+.syh-tutorial-next {
+  min-height: 48px;
+  min-width: 112px;
+  pointer-events: auto;
+  position: relative;
+  z-index: 2;
+}
+
+.syh-tutorial-next-wrap {
+  display: grid;
+  justify-items: end;
+  gap: 5px;
+  min-width: 132px;
+}
+
+.syh-tutorial-requirement {
+  max-width: 190px;
+  color: #d1c7bc;
+  font-family: 'DIN Condensed', 'Arial Narrow', sans-serif;
+  font-size: 0.68rem;
+  line-height: 1.2;
+  text-align: right;
+}
+
+@media (max-width: 620px) {
+  .syh-tutorial-modal {
+    padding:
+      max(8px, env(safe-area-inset-top))
+      8px
+      max(8px, env(safe-area-inset-bottom));
+    place-items: start center;
+  }
+
+  .syh-tutorial {
+    width: 100%;
+    max-height: calc(100dvh - max(16px, env(safe-area-inset-top)) - max(16px, env(safe-area-inset-bottom)));
+    min-height: 0;
+  }
+
+  .syh-tutorial-step {
+    min-height: 360px;
+  }
+
+  .syh-tutorial-actions {
+    gap: 8px;
+  }
+
+  .syh-tutorial-actions > span {
+    flex: 0 0 auto;
+  }
+
+  .syh-tutorial-actions > button,
+  .syh-tutorial-next {
+    min-width: 96px;
+    min-height: 50px;
+  }
+
+  .syh-tutorial-requirement {
+    max-width: 145px;
+    font-size: 0.62rem;
+  }
+}
