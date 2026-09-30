@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { advanceComputers } from './game/ai'
+import { chooseAiAction } from './game/ai'
 import {
   actorId,
   canDeclare,
@@ -27,7 +27,43 @@ function formatTurnTime(totalSeconds: number) {
 }
 
 function apply(state: GameState, action: Action): GameState {
-  return advanceComputers(reduce(state, action))
+  return reduce(state, action)
+}
+
+function actionLabel(state: GameState, action: Action): string {
+  const playerId = 'playerId' in action ? action.playerId : actorId(state)
+  const playerName = playerId ? nameOf(state, playerId) : 'Opponent'
+
+  if (action.type === 'SELECT_CARD' || action.type === 'CONFIRM_ATTACK') {
+    const card = state.catalog[action.cardId]
+    if (!card) return `${playerName} made a move`
+    const label =
+      card.kind === 'number'
+        ? `${card.color} ${card.number}`
+        : card.kind
+            .split('-')
+            .map((part) => part[0]?.toUpperCase() + part.slice(1))
+            .join(' ')
+    return `${playerName} plays ${label}`
+  }
+
+  if (action.type === 'TAKE_DISCARD') return `${playerName} takes the discard`
+  if (action.type === 'RESPOND_DEFENSE') {
+    return action.response === 'accept'
+      ? `${playerName} accepts the attack`
+      : `${playerName} defends with ${action.response === 'blank' ? 'Blank' : 'a counter'}`
+  }
+  if (action.type === 'DECLARE') return `${playerName} declares a scoring hand`
+  if (action.type === 'PASS_DECLARE') return `${playerName} passes`
+  if (action.type === 'CLAIM_DROPPED') return `${playerName} claims dropped cards`
+  if (action.type === 'TRIM_HAND') return `${playerName} discards extras`
+  if (action.type === 'CHOOSE_REVERSE_COLOR') return `${playerName} reverses with ${action.color}`
+  if (action.type === 'RESPOND_REVERSE_BLANK') {
+    return action.response === 'blank'
+      ? `${playerName} blocks the reversal with Blank`
+      : `${playerName} accepts the reversal`
+  }
+  return `${playerName} made a move`
 }
 
 function opponentSeatClass(index: number, total: number) {
@@ -54,7 +90,10 @@ export function App() {
   const [trimIds, setTrimIds] = useState<string[]>([])
   const [dropColor, setDropColor] = useState<Color>('orange')
   const [turnSeconds, setTurnSeconds] = useState(TURN_SECONDS)
+  const [openingShuffle, setOpeningShuffle] = useState(false)
+  const [moveNotice, setMoveNotice] = useState<string | null>(null)
   const lock = useRef(false)
+  const moveNoticeTimer = useRef<number | null>(null)
 
   const dispatch = (action: Action) => {
     if (lock.current) return
@@ -74,17 +113,53 @@ export function App() {
   }
 
   const start = () => {
-    const next = apply(emptyMenuState(menuTest), {
-      type: 'START_MATCH',
-      opponentCount: menuCount,
-      testMode: menuTest,
-    })
-    setState(next)
-    saveMatch(next)
-    setShowStart(false)
+    if (openingShuffle) return
+    setOpeningShuffle(true)
+    window.setTimeout(() => {
+      const next = apply(emptyMenuState(menuTest), {
+        type: 'START_MATCH',
+        opponentCount: menuCount,
+        testMode: menuTest,
+      })
+      setState(next)
+      saveMatch(next)
+      setShowStart(false)
+      setOpeningShuffle(false)
+    }, 1400)
   }
 
   const activeActorId = actorId(state)
+
+  useEffect(() => {
+    if (
+      showStart ||
+      openingShuffle ||
+      !activeActorId ||
+      activeActorId === 'human' ||
+      state.phase.type === 'menu' ||
+      state.phase.type === 'round_over' ||
+      state.phase.type === 'match_over'
+    ) {
+      return
+    }
+
+    const timer = window.setTimeout(() => {
+      try {
+        const action = chooseAiAction(state)
+        setMoveNotice(actionLabel(state, action))
+        const next = reduce(state, action)
+        setState(next)
+        saveMatch(next)
+
+        if (moveNoticeTimer.current) window.clearTimeout(moveNoticeTimer.current)
+        moveNoticeTimer.current = window.setTimeout(() => setMoveNotice(null), 1100)
+      } catch {
+        setMoveNotice(null)
+      }
+    }, 900)
+
+    return () => window.clearTimeout(timer)
+  }, [activeActorId, openingShuffle, showStart, state])
 
   useEffect(() => {
     setTurnSeconds(TURN_SECONDS)
@@ -148,6 +223,22 @@ export function App() {
           </button>
         </nav>
       </header>
+
+      {openingShuffle ? (
+        <div className="syh-opening-shuffle" role="status" aria-live="polite">
+          <div className="syh-opening-shuffle-card syh-opening-card-one" />
+          <div className="syh-opening-shuffle-card syh-opening-card-two" />
+          <div className="syh-opening-shuffle-card syh-opening-card-three" />
+          <strong>SHUFFLING THE DECK</strong>
+          <span>Mixing all 70 cards before the deal…</span>
+        </div>
+      ) : null}
+
+      {moveNotice ? (
+        <div className="syh-move-notice" role="status" aria-live="polite">
+          {moveNotice}
+        </div>
+      ) : null}
 
       {showStart || state.phase.type === 'menu' ? (
         <StartScreen
@@ -254,7 +345,7 @@ export function App() {
               SHOW YOUR HAND
             </div>
             <div className="syh-center-piles">
-              <div className="syh-pile">
+              <div className={`syh-pile syh-draw-pile ${openingShuffle ? 'is-shuffling' : ''}`}>
                 <CardView faceDown />
                 <span>Draw · {state.drawPile.length}</span>
               </div>
