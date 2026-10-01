@@ -52,7 +52,7 @@ SHOW YOUR HAND is an original competitive card game being developed as both a ph
 
 ## Beta 0.1.2
 
-This audit-hardening release closes the highest-impact multiplayer gaps found in production testing:
+This audit-hardening release closes the highest-impact multiplayer gaps found in production testing. The browser bundle is published on Netlify while authoritative room/game hardening is deployed on Supabase:
 
 - explicit online action allowlist by game phase; menu/control actions such as RESTART, START_MATCH, and TOGGLE_TEST_MODE are rejected server-side
 - two-player/table invariants are re-checked before every authoritative state commit
