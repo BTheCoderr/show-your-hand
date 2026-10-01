@@ -26,4 +26,4 @@ describe('Edge Function public API key validation', () => {
     )
     expect([...keys]).toEqual(['one'])
   })
-}
+})
