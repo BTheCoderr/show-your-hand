@@ -10,6 +10,9 @@ on:
       - main
     paths:
       - "src/**"
+      - "supabase/functions/**"
+      - "supabase/migrations/**"
+      - "scripts/**"
       - "public/**"
       - "package.json"
       - "package-lock.json"
