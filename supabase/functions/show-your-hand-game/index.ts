@@ -1,5 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { actorId, emptyMenuState, reduce } from './game/engine.ts'
+import { validPublicApiKey } from './auth.ts'
 import { onlineActionError, onlineStateInvariantError } from './protocol.ts'
 import type { Action, GameState } from './game/types.ts'
 
@@ -66,6 +67,22 @@ function projectState(input: GameState | null, viewerId: string): GameState | nu
       state.catalog[id] = { id, kind: 'blank', art: '/cards/back.png' }
       return id
     })
+  }
+
+  const activePlayer = state.players[state.currentPlayerIndex]
+  if (
+    state.phase.type === 'choose_targets' &&
+    activePlayer &&
+    activePlayer.id !== viewerId
+  ) {
+    const hiddenSelectionId = '__hidden_selection'
+    state.catalog[hiddenSelectionId] = {
+      id: hiddenSelectionId,
+      kind: 'blank',
+      art: '/cards/back.png',
+    }
+    state.phase = { ...state.phase, cardId: hiddenSelectionId }
+    state.selectedCardId = null
   }
 
   state.drawPile = state.drawPile.map((_, index) => `__draw_${index + 1}`)
@@ -197,7 +214,17 @@ async function updateStats(
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
-  if (!req.headers.get('apikey')) return json({ error: 'Missing apikey' }, 401)
+
+  const apiKey = req.headers.get('apikey')
+  if (
+    !validPublicApiKey(
+      apiKey,
+      Deno.env.get('SUPABASE_PUBLISHABLE_KEYS'),
+      Deno.env.get('SUPABASE_ANON_KEY'),
+    )
+  ) {
+    return json({ error: 'Invalid apikey' }, 401)
+  }
 
   try {
     const body = await req.json()
