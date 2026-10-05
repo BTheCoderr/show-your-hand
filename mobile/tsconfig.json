@@ -10,5 +10,8 @@
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
     "../src/game/**/*.ts"
+  ],
+  "exclude": [
+    "../src/game/**/*.test.ts"
   ]
 }
