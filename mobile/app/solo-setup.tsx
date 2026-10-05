@@ -15,15 +15,22 @@ import {
   saveMobilePreferences,
   type MobilePreferences,
 } from '../src/mobilePrefs'
+import { loadSoloSave, type SoloSave } from '../src/soloPersist'
 import { theme } from '../src/theme'
 
 export default function SoloSetupScreen() {
   const [prefs, setPrefs] = useState<MobilePreferences>(
     DEFAULT_MOBILE_PREFERENCES,
   )
+  const [savedMatch, setSavedMatch] = useState<SoloSave | null>(null)
 
   useEffect(() => {
-    void loadMobilePreferences().then(setPrefs)
+    void Promise.all([loadMobilePreferences(), loadSoloSave()]).then(
+      ([nextPrefs, save]) => {
+        setPrefs(nextPrefs)
+        setSavedMatch(save)
+      },
+    )
   }, [])
 
   const update = async (next: MobilePreferences) => {
@@ -51,6 +58,27 @@ export default function SoloSetupScreen() {
           Choose how many CPU opponents you want and whether you want a visible
           turn clock.
         </Text>
+
+        {savedMatch && savedMatch.game.phase.type !== 'match_over' ? (
+          <Pressable
+            onPress={() =>
+              router.push({
+                pathname: '/solo',
+                params: { resume: '1' },
+              })
+            }
+            style={styles.resumeCard}
+          >
+            <View>
+              <Text style={styles.resumeTitle}>RESUME SAVED MATCH</Text>
+              <Text style={styles.resumeMeta}>
+                You vs {savedMatch.opponentCount} CPU
+                {savedMatch.opponentCount === 1 ? '' : 's'} · {savedMatch.beginnerMode ? 'Beginner' : 'Standard'}
+              </Text>
+            </View>
+            <Text style={styles.resumeArrow}>→</Text>
+          </Pressable>
+        ) : null}
 
         <View style={styles.card}>
           <Text style={styles.label}>CPU OPPONENTS</Text>
@@ -150,6 +178,33 @@ const styles = StyleSheet.create({
     color: theme.muted,
     fontSize: 15,
     lineHeight: 22,
+  },
+  resumeCard: {
+    minHeight: 74,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: theme.orange,
+    backgroundColor: '#25160d',
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  resumeTitle: {
+    color: theme.orange,
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  resumeMeta: {
+    color: theme.text,
+    fontSize: 12,
+    marginTop: 5,
+  },
+  resumeArrow: {
+    color: theme.orange,
+    fontSize: 26,
+    fontWeight: '900',
   },
   card: {
     backgroundColor: theme.panel,
