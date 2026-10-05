@@ -38,12 +38,9 @@ export default function HomeScreen() {
       <View style={styles.page}>
         <View>
           <Text style={styles.kicker}>BETA MOBILE · 0.1.0</Text>
-          <Text style={styles.title}>SHOW{'
-'}YOUR{'
-'}HAND</Text>
+          <Text style={styles.title}>SHOW{'\\n'}YOUR{'\\n'}HAND</Text>
           <Text style={styles.tagline}>
-            DROP. PICK UP. ATTACK. DEFEND.{'
-'}BUT NEVER SHOW YOUR HAND.
+            DROP. PICK UP. ATTACK. DEFEND.{'\\n'}BUT NEVER SHOW YOUR HAND.
           </Text>
         </View>
 
