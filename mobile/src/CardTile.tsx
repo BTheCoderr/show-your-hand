@@ -1,5 +1,6 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import {
+  Animated,
   Image,
   PanResponder,
   Pressable,
@@ -40,6 +41,17 @@ export function CardTile({
       : card?.kind.replaceAll('-', ' ') ?? 'Card'
 
   const actionable = Boolean(onPress || onSwipeUp || onSwipeDown)
+  const lift = useRef(new Animated.Value(selected ? -8 : 0)).current
+
+  useEffect(() => {
+    Animated.spring(lift, {
+      toValue: selected ? -8 : 0,
+      damping: 16,
+      stiffness: 220,
+      mass: 0.7,
+      useNativeDriver: true,
+    }).start()
+  }, [lift, selected])
 
   const panResponder = useMemo(
     () =>
@@ -62,7 +74,10 @@ export function CardTile({
   )
 
   return (
-    <View {...panResponder.panHandlers}>
+    <Animated.View
+      {...panResponder.panHandlers}
+      style={{ transform: [{ translateY: lift }] }}
+    >
       <Pressable
         accessibilityRole={actionable ? 'button' : undefined}
         accessibilityLabel={label}
@@ -99,7 +114,7 @@ export function CardTile({
           </View>
         ) : null}
       </Pressable>
-    </View>
+    </Animated.View>
   )
 }
 
@@ -121,7 +136,6 @@ const styles = StyleSheet.create({
   selected: {
     borderColor: theme.orange,
     borderWidth: 3,
-    transform: [{ translateY: -8 }],
   },
   pressed: {
     transform: [{ scale: 0.96 }],
