@@ -64,8 +64,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   compact: {
-    width: 72,
-    height: 104,
+    width: 62,
+    height: 90,
     borderRadius: 10,
   },
   selected: {
