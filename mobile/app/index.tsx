@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react'
 import { router } from 'expo-router'
 import { playMobileFeedback } from '../src/feedback'
+import { loadMobilePreferences } from '../src/mobilePrefs'
 import { SafeAreaView, StyleSheet, Text, Pressable, View } from 'react-native'
 import { theme } from '../src/theme'
 
@@ -33,6 +35,14 @@ function ActionButton({
 }
 
 export default function HomeScreen() {
+  const [showTutorialPrompt, setShowTutorialPrompt] = useState(false)
+
+  useEffect(() => {
+    void loadMobilePreferences().then((prefs) => {
+      setShowTutorialPrompt(!prefs.tutorialSeen)
+    })
+  }, [])
+
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.page}>
@@ -45,6 +55,28 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.actions}>
+          {showTutorialPrompt ? (
+            <View style={styles.tutorialPrompt}>
+              <Text style={styles.tutorialPromptTitle}>FIRST GAME?</Text>
+              <Text style={styles.tutorialPromptText}>
+                Run the 2-minute interactive tutorial before you sit at the table.
+              </Text>
+              <View style={styles.promptActions}>
+                <Pressable
+                  onPress={() => router.push('/tutorial')}
+                  style={styles.promptPrimary}
+                >
+                  <Text style={styles.promptPrimaryText}>START TUTORIAL</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setShowTutorialPrompt(false)}
+                  style={styles.promptSecondary}
+                >
+                  <Text style={styles.promptSecondaryText}>NOT NOW</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : null}
           <ActionButton
             title="PLAY SOLO"
             subtitle="1–5 CPU opponents · same shared game engine"
@@ -109,6 +141,56 @@ const styles = StyleSheet.create({
     marginTop: 22,
   },
   actions: { gap: 12 },
+  tutorialPrompt: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.orange,
+    backgroundColor: '#25160d',
+    padding: 14,
+    gap: 8,
+  },
+  tutorialPromptTitle: {
+    color: theme.orange,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1.3,
+  },
+  tutorialPromptText: {
+    color: theme.text,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  promptActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  promptPrimary: {
+    flex: 1,
+    minHeight: 42,
+    borderRadius: 11,
+    backgroundColor: theme.orange,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  promptSecondary: {
+    minWidth: 90,
+    minHeight: 42,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: theme.line,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  promptPrimaryText: {
+    color: theme.text,
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  promptSecondaryText: {
+    color: theme.muted,
+    fontSize: 10,
+    fontWeight: '900',
+  },
   action: {
     minHeight: 76,
     justifyContent: 'center',
