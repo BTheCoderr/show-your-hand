@@ -1,4 +1,12 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
+import { useMemo } from 'react'
+import {
+  Image,
+  PanResponder,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native'
 import type { Card } from '../../src/game/types'
 import { sourceForArt } from './cardAssets'
 import { theme } from './theme'
@@ -9,6 +17,8 @@ type Props = {
   selected?: boolean
   disabled?: boolean
   onPress?: () => void
+  onSwipeUp?: () => void
+  onSwipeDown?: () => void
   compact?: boolean
 }
 
@@ -18,6 +28,8 @@ export function CardTile({
   selected = false,
   disabled = false,
   onPress,
+  onSwipeUp,
+  onSwipeDown,
   compact = false,
 }: Props) {
   const art = hidden ? '/cards/back.png' : card?.art ?? '/cards/back.png'
@@ -27,29 +39,67 @@ export function CardTile({
       ? `${card.color} ${card.number}`
       : card?.kind.replaceAll('-', ' ') ?? 'Card'
 
+  const actionable = Boolean(onPress || onSwipeUp || onSwipeDown)
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gesture) => {
+          if (disabled || (!onSwipeUp && !onSwipeDown)) return false
+          return (
+            Math.abs(gesture.dy) > 10 &&
+            Math.abs(gesture.dy) > Math.abs(gesture.dx) * 1.2
+          )
+        },
+        onPanResponderRelease: (_, gesture) => {
+          if (disabled) return
+          if (gesture.dy <= -34) onSwipeUp?.()
+          if (gesture.dy >= 34) onSwipeDown?.()
+        },
+        onPanResponderTerminationRequest: () => true,
+      }),
+    [disabled, onSwipeDown, onSwipeUp],
+  )
+
   return (
-    <Pressable
-      accessibilityRole={onPress ? 'button' : undefined}
-      accessibilityLabel={label}
-      disabled={disabled || !onPress}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.wrap,
-        compact && styles.compact,
-        selected && styles.selected,
-        pressed && !disabled && styles.pressed,
-        disabled && onPress && styles.disabled,
-      ]}
-    >
-      <Image source={sourceForArt(art)} style={styles.image} resizeMode="contain" />
-      {!hidden && !compact ? (
-        <View style={styles.caption}>
-          <Text style={styles.captionText} numberOfLines={1}>
-            {label.toUpperCase()}
-          </Text>
-        </View>
-      ) : null}
-    </Pressable>
+    <View {...panResponder.panHandlers}>
+      <Pressable
+        accessibilityRole={actionable ? 'button' : undefined}
+        accessibilityLabel={label}
+        accessibilityHint={
+          onSwipeUp || onSwipeDown
+            ? [
+                onSwipeUp ? 'Swipe up to play.' : '',
+                onSwipeDown ? 'Swipe down for the alternate action.' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')
+            : undefined
+        }
+        disabled={disabled || !actionable}
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.wrap,
+          compact && styles.compact,
+          selected && styles.selected,
+          pressed && !disabled && styles.pressed,
+          disabled && actionable && styles.disabled,
+        ]}
+      >
+        <Image
+          source={sourceForArt(art)}
+          style={styles.image}
+          resizeMode="contain"
+        />
+        {!hidden && !compact ? (
+          <View style={styles.caption}>
+            <Text style={styles.captionText} numberOfLines={1}>
+              {label.toUpperCase()}
+            </Text>
+          </View>
+        ) : null}
+      </Pressable>
+    </View>
   )
 }
 
