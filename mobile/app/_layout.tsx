@@ -1,0 +1,25 @@
+import { Stack } from 'expo-router'
+import { StatusBar } from 'react-native'
+import { theme } from '../src/theme'
+
+export default function RootLayout() {
+  return (
+    <>
+      <StatusBar barStyle="light-content" />
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: theme.bg },
+          headerTintColor: theme.text,
+          headerShadowVisible: false,
+          contentStyle: { backgroundColor: theme.bg },
+          headerTitleStyle: { fontWeight: '900' },
+        }}
+      >
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="solo" options={{ title: 'SOLO TABLE' }} />
+        <Stack.Screen name="online" options={{ title: 'ONLINE 1V1' }} />
+        <Stack.Screen name="rules" options={{ title: 'HOW TO PLAY' }} />
+      </Stack>
+    </>
+  )
+}
