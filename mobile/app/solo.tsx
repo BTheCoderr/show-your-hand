@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocalSearchParams } from 'expo-router'
 import {
+  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -33,6 +34,7 @@ import {
   formatTurnSeconds,
   useTurnTimer,
 } from '../src/useTurnTimer'
+import { clearSoloSave, loadSoloSave, saveSoloSave } from '../src/soloPersist'
 import { theme } from '../src/theme'
 
 type OpponentCount = 1 | 2 | 3 | 4 | 5
@@ -83,11 +85,20 @@ export default function SoloScreen() {
   const params = useLocalSearchParams<{
     opponents?: string
     beginner?: string
+    resume?: string
   }>()
-  const opponentCount = parseOpponentCount(params.opponents)
-  const beginnerMode = params.beginner !== '0'
+  const wantsResume = params.resume === '1'
+  const initialOpponentCount = parseOpponentCount(params.opponents)
+  const initialBeginnerMode = params.beginner !== '0'
 
-  const [game, setGame] = useState<GameState>(() => freshMatch(opponentCount))
+  const [opponentCount, setOpponentCount] = useState<OpponentCount>(
+    initialOpponentCount,
+  )
+  const [beginnerMode, setBeginnerMode] = useState(initialBeginnerMode)
+  const [restoring, setRestoring] = useState(wantsResume)
+  const [game, setGame] = useState<GameState>(() =>
+    freshMatch(initialOpponentCount),
+  )
   const [dropColor, setDropColor] = useState<Color>('orange')
   const [claimIds, setClaimIds] = useState<string[]>([])
   const [trimIds, setTrimIds] = useState<string[]>([])
@@ -98,6 +109,46 @@ export default function SoloScreen() {
   useEffect(() => {
     void loadMobileStats().then(setStats)
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const restore = async () => {
+      if (!wantsResume) {
+        await clearSoloSave()
+        if (!cancelled) setRestoring(false)
+        return
+      }
+
+      const saved = await loadSoloSave()
+      if (!cancelled && saved && saved.game.phase.type !== 'match_over') {
+        setOpponentCount(saved.opponentCount)
+        setBeginnerMode(saved.beginnerMode)
+        setGame(saved.game)
+      }
+      if (!cancelled) setRestoring(false)
+    }
+
+    void restore()
+    return () => {
+      cancelled = true
+    }
+  }, [wantsResume])
+
+  useEffect(() => {
+    if (restoring) return
+    if (game.phase.type === 'match_over') {
+      void clearSoloSave()
+      return
+    }
+
+    void saveSoloSave({
+      game,
+      opponentCount,
+      beginnerMode,
+      updatedAt: new Date().toISOString(),
+    })
+  }, [game, opponentCount, beginnerMode, restoring])
 
   const human = playerById(game, 'human')
   const opponents = game.players.filter((player) => player.id !== 'human')
@@ -507,6 +558,17 @@ export default function SoloScreen() {
     return null
   }
 
+  if (restoring) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['bottom']}>
+        <View style={styles.loading}>
+          <ActivityIndicator size="large" />
+          <Text style={styles.loadingText}>Restoring saved table…</Text>
+        </View>
+      </SafeAreaView>
+    )
+  }
+
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.page}>
@@ -728,6 +790,17 @@ export default function SoloScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: theme.bg },
+  loading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  loadingText: {
+    color: theme.muted,
+    fontSize: 13,
+    fontWeight: '800',
+  },
   page: { padding: 16, paddingBottom: 40, gap: 16 },
   topMeta: {
     flexDirection: 'row',
