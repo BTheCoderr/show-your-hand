@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import * as Haptics from 'expo-haptics'
 import {
   Pressable,
@@ -89,7 +89,7 @@ export function OnlineTable({
   const active = actorId(state)
   const topDiscardId = state.discardPile.at(-1)
   const topDiscard = topDiscardId ? state.catalog[topDiscardId] : undefined
-  const instruction = useMemo(() => instructionFor(state, localId), [state, localId])
+  const instruction = instructionFor(state, localId)
   const phase = state.phase
   const chooseAction = phase.type === 'choose_action' && active === localId
   const trimming = phase.type === 'trim_hand' && phase.playerId === localId
