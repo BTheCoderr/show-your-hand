@@ -433,12 +433,24 @@ export function OnlineTable({
           <Text style={styles.sectionLabel}>
             DISCARD · {state.discardPile.length}
           </Text>
-          <CardTile card={topDiscard} compact />
+          <CardTile
+            card={topDiscard}
+            compact
+            disabled={busy || !canTakeDiscard}
+            onSwipeDown={
+              canTakeDiscard && !busy
+                ? () => void dispatch({ type: 'TAKE_DISCARD', playerId: localId })
+                : undefined
+            }
+          />
         </View>
       </View>
 
       <View style={styles.instruction}>
         <Text style={styles.instructionText}>{instruction}</Text>
+        <Text style={styles.gestureHint}>
+          Swipe a hand card up to play · swipe the eligible discard down to pick it up.
+        </Text>
       </View>
 
       {chooseAction ? (
@@ -494,6 +506,16 @@ export function OnlineTable({
                             return [...current, card.id]
                           })
                       : undefined
+                }
+                onSwipeUp={
+                  chooseAction && !busy
+                    ? () =>
+                        void dispatch({
+                          type: 'SELECT_CARD',
+                          playerId: localId,
+                          cardId: card.id,
+                        })
+                    : undefined
                 }
               />
             ))}
@@ -594,6 +616,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 21,
     fontWeight: '700',
+  },
+  gestureHint: {
+    color: theme.muted,
+    fontSize: 10,
+    lineHeight: 15,
+    marginTop: 6,
   },
   quickActions: {
     flexDirection: 'row',
