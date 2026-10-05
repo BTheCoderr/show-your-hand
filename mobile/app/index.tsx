@@ -55,7 +55,7 @@ export default function HomeScreen() {
           />
           <ActionButton
             title="ONLINE 1V1"
-            subtitle="Native lobby is the next mobile milestone"
+            subtitle="Create, join, play, reconnect, rematch"
             onPress={() => router.push('/online')}
             secondary
           />
@@ -68,7 +68,7 @@ export default function HomeScreen() {
         </View>
 
         <Text style={styles.footer}>
-          Native Expo build · same rules engine as the web game
+          Native Expo build · shared rules + shared online backend
         </Text>
       </View>
     </SafeAreaView>
