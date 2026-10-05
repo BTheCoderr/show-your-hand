@@ -1,4 +1,6 @@
 import * as SecureStore from 'expo-secure-store'
+import { handCards } from '../../src/game/helpers'
+import { scoreHand } from '../../src/game/scoring'
 import type { Action, GameState } from '../../src/game/types'
 
 const STATS_KEY = 'show-your-hand:mobile-stats:v1'
@@ -81,7 +83,18 @@ export function statsAfterAction(
     after.phase.type === 'match_over'
   ) {
     next.matchesPlayed += 1
-    if (after.phase.winnerId === localId) next.wins += 1
+    if (after.phase.winnerId === localId) {
+      next.wins += 1
+      next.roundsWon += 1
+    }
+
+    const finalHand = scoreHand(handCards(after, after.phase.winnerId))
+    if (finalHand) {
+      next.bestHandPoints = Math.max(
+        next.bestHandPoints,
+        finalHand.points,
+      )
+    }
   }
 
   return next
