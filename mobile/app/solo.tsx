@@ -603,12 +603,24 @@ export default function SoloScreen() {
             <Text style={styles.sectionLabel}>
               DISCARD · {game.discardPile.length}
             </Text>
-            <CardTile card={topDiscard} compact />
+            <CardTile
+              card={topDiscard}
+              compact
+              disabled={!canTakeDiscard}
+              onSwipeDown={
+                canTakeDiscard
+                  ? () => void dispatch({ type: 'TAKE_DISCARD', playerId: 'human' })
+                  : undefined
+              }
+            />
           </View>
         </View>
 
         <View style={styles.instruction}>
           <Text style={styles.instructionText}>{instruction}</Text>
+          <Text style={styles.gestureHint}>
+            Swipe a hand card up to play · swipe the eligible discard down to pick it up.
+          </Text>
           {turnSeconds === 0 ? (
             <Text style={styles.timerHint}>
               Clock expired — finish the turn when ready.
@@ -675,6 +687,16 @@ export default function SoloScreen() {
                                 return [...current, card.id]
                               })
                           : undefined
+                    }
+                    onSwipeUp={
+                      humanChooseAction
+                        ? () =>
+                            void dispatch({
+                              type: 'SELECT_CARD',
+                              playerId: 'human',
+                              cardId: card.id,
+                            })
+                        : undefined
                     }
                   />
                 )
@@ -843,6 +865,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 21,
     fontWeight: '700',
+  },
+  gestureHint: {
+    color: theme.muted,
+    fontSize: 10,
+    lineHeight: 15,
+    marginTop: 6,
   },
   timerHint: {
     color: theme.danger,
