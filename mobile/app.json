@@ -12,10 +12,12 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.bthedream.showyourhand"
+      "bundleIdentifier": "com.bthedream.showyourhand",
+      "buildNumber": "1"
     },
     "android": {
-      "package": "com.bthedream.showyourhand"
+      "package": "com.bthedream.showyourhand",
+      "versionCode": 1
     },
     "experiments": {
       "typedRoutes": true
@@ -24,6 +26,12 @@
     "platforms": [
       "ios",
       "android"
-    ]
+    ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    }
   }
 }
