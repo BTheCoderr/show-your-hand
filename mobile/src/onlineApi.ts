@@ -310,3 +310,7 @@ export async function saveOnlineSession(
 export function webJoinUrl(code: string): string {
   return `https://show-your-hand.netlify.app/join/${code.toUpperCase()}`
 }
+
+export function nativeJoinUrl(code: string): string {
+  return `showyourhand://join/${code.toUpperCase()}`
+}
