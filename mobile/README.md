@@ -21,18 +21,23 @@ Branch: `feature/mobile-expo-v0`
 Implemented:
 - native branded home screen
 - native rules screen
-- first solo table using the real shared engine
+- solo table using the real shared engine
 - CPU turns using the existing AI
 - attacks, defenses, target selection, Drop Color and Shuffle
 - discard pickup, declaration, scoring, rounds, and match-over
 - native haptic feedback
 - card artwork loaded from the existing asset set
+- native Online 1v1 using the same production Supabase rooms
+- create/join private rooms with the existing six-character codes
+- ready check, host start, server-authoritative moves, reconnect polling and rematch
+- native session persistence with AsyncStorage
+- room deep-link route plus shareable web invite
 
 Next:
 1. install dependencies inside `mobile/`
-2. run `npx expo start` and smoke-test on a physical iPhone
-3. tune small-screen layout from device screenshots
-4. wire native Online 1v1 to the existing Supabase backend
+2. run the mobile validation workflow
+3. smoke-test solo and online on a physical iPhone
+4. tune small-screen layout from device screenshots
 5. configure the Expo/EAS project ID
 6. create the first internal iOS build, then TestFlight
 
