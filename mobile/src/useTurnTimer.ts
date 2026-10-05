@@ -10,18 +10,20 @@ export function formatTurnSeconds(total: number): string {
 }
 
 export function useTurnTimer(
-  state: GameState,
+  state: GameState | null,
   beginnerMode: boolean,
 ): number | null {
   const [seconds, setSeconds] = useState(TURN_SECONDS)
-  const phaseKey = `${state.currentPlayerIndex}:${state.phase.type}`
+  const phaseKey = state
+    ? `${state.currentPlayerIndex}:${state.phase.type}`
+    : 'waiting'
 
   useEffect(() => {
     setSeconds(TURN_SECONDS)
   }, [phaseKey])
 
   useEffect(() => {
-    if (beginnerMode) return
+    if (!state || beginnerMode) return
     if (
       state.phase.type === 'round_over' ||
       state.phase.type === 'match_over' ||
@@ -35,7 +37,7 @@ export function useTurnTimer(
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [beginnerMode, phaseKey, state.phase.type])
+  }, [state, beginnerMode, phaseKey])
 
   return beginnerMode ? null : seconds
 }
