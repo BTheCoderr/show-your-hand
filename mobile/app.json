@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "SHOW YOUR HAND",
+    "slug": "show-your-hand-mobile",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "showyourhand",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "plugins": ["expo-router"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bthedream.showyourhand"
+    },
+    "android": {
+      "package": "com.bthedream.showyourhand"
+    },
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
