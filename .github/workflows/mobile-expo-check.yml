@@ -34,3 +34,7 @@ jobs:
       - name: Bundle iOS app
         working-directory: mobile
         run: npx expo export --platform ios --output-dir dist-ios
+
+      - name: Bundle Android app
+        working-directory: mobile
+        run: npx expo export --platform android --output-dir dist-android
