@@ -1,0 +1,36 @@
+name: Mobile Expo Check
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/mobile-expo-v0
+    paths:
+      - "mobile/**"
+      - "src/game/**"
+      - ".github/workflows/mobile-expo-check.yml"
+
+jobs:
+  mobile:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install mobile dependencies
+        working-directory: mobile
+        run: npm install
+
+      - name: Typecheck native app
+        working-directory: mobile
+        run: npm run typecheck
+
+      - name: Bundle iOS app
+        working-directory: mobile
+        run: npx expo export --platform ios --output-dir dist-ios
