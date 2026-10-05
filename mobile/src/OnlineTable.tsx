@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import * as Haptics from 'expo-haptics'
 import {
   Pressable,
   ScrollView,
@@ -23,6 +22,8 @@ import type {
 } from './onlineApi'
 import { submitAction } from './onlineApi'
 import { CardTile } from './CardTile'
+import { playMobileFeedback } from './feedback'
+import { formatTurnSeconds, useTurnTimer } from './useTurnTimer'
 import { theme } from './theme'
 
 type Props = {
@@ -73,6 +74,7 @@ export function OnlineTable({
   const [dropColor, setDropColor] = useState<Color>('orange')
   const [claimIds, setClaimIds] = useState<string[]>([])
   const [trimIds, setTrimIds] = useState<string[]>([])
+  const turnSeconds = useTurnTimer(state, room.beginnerMode)
 
   if (!state) {
     return (
@@ -104,7 +106,16 @@ export function OnlineTable({
     onError(null)
 
     try {
-      await Haptics.selectionAsync()
+      await playMobileFeedback(
+        action.type === 'CONFIRM_ATTACK'
+          ? 'attack'
+          : action.type === 'RESPOND_DEFENSE' ||
+              action.type === 'RESPOND_REVERSE_BLANK'
+            ? 'defense'
+            : action.type === 'DECLARE'
+              ? 'score'
+              : 'card',
+      )
       const response = await submitAction(session, room.stateVersion, action)
       setClaimIds([])
       setTrimIds([])
@@ -382,16 +393,28 @@ export function OnlineTable({
           <Text style={styles.score}>{local.score}</Text>
         </View>
 
-        <View style={styles.turnBadge}>
-          <Text style={styles.turnBadgeText}>
-            {active === localId
-              ? 'YOUR MOVE'
-              : active
-                ? 'OPPONENT'
-                : phase.type === 'match_over'
-                  ? 'MATCH OVER'
-                  : 'ROUND BREAK'}
-          </Text>
+        <View style={styles.turnCenter}>
+          <View style={styles.turnBadge}>
+            <Text style={styles.turnBadgeText}>
+              {active === localId
+                ? 'YOUR MOVE'
+                : active
+                  ? 'OPPONENT'
+                  : phase.type === 'match_over'
+                    ? 'MATCH OVER'
+                    : 'ROUND BREAK'}
+            </Text>
+          </View>
+          {turnSeconds !== null ? (
+            <Text style={[
+              styles.turnTimer,
+              turnSeconds === 0 && styles.turnTimerExpired,
+            ]}>
+              {formatTurnSeconds(turnSeconds)}
+            </Text>
+          ) : (
+            <Text style={styles.beginnerBadge}>BEGINNER</Text>
+          )}
         </View>
 
         <View style={styles.scoreRight}>
@@ -451,6 +474,11 @@ export function OnlineTable({
         <Text style={styles.gestureHint}>
           Swipe a hand card up to play · swipe the eligible discard down to pick it up.
         </Text>
+        {turnSeconds === 0 ? (
+          <Text style={styles.timerHint}>
+            Clock expired — finish the turn when ready.
+          </Text>
+        ) : null}
       </View>
 
       {chooseAction ? (
@@ -570,6 +598,10 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     lineHeight: 38,
   },
+  turnCenter: {
+    alignItems: 'center',
+    gap: 4,
+  },
   turnBadge: {
     backgroundColor: theme.panel,
     borderColor: theme.line,
@@ -581,6 +613,20 @@ const styles = StyleSheet.create({
   turnBadgeText: {
     color: theme.orange,
     fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  turnTimer: {
+    color: theme.text,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  turnTimerExpired: {
+    color: theme.danger,
+  },
+  beginnerBadge: {
+    color: theme.muted,
+    fontSize: 8,
     fontWeight: '900',
     letterSpacing: 1,
   },
@@ -622,6 +668,12 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 15,
     marginTop: 6,
+  },
+  timerHint: {
+    color: theme.danger,
+    fontSize: 10,
+    marginTop: 5,
+    fontWeight: '800',
   },
   quickActions: {
     flexDirection: 'row',
