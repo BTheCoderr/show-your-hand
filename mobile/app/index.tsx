@@ -1,5 +1,5 @@
 import { router } from 'expo-router'
-import * as Haptics from 'expo-haptics'
+import { playMobileFeedback } from '../src/feedback'
 import { SafeAreaView, StyleSheet, Text, Pressable, View } from 'react-native'
 import { theme } from '../src/theme'
 
@@ -17,7 +17,7 @@ function ActionButton({
   return (
     <Pressable
       onPress={async () => {
-        await Haptics.selectionAsync()
+        await playMobileFeedback('tap')
         onPress()
       }}
       style={({ pressed }) => [
@@ -47,8 +47,8 @@ export default function HomeScreen() {
         <View style={styles.actions}>
           <ActionButton
             title="PLAY SOLO"
-            subtitle="Real shared game engine · 1 CPU"
-            onPress={() => router.push('/solo')}
+            subtitle="1–5 CPU opponents · same shared game engine"
+            onPress={() => router.push('/solo-setup')}
           />
           <ActionButton
             title="ONLINE 1V1"
@@ -58,8 +58,14 @@ export default function HomeScreen() {
           />
           <ActionButton
             title="HOW TO PLAY"
-            subtitle="Scoring, turn flow, and special cards"
-            onPress={() => router.push('/rules')}
+            subtitle="Interactive 8-step tutorial"
+            onPress={() => router.push('/tutorial')}
+            secondary
+          />
+          <ActionButton
+            title="SETTINGS + STATS"
+            subtitle="Haptics, beginner mode, local records"
+            onPress={() => router.push('/settings')}
             secondary
           />
         </View>
