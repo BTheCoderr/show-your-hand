@@ -492,7 +492,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
   },
   opponentArea: { alignItems: 'center', gap: 8 },
-  opponentHand: { flexDirection: 'row', gap: -34 },
+  opponentHand: { flexDirection: 'row', gap: 4 },
   sectionLabel: {
     color: theme.muted,
     fontSize: 10,
