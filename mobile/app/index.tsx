@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { router } from 'expo-router'
 import { playMobileFeedback } from '../src/feedback'
 import { loadMobilePreferences } from '../src/mobilePrefs'
-import { SafeAreaView, StyleSheet, Text, Pressable, View } from 'react-native'
+import { SafeAreaView, ScrollView, StyleSheet, Text, Pressable, View } from 'react-native'
 import { theme } from '../src/theme'
 
 function ActionButton({
@@ -45,13 +45,18 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.page}>
+      <ScrollView contentContainerStyle={styles.page}>
         <View>
           <Text style={styles.kicker}>BETA MOBILE · 0.1.0</Text>
-          <Text style={styles.title}>SHOW{'\\n'}YOUR{'\\n'}HAND</Text>
-          <Text style={styles.tagline}>
-            DROP. PICK UP. ATTACK. DEFEND.{'\\n'}BUT NEVER SHOW YOUR HAND.
-          </Text>
+          <View style={styles.titleBlock}>
+            <Text style={styles.title}>SHOW</Text>
+            <Text style={styles.title}>YOUR</Text>
+            <Text style={styles.title}>HAND</Text>
+          </View>
+          <View style={styles.taglineBlock}>
+            <Text style={styles.tagline}>DROP. PICK UP. ATTACK. DEFEND.</Text>
+            <Text style={styles.tagline}>BUT NEVER SHOW YOUR HAND.</Text>
+          </View>
         </View>
 
         <View style={styles.actions}>
@@ -105,7 +110,7 @@ export default function HomeScreen() {
         <Text style={styles.footer}>
           Native Expo build · shared rules + shared online backend
         </Text>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   )
 }
@@ -113,10 +118,11 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: theme.bg },
   page: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'space-between',
     paddingHorizontal: 22,
     paddingVertical: 24,
+    gap: 22,
   },
   kicker: {
     color: theme.orange,
@@ -125,6 +131,9 @@ const styles = StyleSheet.create({
     letterSpacing: 2.2,
     marginBottom: 18,
   },
+  titleBlock: {
+    marginBottom: 2,
+  },
   title: {
     color: theme.text,
     fontSize: 64,
@@ -132,13 +141,15 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: -3,
   },
+  taglineBlock: {
+    marginTop: 22,
+  },
   tagline: {
     color: theme.muted,
     fontSize: 13,
     lineHeight: 19,
     fontWeight: '800',
     letterSpacing: 0.8,
-    marginTop: 22,
   },
   actions: { gap: 12 },
   tutorialPrompt: {
