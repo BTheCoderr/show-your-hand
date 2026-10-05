@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { router } from 'expo-router'
 import {
   Pressable,
   SafeAreaView,
@@ -84,6 +85,7 @@ export default function TutorialScreen() {
     const prefs = await loadMobilePreferences()
     await saveMobilePreferences({ ...prefs, tutorialSeen: true })
     await playMobileFeedback('score')
+    router.replace('/')
   }
 
   const next = async () => {
