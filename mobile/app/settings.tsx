@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
+  Linking,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -123,6 +124,37 @@ export default function SettingsScreen() {
           <Text style={styles.resetText}>RESET LOCAL STATS</Text>
         </Pressable>
 
+        <View style={styles.linksCard}>
+          <Text style={styles.sectionTitle}>SUPPORT + LEGAL</Text>
+          <Pressable
+            style={styles.linkRow}
+            onPress={() =>
+              void Linking.openURL('https://show-your-hand.netlify.app/privacy')
+            }
+          >
+            <Text style={styles.linkText}>Privacy</Text>
+            <Text style={styles.linkArrow}>→</Text>
+          </Pressable>
+          <Pressable
+            style={styles.linkRow}
+            onPress={() =>
+              void Linking.openURL('https://show-your-hand.netlify.app/terms')
+            }
+          >
+            <Text style={styles.linkText}>Terms</Text>
+            <Text style={styles.linkArrow}>→</Text>
+          </Pressable>
+          <Pressable
+            style={styles.linkRow}
+            onPress={() =>
+              void Linking.openURL('https://show-your-hand.netlify.app/feedback')
+            }
+          >
+            <Text style={styles.linkText}>Feedback + support</Text>
+            <Text style={styles.linkArrow}>→</Text>
+          </Pressable>
+        </View>
+
         <Text style={styles.note}>
           Online stats live with the room session and stay server-authoritative.
         </Text>
@@ -206,6 +238,32 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     marginTop: 5,
     letterSpacing: 0.8,
+  },
+  linksCard: {
+    backgroundColor: theme.panel,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: theme.line,
+    padding: 16,
+    gap: 4,
+  },
+  linkRow: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: theme.line,
+  },
+  linkText: {
+    color: theme.text,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  linkArrow: {
+    color: theme.orange,
+    fontSize: 20,
+    fontWeight: '900',
   },
   resetButton: {
     minHeight: 48,
