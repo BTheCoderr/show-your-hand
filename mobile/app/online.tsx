@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocalSearchParams } from 'expo-router'
-import * as Haptics from 'expo-haptics'
 import {
   ActivityIndicator,
   Pressable,
@@ -12,6 +11,9 @@ import {
   View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { handCards, playerById } from '../../src/game/helpers'
+import { CardTile } from '../src/CardTile'
+import { playMobileFeedback } from '../src/feedback'
 import { OnlineTable } from '../src/OnlineTable'
 import {
   createRoom,
@@ -24,6 +26,7 @@ import {
   setReady,
   setRoomOptions,
   startRoom,
+  nativeJoinUrl,
   webJoinUrl,
   type AuthoritativeResponse,
   type OnlineRoom,
@@ -152,7 +155,7 @@ export default function OnlineScreen() {
     setError(null)
 
     try {
-      await Haptics.selectionAsync()
+      await playMobileFeedback('tap')
       await task()
     } catch (taskError) {
       setError(taskError instanceof Error ? taskError.message : String(taskError))
@@ -310,6 +313,16 @@ export default function OnlineScreen() {
 
   if (room.status === 'completed') {
     const localStats = localPlayer?.stats
+    const finalState = room.gameState
+    const winnerId =
+      finalState?.phase.type === 'match_over'
+        ? finalState.phase.winnerId
+        : null
+    const winner =
+      finalState && winnerId ? playerById(finalState, winnerId) : null
+    const winningCards =
+      finalState && winnerId ? handCards(finalState, winnerId) : []
+
     return (
       <SafeAreaView style={styles.safe} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.page}>
@@ -317,6 +330,23 @@ export default function OnlineScreen() {
           <Text style={styles.title}>RUN IT BACK?</Text>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          {winner ? (
+            <View style={styles.winnerCard}>
+              <Text style={styles.resultTitle}>
+                {winner.id === session.gamePlayerId
+                  ? 'YOU WON THE MATCH'
+                  : `${winner.name.toUpperCase()} WON`}
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View style={styles.winningHand}>
+                  {winningCards.map((card) => (
+                    <CardTile key={card.id} card={card} compact />
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+          ) : null}
 
           <View style={styles.resultCard}>
             <Text style={styles.resultTitle}>SESSION STATS</Text>
@@ -419,7 +449,8 @@ export default function OnlineScreen() {
             label="SHARE INVITE"
             onPress={() =>
               void Share.share({
-                message: `Join my SHOW YOUR HAND room ${room.code}: ${webJoinUrl(room.code)}`,
+                message:
+                  `Join my SHOW YOUR HAND room ${room.code}.\n\nWeb: ${webJoinUrl(room.code)}\nApp: ${nativeJoinUrl(room.code)}`,
               })
             }
           />
@@ -722,6 +753,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 12,
     fontWeight: '800',
+  },
+  winnerCard: {
+    backgroundColor: theme.panel,
+    borderWidth: 1,
+    borderColor: theme.orange,
+    borderRadius: 18,
+    padding: 18,
+    gap: 12,
+  },
+  winningHand: {
+    flexDirection: 'row',
+    gap: 7,
   },
   resultCard: {
     backgroundColor: theme.panel,
