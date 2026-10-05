@@ -18,6 +18,7 @@ export default function RootLayout() {
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="solo" options={{ title: 'SOLO TABLE' }} />
         <Stack.Screen name="online" options={{ title: 'ONLINE 1V1' }} />
+        <Stack.Screen name="join/[code]" options={{ headerShown: false }} />
         <Stack.Screen name="rules" options={{ title: 'HOW TO PLAY' }} />
       </Stack>
     </>
