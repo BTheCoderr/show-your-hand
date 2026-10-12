@@ -14,26 +14,24 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#090909",
-          "image": "./assets/splash.png",
-          "imageWidth": 220
+          "backgroundColor": "#000000",
+          "image": "./assets/logo.png",
+          "imageWidth": 300
         }
       ]
     ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.bthedream.showyourhand",
-      "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "com.bthedream.showyourhand",
-      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#090909"
+        "backgroundColor": "#000000"
       }
     },
     "experiments": {
