@@ -5,3 +5,17 @@ dist
 playthrough-final.png
 .playwright-cli
 
+# Expo / native
+.expo
+mobile/.expo
+mobile/dist-ios
+mobile/dist-android
+mobile/ios
+mobile/android
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.pem
+
