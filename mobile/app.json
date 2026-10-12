@@ -49,6 +49,16 @@
     },
     "updates": {
       "fallbackToCacheTimeout": 0
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "046d7083-6f3b-4b16-9f22-61894243e100"
+      }
     }
   }
 }

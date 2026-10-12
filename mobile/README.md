@@ -62,14 +62,14 @@ Owner: `bferrell514`
 Slug: `show-your-hand-mobile`  
 Bundle ID: `com.bthedream.showyourhand`
 
-Do not create a second Expo project. After `eas login`, link the existing project with:
+Do not create a second Expo project. After `eas login`, check for the existing project with:
 
 ```bash
 cd mobile
-eas init --non-interactive --force false
+eas init --non-interactive
 ```
 
-If Expo already has `@bferrell514/show-your-hand-mobile`, use that project's ID. Do not accept a duplicate create.
+Without `--force` this never creates a project. It reports either `Existing project found ... (ID: ...)` or `Project does not exist`. Link an existing project with `eas init --id <ID>`.
 
 Build profiles in `eas.json`:
 
