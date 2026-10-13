@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLocalSearchParams } from 'expo-router'
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   Share,
@@ -99,12 +100,16 @@ export default function OnlineScreen() {
         setSession(saved)
         const nextRoom = await getRoom(saved)
         if (!cancelled) setRoom(nextRoom)
-      } catch {
+      } catch (restoreError) {
         if (!cancelled) {
-          await saveOnlineSession(null).catch(() => undefined)
-          setSession(null)
+          // A temporary network failure must not erase a player's saved seat.
+          // Polling will retry in the background while the recovery screen stays visible.
           setRoom(null)
-          setError(null)
+          setError(
+            restoreError instanceof Error
+              ? restoreError.message
+              : 'Could not reach your saved table. Please retry.',
+          )
         }
       } finally {
         if (!cancelled) setRestoring(false)
@@ -218,6 +223,56 @@ export default function OnlineScreen() {
           <ActivityIndicator size="large" />
           <Text style={styles.muted}>Restoring your table…</Text>
         </View>
+      </SafeAreaView>
+    )
+  }
+
+  if (session && !room) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['bottom']}>
+        <ScrollView contentContainerStyle={styles.page}>
+          <Text style={styles.eyebrow}>SAVED ONLINE SEAT</Text>
+          <Text style={styles.title}>RECONNECT</Text>
+          <Text style={styles.body}>
+            Your seat in room {session.roomCode} is still saved on this phone.
+            A connection error will not erase it. You can retry now or wait
+            for the connection to recover.
+          </Text>
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+          <ActionButton
+            label={busy ? 'RECONNECTING…' : 'RETRY CONNECTION'}
+            disabled={busy}
+            onPress={() =>
+              void run(async () => {
+                setRoom(await getRoom(session))
+              })
+            }
+          />
+          <ActionButton
+            label="FORGET SAVED ROOM"
+            secondary
+            disabled={busy}
+            onPress={() =>
+              Alert.alert(
+                'Forget your saved room?',
+                'This removes your local seat token. You may not be able to rejoin the room without a new invite.',
+                [
+                  { text: 'Keep seat', style: 'cancel' },
+                  {
+                    text: 'Forget room',
+                    style: 'destructive',
+                    onPress: () =>
+                      void run(async () => {
+                        await saveOnlineSession(null)
+                        setSession(null)
+                        setRoom(null)
+                      }),
+                  },
+                ],
+              )
+            }
+          />
+        </ScrollView>
       </SafeAreaView>
     )
   }
