@@ -10,7 +10,9 @@ export default function RootLayout() {
         screenOptions={{
           headerStyle: { backgroundColor: theme.bg },
           headerTintColor: theme.text,
-          headerBackButtonDisplayMode: 'minimal',
+          // Always use a generic back label, not the previous route name ('index').
+          headerBackButtonDisplayMode: 'generic',
+          headerBackTitle: 'Back',
           headerShadowVisible: false,
           contentStyle: { backgroundColor: theme.bg },
           headerTitleStyle: { fontWeight: '900' },
