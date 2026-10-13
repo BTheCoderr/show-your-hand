@@ -1,0 +1,142 @@
+name: Show Your Hand - Expo Cloud Build
+
+# A manual-only bridge from GitHub to Expo EAS. No builds on push or PR.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "What do you want to run?"
+        required: true
+        default: preflight
+        type: choice
+        options:
+          - preflight
+          - build_ios_preview
+      confirm:
+        description: "For build_ios_preview ONLY, type BUILD_IOS_PREVIEW (may use EAS build credits)"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+# Avoid starting concurrent jobs for the same manual workflow/ref.
+concurrency:
+  group: show-your-hand-eas-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: Validate Show Your Hand native branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm intentional build request
+        if: ${{ inputs.mode == 'build_ios_preview' }}
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          if [ "$CONFIRM" != "BUILD_IOS_PREVIEW" ]; then
+            echo "::error::Build not authorized. Enter BUILD_IOS_PREVIEW to request a potentially billable EAS preview build."
+            exit 1
+          fi
+
+      - name: Check out the mobile development branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/mobile-expo-v0
+          persist-credentials: false
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            mobile/package-lock.json
+
+      - name: Verify the existing Expo application identity
+        run: |
+          node <<'NODE'
+          const app = require('./mobile/app.json').expo;
+          const expected = {
+            owner: 'bferrell514',
+            slug: 'show-your-hand-mobile',
+            bundleIdentifier: 'com.bthedream.showyourhand',
+            projectId: '046d7083-6f3b-4b16-9f22-61894243e100'
+          };
+          if (app.owner !== expected.owner ||
+              app.slug !== expected.slug ||
+              app.ios?.bundleIdentifier !== expected.bundleIdentifier ||
+              app.extra?.eas?.projectId !== expected.projectId) {
+            throw new Error('Wrong Expo project: refusing to build or submit a different app.');
+          }
+          console.log('Verified Expo project identity (no build started).');
+          NODE
+
+      - name: Install shared engine dependencies
+        run: npm ci
+
+      - name: Run game, artwork, timer, and storage tests
+        run: npm test
+
+      - name: Install mobile dependencies
+        working-directory: mobile
+        run: npm install
+
+      - name: Type-check native iOS app
+        working-directory: mobile
+        run: npm run typecheck
+
+      - name: Verify native iOS JavaScript bundle
+        working-directory: mobile
+        run: npx expo export --platform ios --output-dir dist-ios
+
+  build_preview:
+    name: Request optional iOS preview on Expo EAS
+    needs: preflight
+    if: ${{ inputs.mode == 'build_ios_preview' && inputs.confirm == 'BUILD_IOS_PREVIEW' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify Expo token was configured privately
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::Missing EXPO_TOKEN. Add it in Repository Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+      - name: Check out the mobile development branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/mobile-expo-v0
+          persist-credentials: false
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            mobile/package-lock.json
+
+      - name: Authenticate with Expo and install EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          packager: npm
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install workspace dependencies
+        run: npm ci
+
+      - name: Install mobile dependencies
+        working-directory: mobile
+        run: npm install
+
+      - name: Request preview build (not App Store / TestFlight submission)
+        working-directory: mobile
+        run: eas build --platform ios --profile preview --non-interactive --no-wait
