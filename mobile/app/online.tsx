@@ -3,6 +3,7 @@ import { useLocalSearchParams } from 'expo-router'
 import {
   ActivityIndicator,
   Alert,
+  AppState,
   Pressable,
   ScrollView,
   Share,
@@ -135,13 +136,14 @@ export default function OnlineScreen() {
 
     let cancelled = false
     let pollInFlight = false
+    let foreground = AppState.currentState !== 'background'
     const poll = async () => {
-      // A slow response must not create a queue of requests or roll back newer moves.
-      if (pollInFlight) return
+      // Only poll in the foreground, and never overlap a previous request.
+      if (cancelled || !foreground || pollInFlight) return
       pollInFlight = true
       try {
         const nextRoom = await getRoom(session)
-        if (!cancelled) {
+        if (!cancelled && foreground) {
           setRoom((current) =>
             !current || nextRoom.stateVersion >= current.stateVersion
               ? nextRoom
@@ -162,10 +164,16 @@ export default function OnlineScreen() {
 
     void poll()
     const timer = setInterval(() => void poll(), 1200)
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      const resumed = !foreground && nextState === 'active'
+      foreground = nextState === 'active'
+      if (resumed) void poll()
+    })
 
     return () => {
       cancelled = true
       clearInterval(timer)
+      subscription.remove()
     }
   }, [session?.roomId, session?.playerToken])
 
@@ -207,6 +215,16 @@ export default function OnlineScreen() {
       setSession(null)
       setRoom(null)
     })
+
+  const confirmLeaveLiveMatch = () =>
+    Alert.alert(
+      'Leave this online match?',
+      'This gives up your seat and may end the match for your opponent. To keep playing later, use Back instead.',
+      [
+        { text: 'Stay at table', style: 'cancel' },
+        { text: 'Leave match', style: 'destructive', onPress: handleLeave },
+      ],
+    )
 
   const patchAuthoritativeRoom = (response: AuthoritativeResponse) => {
     setRoom((current) =>
@@ -368,6 +386,16 @@ export default function OnlineScreen() {
         ) : null}
 
         {error ? <Text style={styles.inlineError}>{error}</Text> : null}
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Leave online match"
+          disabled={busy}
+          onPress={confirmLeaveLiveMatch}
+          style={styles.liveLeave}
+        >
+          <Text style={styles.liveLeaveText}>LEAVE TABLE</Text>
+        </Pressable>
 
         <OnlineTable
           room={room}
@@ -721,6 +749,24 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '900',
     letterSpacing: 1.2,
+  },
+  liveLeave: {
+    alignSelf: 'flex-end',
+    minHeight: 32,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    marginTop: 6,
+    marginRight: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.line,
+    backgroundColor: theme.panel,
+  },
+  liveLeaveText: {
+    color: theme.muted,
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.6,
   },
   roomCode: {
     color: theme.text,

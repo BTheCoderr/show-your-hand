@@ -10,6 +10,12 @@ on:
       - "src/game/**"
       - "src/deviceStore.ts"
       - "src/deviceStore.test.ts"
+      - "src/serialQueue.ts"
+      - "src/serialQueue.test.ts"
+      - "src/turnClock.ts"
+      - "src/turnClock.test.ts"
+      - "src/ui/cardArt.ts"
+      - "src/ui/cardArt.test.ts"
       - ".github/workflows/mobile-expo-check.yml"
 
 jobs:

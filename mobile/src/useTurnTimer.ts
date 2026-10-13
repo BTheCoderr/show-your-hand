@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { newHistoryEvents, startsAnotherTurn } from '../../src/turnClock'
 import type { GameState } from '../../src/game/types'
 
 export const TURN_SECONDS = 120
@@ -14,9 +15,12 @@ export function useTurnTimer(
   beginnerMode: boolean,
 ): number | null {
   const [seconds, setSeconds] = useState(TURN_SECONDS)
-  const phaseKey = state
-    ? `${state.roundStarterIndex}:${state.currentPlayerIndex}:${state.phase.type}`
-    : 'waiting'
+  const previous = useRef<{
+    history: string[]
+    currentPlayerIndex: number
+    roundStarterIndex: number
+  } | null>(null)
+
   const running = Boolean(
     state &&
       !beginnerMode &&
@@ -24,8 +28,31 @@ export function useTurnTimer(
   )
 
   useEffect(() => {
-    setSeconds(TURN_SECONDS)
-  }, [phaseKey])
+    if (!state) {
+      previous.current = null
+      setSeconds(TURN_SECONDS)
+      return
+    }
+
+    const last = previous.current
+    const events = last ? newHistoryEvents(last.history, state.history) : []
+    // CPU players may act in one reducer update, returning to the same active
+    // player. A player index alone cannot identify a new turn.
+    if (
+      last &&
+      (last.currentPlayerIndex !== state.currentPlayerIndex ||
+        last.roundStarterIndex !== state.roundStarterIndex ||
+        events.some(startsAnotherTurn))
+    ) {
+      setSeconds(TURN_SECONDS)
+    }
+
+    previous.current = {
+      history: state.history,
+      currentPlayerIndex: state.currentPlayerIndex,
+      roundStarterIndex: state.roundStarterIndex,
+    }
+  }, [state])
 
   useEffect(() => {
     if (!running) return
@@ -37,7 +64,7 @@ export function useTurnTimer(
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [running, phaseKey])
+  }, [running])
 
   return beginnerMode ? null : seconds
 }
