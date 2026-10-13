@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
+  Alert,
   Linking,
   Pressable,
   SafeAreaView,
@@ -54,9 +55,21 @@ export default function SettingsScreen() {
     await saveMobilePreferences(next)
   }
 
-  const resetStats = async () => {
-    await clearMobileStats()
-    setStats(EMPTY_MOBILE_STATS)
+  const resetStats = () => {
+    Alert.alert(
+      'Reset solo stats?',
+      'This permanently clears the solo match, win, round, attack, and defense totals saved on this phone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset stats',
+          style: 'destructive',
+          onPress: () => {
+            void clearMobileStats().then(() => setStats(EMPTY_MOBILE_STATS))
+          },
+        },
+      ],
+    )
   }
 
   return (
@@ -120,7 +133,7 @@ export default function SettingsScreen() {
           ))}
         </View>
 
-        <Pressable style={styles.resetButton} onPress={() => void resetStats()}>
+        <Pressable accessibilityRole="button" style={styles.resetButton} onPress={resetStats}>
           <Text style={styles.resetText}>RESET LOCAL STATS</Text>
         </Pressable>
 
