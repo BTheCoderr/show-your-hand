@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import type { Card } from '../game/types'
+import { resolveCardArt } from './cardArt'
 
 export type SwipeDirection = 'up' | 'down' | 'left' | 'right'
 
@@ -29,7 +30,7 @@ export function CardView({
   gestureEnabled = false,
   onSwipe,
 }: Props) {
-  const src = faceDown || !card ? '/cards/back.png' : card.art
+  const src = resolveCardArt(faceDown || !card ? '/cards/back.png' : card.art)
   const alt =
     faceDown || !card
       ? 'Card back'
