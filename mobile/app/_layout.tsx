@@ -10,12 +10,13 @@ export default function RootLayout() {
         screenOptions={{
           headerStyle: { backgroundColor: theme.bg },
           headerTintColor: theme.text,
+          headerBackButtonDisplayMode: 'minimal',
           headerShadowVisible: false,
           contentStyle: { backgroundColor: theme.bg },
           headerTitleStyle: { fontWeight: '900' },
         }}
       >
-        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="index" options={{ headerShown: false, title: 'HOME' }} />
         <Stack.Screen name="solo-setup" options={{ title: 'SOLO SETUP' }} />
         <Stack.Screen name="solo" options={{ title: 'SOLO TABLE' }} />
         <Stack.Screen name="online" options={{ title: 'ONLINE 1V1' }} />
