@@ -105,6 +105,7 @@ export default function SoloScreen() {
   const [targetIds, setTargetIds] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const [stats, setStats] = useState<MobileStats>(EMPTY_MOBILE_STATS)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   useEffect(() => {
     void loadMobileStats().then(setStats)
@@ -114,19 +115,28 @@ export default function SoloScreen() {
     let cancelled = false
 
     const restore = async () => {
-      if (!wantsResume) {
-        await clearSoloSave()
-        if (!cancelled) setRestoring(false)
-        return
-      }
+      try {
+        if (!wantsResume) {
+          await clearSoloSave()
+          return
+        }
 
-      const saved = await loadSoloSave()
-      if (!cancelled && saved && saved.game.phase.type !== 'match_over') {
-        setOpponentCount(saved.opponentCount)
-        setBeginnerMode(saved.beginnerMode)
-        setGame(saved.game)
+        const saved = await loadSoloSave()
+        if (!cancelled && saved && saved.game.phase.type !== 'match_over') {
+          setOpponentCount(saved.opponentCount)
+          setBeginnerMode(saved.beginnerMode)
+          setGame(saved.game)
+        } else if (!cancelled) {
+          setSaveError('Saved match unavailable. A new table has been started.')
+        }
+      } catch {
+        if (!cancelled) {
+          setSaveError('Storage could not be read. This match may not resume after closing the app.')
+        }
+      } finally {
+        // A storage error must never trap the player on the loading screen.
+        if (!cancelled) setRestoring(false)
       }
-      if (!cancelled) setRestoring(false)
     }
 
     void restore()
@@ -137,17 +147,30 @@ export default function SoloScreen() {
 
   useEffect(() => {
     if (restoring) return
-    if (game.phase.type === 'match_over') {
-      void clearSoloSave()
-      return
-    }
+    let cancelled = false
+    const task =
+      game.phase.type === 'match_over'
+        ? clearSoloSave()
+        : saveSoloSave({
+            game,
+            opponentCount,
+            beginnerMode,
+            updatedAt: new Date().toISOString(),
+          })
 
-    void saveSoloSave({
-      game,
-      opponentCount,
-      beginnerMode,
-      updatedAt: new Date().toISOString(),
-    })
+    void task.then(
+      () => {
+        if (!cancelled) setSaveError(null)
+      },
+      () => {
+        if (!cancelled) {
+          setSaveError('This match could not be saved. Check device storage before closing the app.')
+        }
+      },
+    )
+    return () => {
+      cancelled = true
+    }
   }, [game, opponentCount, beginnerMode, restoring])
 
   const human = playerById(game, 'human')
@@ -597,6 +620,12 @@ export default function SoloScreen() {
           ) : null}
         </View>
 
+        {saveError ? (
+          <Text accessibilityRole="alert" style={styles.saveWarning}>
+            {saveError}
+          </Text>
+        ) : null}
+
         <View style={styles.scoreBoard}>
           <View style={styles.scoreCell}>
             <Text style={styles.scoreLabel}>YOU</Text>
@@ -1019,6 +1048,17 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: { opacity: 0.35 },
   buttonPressed: { transform: [{ scale: 0.98 }] },
+  saveWarning: {
+    color: theme.danger,
+    backgroundColor: theme.panel,
+    borderColor: theme.danger,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 12,
+    lineHeight: 18,
+  },
   buttonText: {
     color: theme.text,
     fontSize: 12,
