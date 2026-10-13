@@ -11,6 +11,7 @@ on:
         type: choice
         options:
           - preflight
+          - check_expo_connection
           - build_ios_preview
       confirm:
         description: "For build_ios_preview ONLY, type BUILD_IOS_PREVIEW (may use EAS build credits)"
@@ -92,6 +93,43 @@ jobs:
       - name: Verify native iOS JavaScript bundle
         working-directory: mobile
         run: npx expo export --platform ios --output-dir dist-ios
+
+  check_connection:
+    name: Verify Expo login without starting a build
+    needs: preflight
+    if: ${{ inputs.mode == 'check_expo_connection' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify private Expo token exists
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::EXPO_TOKEN missing: add it under GitHub Actions repository secrets first."
+            exit 1
+          fi
+
+      - name: Check out Show Your Hand mobile branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/mobile-expo-v0
+          persist-credentials: false
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Authenticate with Expo (read-only)
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          packager: npm
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Confirm the Expo account connection
+        working-directory: mobile
+        run: eas whoami
 
   build_preview:
     name: Request optional iOS preview on Expo EAS
