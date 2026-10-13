@@ -1,6 +1,31 @@
-import { Stack } from 'expo-router'
-import { StatusBar } from 'react-native'
+import { Stack, router } from 'expo-router'
+import { Pressable, StatusBar, StyleSheet, Text } from 'react-native'
 import { theme } from '../src/theme'
+
+function BackButton() {
+  const goBack = () => {
+    if (router.canGoBack()) {
+      router.back()
+    } else {
+      // A direct link can open a screen without a previous route.
+      router.replace('/')
+    }
+  }
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Back"
+      accessibilityHint="Go to the previous screen"
+      hitSlop={8}
+      onPress={goBack}
+      style={({ pressed }) => [styles.back, pressed && styles.backPressed]}
+    >
+      <Text style={styles.backArrow}>‹</Text>
+      <Text style={styles.backLabel}>Back</Text>
+    </Pressable>
+  )
+}
 
 export default function RootLayout() {
   return (
@@ -10,9 +35,9 @@ export default function RootLayout() {
         screenOptions={{
           headerStyle: { backgroundColor: theme.bg },
           headerTintColor: theme.text,
-          // Always use a generic back label, not the previous route name ('index').
-          headerBackButtonDisplayMode: 'generic',
-          headerBackTitle: 'Back',
+          // Do not let iOS use a route name such as "index" as the back label.
+          headerBackVisible: false,
+          headerLeft: () => <BackButton />,
           headerShadowVisible: false,
           contentStyle: { backgroundColor: theme.bg },
           headerTitleStyle: { fontWeight: '900' },
@@ -30,3 +55,34 @@ export default function RootLayout() {
     </>
   )
 }
+
+const styles = StyleSheet.create({
+  back: {
+    minHeight: 40,
+    minWidth: 86,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    borderWidth: 1,
+    borderColor: theme.line,
+    borderRadius: 22,
+    backgroundColor: theme.panel,
+    paddingHorizontal: 12,
+  },
+  backPressed: {
+    opacity: 0.75,
+  },
+  backArrow: {
+    color: theme.text,
+    fontSize: 29,
+    lineHeight: 32,
+    fontWeight: '500',
+    marginTop: -3,
+  },
+  backLabel: {
+    color: theme.text,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+})
