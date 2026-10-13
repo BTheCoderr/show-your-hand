@@ -7,7 +7,7 @@ export function isProductPath(pathname: string): pathname is ProductPath {
   return pathname === '/about' || pathname === '/privacy' || pathname === '/terms' || pathname === '/feedback'
 }
 
-const LAST_UPDATED = 'September 30, 2026'
+const LAST_UPDATED = 'October 13, 2026'
 
 export function ProductPage({ path }: { path: ProductPath }) {
   if (path === '/feedback') return <FeedbackPage />
@@ -92,6 +92,20 @@ export function ProductPage({ path }: { path: ProductPath }) {
           <p>
             Private room tokens are used to reconnect you to the same seat. Do not share them.
             Invite links contain only the public room code, not your private room token.
+          </p>
+          <p>
+            Table chat and voice are optional and only work inside a private online room. Chat
+            messages and the live card-drag animation are relayed in real time through our game
+            provider, Supabase, and are not saved on our servers; your device keeps a copy of the
+            room’s chat until you close the tab. Voice audio travels directly between the two
+            players’ devices and is never recorded. To set up a voice connection, each device shares
+            its network address with the other player and with public STUN servers run by Google
+            and Cloudflare. The microphone is only used after you tap Voice and allow access.
+          </p>
+          <p>
+            If you report a player, the report sends the room code, both table names, your note,
+            and that player’s recent chat messages from your device to the SHOW YOUR HAND team
+            through our website host, Netlify, so we can review it.
           </p>
           <p>
             Online beta records may be retained for reliability, security, playtesting, and product

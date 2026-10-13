@@ -86,6 +86,7 @@ export type Phase =
       reverserId: PlayerId
       reverseColor: Color
     }
+  | { type: 'draw_card'; playerId: PlayerId }
   | { type: 'may_declare'; playerId: PlayerId }
   | { type: 'review_hands' }
   | { type: 'round_over'; winnerId: PlayerId; points: number; combo: ComboName; label: string }
@@ -107,12 +108,23 @@ export type GameState = {
   matchPointGoal: number
   rngState: number
   selectedCardId: string | null
+  /** When true, the active player picks up their replacement card themselves after a drop. */
+  manualDraw?: boolean
+  /** Player who still owes one pickup from the draw pile for their own drop this turn. */
+  pendingDrawId?: PlayerId | null
 }
 
 export type Action =
-  | { type: 'START_MATCH'; opponentCount: 1 | 2 | 3 | 4 | 5; testMode?: boolean; seed?: number }
+  | {
+      type: 'START_MATCH'
+      opponentCount: 1 | 2 | 3 | 4 | 5
+      testMode?: boolean
+      seed?: number
+      manualDraw?: boolean
+    }
   | { type: 'SELECT_CARD'; playerId: PlayerId; cardId: string }
   | { type: 'TAKE_DISCARD'; playerId: PlayerId }
+  | { type: 'DRAW_CARD'; playerId: PlayerId }
   | { type: 'CLAIM_DROPPED'; playerId: PlayerId; cardIds: string[] }
   | { type: 'TRIM_HAND'; playerId: PlayerId; cardIds: string[] }
   | { type: 'CANCEL_SELECTION' }

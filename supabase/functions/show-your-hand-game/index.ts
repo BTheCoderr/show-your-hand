@@ -271,6 +271,7 @@ Deno.serve(async (req: Request) => {
         type: 'START_MATCH',
         opponentCount: 1,
         testMode: false,
+        manualDraw: body?.manualDraw === true,
       })
       state.players = state.players.map((player, index) => ({
         ...player,

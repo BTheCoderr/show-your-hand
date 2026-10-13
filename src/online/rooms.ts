@@ -230,6 +230,7 @@ export async function startRoom(session: OnlineSession): Promise<AuthoritativeRe
     op: 'start',
     roomId: session.roomId,
     playerToken: session.playerToken,
+    manualDraw: true,
   })
 }
 

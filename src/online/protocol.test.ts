@@ -36,6 +36,19 @@ describe('online action protocol', () => {
       }),
     ).toBeNull()
     expect(onlineActionError(state, { type: 'NEXT_ROUND' })).toMatch(/not allowed/)
+    expect(onlineActionError(state, { type: 'DRAW_CARD', playerId: current.id })).toMatch(/not allowed/)
+  })
+
+  it('allows only the draw move while a player owes a pickup', () => {
+    const state = onlineState()
+    const current = state.players[state.currentPlayerIndex]
+    state.phase = { type: 'draw_card', playerId: current.id }
+
+    expect(onlineActionError(state, { type: 'DRAW_CARD', playerId: current.id })).toBeNull()
+    expect(onlineActionError(state, { type: 'TAKE_DISCARD', playerId: current.id })).toMatch(/not allowed/)
+    expect(
+      onlineActionError(state, { type: 'SELECT_CARD', playerId: current.id, cardId: current.hand[0] }),
+    ).toMatch(/not allowed/)
   })
 
   it('rejects online state changes that alter table identity or enable test mode', () => {

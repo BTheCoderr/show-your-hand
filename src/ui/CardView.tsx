@@ -14,6 +14,8 @@ type Props = {
   onClick?: () => void
   gestureEnabled?: boolean
   onSwipe?: (direction: SwipeDirection) => void
+  onDragMove?: (offset: { x: number; y: number }) => void
+  onDragEnd?: (swiped: SwipeDirection | null) => void
 }
 
 const SWIPE_THRESHOLD = 46
@@ -28,6 +30,8 @@ export function CardView({
   onClick,
   gestureEnabled = false,
   onSwipe,
+  onDragMove,
+  onDragEnd,
 }: Props) {
   const src = faceDown || !card ? '/cards/back.png' : card.art
   const alt =
@@ -54,6 +58,7 @@ export function CardView({
     const y = event.clientY - start.current.y
     if (Math.hypot(x, y) > 8) suppressClick.current = true
     setDrag({ x, y, active: true })
+    onDragMove?.({ x, y })
   }
 
   const finishDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
@@ -69,8 +74,9 @@ export function CardView({
       // Pointer capture may already be released by the browser.
     }
 
+    let swiped: SwipeDirection | null = null
     if (Math.max(Math.abs(x), Math.abs(y)) >= SWIPE_THRESHOLD && onSwipe) {
-      const direction: SwipeDirection =
+      swiped =
         Math.abs(y) >= Math.abs(x)
           ? y < 0
             ? 'up'
@@ -79,9 +85,10 @@ export function CardView({
             ? 'left'
             : 'right'
       suppressClick.current = true
-      onSwipe(direction)
+      onSwipe(swiped)
     }
     setDrag({ x: 0, y: 0, active: false })
+    onDragEnd?.(swiped)
   }
 
   const cancelDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
@@ -94,6 +101,7 @@ export function CardView({
       // Pointer capture may already be released by the browser.
     }
     setDrag({ x: 0, y: 0, active: false })
+    onDragEnd?.(null)
   }
 
   const rotation = Math.max(-8, Math.min(8, drag.x * 0.04))

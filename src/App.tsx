@@ -41,18 +41,23 @@ import {
   type OnlineRoom,
   type OnlineSession,
 } from './online/rooms'
+import { openTableChannel, type TableChannel, type TableEvent } from './online/tableChannel'
 import type { Action, Color, GameState } from './game/types'
 import { COLORS } from './game/types'
-import { CardView } from './ui/CardView'
+import { CardView, type SwipeDirection } from './ui/CardView'
 import { FirstVisitPrompt } from './ui/FirstVisitPrompt'
 import { InstallHelp } from './ui/InstallHelp'
 import { OnlineLobby } from './ui/OnlineLobby'
+import { PickupMotionLayer, type PickupFlight, type PickupGhost } from './ui/PickupMotion'
 import { RulesPanel } from './ui/RulesPanel'
 import { StartScreen } from './ui/StartScreen'
+import { TableComms, type CommsRouter } from './ui/TableComms'
 import { Tutorial } from './ui/Tutorial'
 
 const TURN_SECONDS = 120
 const APP_VERSION = 'Beta 0.1.2'
+const PICKUP_DRAG_SEND_MS = 40
+const PICKUP_FLIGHT_DEDUPE_MS = 4000
 
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -126,6 +131,10 @@ function beginnerHelp(state: GameState, viewerId: string): string | null {
       return phase.attack.attackerId === viewerId
         ? 'You can spend a Blank to cancel the reversed Drop Color, or accept it.'
         : 'The original attacker gets one chance to Blank the reversal.'
+    case 'draw_card':
+      return phase.playerId === viewerId
+        ? 'Now pick up: drag the glowing card on the draw pile down into your hand.'
+        : `${nameOf(state, phase.playerId)} is picking up a card from the draw pile.`
     case 'may_declare':
       return phase.playerId === viewerId
         ? 'Your hand scores. Declare it to end the round and collect the points, or pass.'
@@ -160,6 +169,7 @@ function actionLabel(state: GameState, action: Action): string {
   }
 
   if (action.type === 'TAKE_DISCARD') return `${playerName} takes the discard`
+  if (action.type === 'DRAW_CARD') return `${playerName} picks up a card`
   if (action.type === 'RESPOND_DEFENSE') {
     return action.response === 'accept'
       ? `${playerName} accepts the attack`
@@ -229,6 +239,8 @@ export function App() {
   const [localStats, setLocalStats] = useState(() => loadLocalStats())
   const [onlineSession, setOnlineSession] = useState<OnlineSession | null>(restoredOnlineSession)
   const [onlineRoom, setOnlineRoom] = useState<OnlineRoom | null>(null)
+  const onlineRoomRef = useRef(onlineRoom)
+  onlineRoomRef.current = onlineRoom
   const [onlineLobbyOpen, setOnlineLobbyOpen] = useState(
     Boolean(restoredOnlineSession || invitedCode),
   )
@@ -249,6 +261,19 @@ export function App() {
   const attackTimer = useRef<number | null>(null)
   const aiAttackTimer = useRef<number | null>(null)
   const lastOutcomeRef = useRef<string | null>(null)
+  const [pickupGhost, setPickupGhost] = useState<PickupGhost | null>(null)
+  const [pickupFlights, setPickupFlights] = useState<PickupFlight[]>([])
+  const [drawPileElement, setDrawPileElement] = useState<HTMLDivElement | null>(null)
+  const seatElements = useRef<Record<string, HTMLElement | null>>({})
+  const tableChannel = useRef<TableChannel | null>(null)
+  const [channelHandle, setChannelHandle] = useState<TableChannel | null>(null)
+  const [channelConnected, setChannelConnected] = useState(false)
+  const commsRouter = useRef<CommsRouter['current']>(null)
+  const pickupDragSentAt = useRef(0)
+  const pickupGhostRef = useRef<PickupGhost | null>(null)
+  const lastFlightAt = useRef<Record<string, number>>({})
+  const flightKey = useRef(0)
+  const previousState = useRef<GameState | null>(null)
 
   const localPlayerId = onlineSession?.gamePlayerId ?? 'human'
   const onlineInGame = Boolean(onlineSession && onlineRoom?.status === 'in_game')
@@ -615,6 +640,7 @@ export function App() {
         type: 'START_MATCH',
         opponentCount: menuCount,
         testMode: menuTest,
+        manualDraw: true,
       })
       setState(next)
       saveMatch(next)
@@ -705,6 +731,104 @@ export function App() {
     }
   }, [onlineSession?.roomId, onlineSession?.playerToken, onlineSession?.stateVersion])
 
+  const startPickupFlight = (playerId: string, fromProgress = 0, sway = 0) => {
+    lastFlightAt.current[playerId] = Date.now()
+    flightKey.current += 1
+    const key = flightKey.current
+    setPickupFlights((current) => [...current.slice(-3), { key, playerId, fromProgress, sway }])
+  }
+
+  const updatePickupGhost = (ghost: PickupGhost | null) => {
+    pickupGhostRef.current = ghost
+    setPickupGhost(ghost)
+  }
+
+  useEffect(() => {
+    if (!onlineSession) return
+    const opponentId = () =>
+      onlineRoomRef.current?.players.find(
+        (player) => player.gamePlayerId !== onlineSession.gamePlayerId,
+      )?.gamePlayerId
+
+    const handleEvent = (event: string, payload: TableEvent) => {
+      if (payload.from !== opponentId()) return
+      if (event === 'pickup-drag') {
+        updatePickupGhost({
+          playerId: payload.from,
+          progress: Number(payload.progress) || 0,
+          sway: Math.max(-1, Math.min(1, Number(payload.sway) || 0)),
+        })
+      } else if (event === 'pickup-end') {
+        const last = pickupGhostRef.current
+        updatePickupGhost(null)
+        if (payload.done === true) startPickupFlight(payload.from, last?.progress ?? 0, last?.sway ?? 0)
+      } else {
+        commsRouter.current?.(event, payload)
+      }
+    }
+
+    const channel = openTableChannel(
+      onlineSession.roomId,
+      onlineSession.gamePlayerId,
+      handleEvent,
+      setChannelConnected,
+    )
+    tableChannel.current = channel
+    setChannelHandle(channel)
+    return () => {
+      channel?.close()
+      tableChannel.current = null
+      setChannelHandle(null)
+      updatePickupGhost(null)
+    }
+  }, [onlineSession?.roomId, onlineSession?.gamePlayerId])
+
+  const opponentSeatId = onlineOpponent?.gamePlayerId
+  const opponentSeatName = onlineOpponent?.displayName
+  const commsOpponent = useMemo(
+    () => (opponentSeatId ? { id: opponentSeatId, name: opponentSeatName ?? 'Opponent' } : null),
+    [opponentSeatId, opponentSeatName],
+  )
+  const selfSeatName =
+    onlineRoom?.players.find((player) => player.gamePlayerId === onlineSession?.gamePlayerId)
+      ?.displayName ?? 'You'
+
+  useEffect(() => {
+    const before = previousState.current
+    previousState.current = state
+    if (!before || before.phase.type !== 'draw_card') return
+    const drawerId = before.phase.playerId
+    if (state.phase.type === 'draw_card' && state.phase.playerId === drawerId) return
+    if (drawerId === localPlayerId) return
+    const beforeHand = before.players.find((player) => player.id === drawerId)?.hand.length ?? 0
+    const afterHand = state.players.find((player) => player.id === drawerId)?.hand.length ?? 0
+    if (afterHand <= beforeHand) return
+    if (Date.now() - (lastFlightAt.current[drawerId] ?? 0) < PICKUP_FLIGHT_DEDUPE_MS) return
+    if (pickupGhostRef.current?.playerId === drawerId) updatePickupGhost(null)
+    startPickupFlight(drawerId)
+  }, [localPlayerId, state])
+
+  const pickupDistance = () => {
+    const pile = drawPileElement?.getBoundingClientRect()
+    const hand = seatElements.current[localPlayerId]?.getBoundingClientRect()
+    if (!pile || !hand) return 220
+    return Math.max(80, hand.top + hand.height / 2 - (pile.top + pile.height / 2))
+  }
+
+  const reportPickupDrag = ({ x, y }: { x: number; y: number }) => {
+    const now = Date.now()
+    if (now - pickupDragSentAt.current < PICKUP_DRAG_SEND_MS) return
+    pickupDragSentAt.current = now
+    tableChannel.current?.send('pickup-drag', {
+      progress: Math.max(0, Math.min(1, y / pickupDistance())),
+      sway: Math.max(-1, Math.min(1, x / 120)),
+    })
+  }
+
+  const endPickupDrag = (swiped: SwipeDirection | null) => {
+    tableChannel.current?.send('pickup-end', { done: swiped === 'down' })
+  }
+
   useEffect(() => {
     setTurnSeconds(TURN_SECONDS)
   }, [activeActorId, state.roundStarterIndex, showStart])
@@ -771,6 +895,7 @@ export function App() {
     currentPlayer(state).id === localPlayerId &&
     playerById(state, localPlayerId).hand.length === 5 &&
     topDiscard?.kind === 'number'
+  const canDraw = state.phase.type === 'draw_card' && state.phase.playerId === localPlayerId
 
   return (
     <div className="syh-app">
@@ -945,6 +1070,9 @@ export function App() {
                 return (
                   <article
                     key={player.id}
+                    ref={(element) => {
+                      seatElements.current[player.id] = element
+                    }}
                     className={`syh-seat ${opponentSeatClass(index, opponents.length)} ${active ? 'is-active' : ''}`}
                   >
                     <div className="syh-row">
@@ -1021,9 +1149,37 @@ export function App() {
               </div>
             ) : null}
             <div className="syh-center-piles">
-              <div className={`syh-pile syh-draw-pile ${openingShuffle ? 'is-shuffling' : ''}`}>
-                <CardView faceDown />
-                <span>Draw · {state.drawPile.length}</span>
+              <div
+                ref={setDrawPileElement}
+                className={`syh-pile syh-draw-pile ${openingShuffle ? 'is-shuffling' : ''} ${canDraw ? 'is-takeable' : ''}`}
+              >
+                <CardView
+                  faceDown
+                  label={
+                    canDraw
+                      ? 'Pick up: drag the top card of the draw pile down into your hand, or tap it'
+                      : undefined
+                  }
+                  gestureEnabled={canDraw}
+                  onClick={
+                    canDraw
+                      ? () => {
+                          if (lock.current) return
+                          startPickupFlight(localPlayerId)
+                          tableChannel.current?.send('pickup-end', { done: true })
+                          dispatch({ type: 'DRAW_CARD', playerId: localPlayerId })
+                        }
+                      : undefined
+                  }
+                  onSwipe={(direction) => {
+                    if (canDraw && direction === 'down') {
+                      dispatch({ type: 'DRAW_CARD', playerId: localPlayerId })
+                    }
+                  }}
+                  onDragMove={canDraw ? reportPickupDrag : undefined}
+                  onDragEnd={canDraw ? endPickupDrag : undefined}
+                />
+                <span>{canDraw ? 'Pick up' : 'Draw'} · {state.drawPile.length}</span>
               </div>
               <div className={`syh-pile ${canTakeDiscard ? 'is-takeable' : ''}`}>
                 <CardView
@@ -1202,7 +1358,12 @@ export function App() {
                 ) : null}
               </span>
             </header>
-            <div className="syh-row is-you">
+            <div
+              className="syh-row is-you"
+              ref={(element) => {
+                seatElements.current[localPlayerId] = element
+              }}
+            >
               {handCards(state, localPlayerId).map((card) => (
                 <CardView
                   key={card.id}
@@ -1255,6 +1416,16 @@ export function App() {
             </div>
           </section>
           </div>
+
+          <PickupMotionLayer
+            ghost={pickupGhost}
+            flights={pickupFlights}
+            pile={drawPileElement}
+            targetFor={(playerId) => seatElements.current[playerId] ?? null}
+            onFlightDone={(key) =>
+              setPickupFlights((current) => current.filter((flight) => flight.key !== key))
+            }
+          />
 
           {state.phase.type === 'await_defense' && state.phase.responderId === localPlayerId ? (
             <DefensePrompt
@@ -1391,6 +1562,21 @@ export function App() {
           void leaveOnlineMatch()
         }}
       />
+
+      {onlineSession && onlineRoom ? (
+        <TableComms
+          key={onlineSession.roomId}
+          channel={channelHandle}
+          connected={channelConnected}
+          router={commsRouter}
+          roomId={onlineSession.roomId}
+          roomCode={onlineSession.roomCode}
+          selfId={onlineSession.gamePlayerId}
+          selfName={selfSeatName}
+          opponent={commsOpponent}
+          isHost={onlineSession.isHost}
+        />
+      ) : null}
 
       <InstallHelp open={installHelpOpen} onClose={() => setInstallHelpOpen(false)} />
       <Tutorial open={tutorialOpen} onClose={() => setTutorialOpen(false)} />

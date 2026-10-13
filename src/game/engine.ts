@@ -4,6 +4,7 @@ import {
   currentPlayer,
   dropColorFromHand,
   firstQualifying,
+  drawOne,
   log,
   nameOf,
   nextOpponent,
@@ -11,6 +12,7 @@ import {
   playerById,
   playerScore,
   refillAll,
+  refillPlayer,
   spendFromHand,
 } from './helpers'
 import { seedFrom, shuffleInPlace } from './rng'
@@ -77,6 +79,7 @@ function dealRound(state: GameState, firstIndex: number): void {
   state.skippedPlayerId = null
   state.revealedUntilTurnEnd = []
   state.selectedCardId = null
+  state.pendingDrawId = null
   state.phase = { type: 'choose_action' }
   assertConservation(state)
 }
@@ -85,9 +88,11 @@ function startMatch(
   opponentCount: 1 | 2 | 3 | 4 | 5,
   testMode = false,
   seed?: number,
+  manualDraw = false,
 ): GameState {
   const state = emptyMenuState(testMode)
   state.rngState = seedFrom(seed)
+  state.manualDraw = manualDraw
   state.players = makePlayers(opponentCount)
   dealRound(state, 0)
   log(
@@ -234,9 +239,41 @@ function endTurn(state: GameState): void {
   log(state, `${currentPlayer(state).name}'s turn.`)
 }
 
+function owePickupIfShort(state: GameState, playerId: PlayerId): void {
+  if (!state.manualDraw) return
+  if (playerById(state, playerId).hand.length < 5) state.pendingDrawId = playerId
+}
+
 function afterActionResolved(state: GameState): void {
+  const owedId = state.pendingDrawId
+  if (owedId) {
+    const owed = playerById(state, owedId)
+    for (const player of state.players) {
+      if (player.id === owedId) {
+        while (owed.hand.length < 4) owed.hand.push(drawOne(state))
+      } else {
+        refillPlayer(state, player)
+      }
+    }
+    if (owed.hand.length < 5) {
+      state.phase = { type: 'draw_card', playerId: owedId }
+      return
+    }
+    state.pendingDrawId = null
+  }
   refillAll(state)
   openDeclareWindow(state)
+}
+
+function drawCard(state: GameState, playerId: PlayerId): void {
+  if (state.phase.type !== 'draw_card' || state.phase.playerId !== playerId) {
+    throw new Error('You cannot pick up from the draw pile now')
+  }
+  const player = playerById(state, playerId)
+  player.hand.push(drawOne(state))
+  state.pendingDrawId = null
+  log(state, `${player.name} picked up a card from the draw pile.`)
+  afterActionResolved(state)
 }
 
 function resolveShowYourHand(state: GameState, attack: PendingAttack): void {
@@ -454,11 +491,13 @@ function discardCard(state: GameState, playerId: PlayerId, cardId: string): void
   const label = card.kind === 'number' ? `${card.color} ${card.number}` : card.kind.replace(/-/g, ' ')
   log(state, `${nameOf(state, playerId)} discarded ${label}.`)
   state.selectedCardId = null
+  owePickupIfShort(state, playerId)
   afterActionResolved(state)
 }
 
 function playAttack(state: GameState, attack: PendingAttack): void {
   spendFromHand(state, attack.attackerId, attack.cardId)
+  owePickupIfShort(state, attack.attackerId)
   const label = attack.kind.replace(/-/g, ' ')
   const targets = attack.targetIds.map((id) => nameOf(state, id)).join(' and ')
   const colorBit = attack.color ? ` (${attack.color})` : ''
@@ -576,7 +615,7 @@ function nextRound(state: GameState): void {
 
 export function reduce(state: GameState, action: Action): GameState {
   if (action.type === 'START_MATCH') {
-    return startMatch(action.opponentCount, action.testMode, action.seed)
+    return startMatch(action.opponentCount, action.testMode, action.seed, action.manualDraw)
   }
   if (action.type === 'RESTART') {
     return emptyMenuState(state.testMode)
@@ -596,6 +635,9 @@ export function reduce(state: GameState, action: Action): GameState {
         break
       case 'TAKE_DISCARD':
         takeDiscard(next, action.playerId)
+        break
+      case 'DRAW_CARD':
+        drawCard(next, action.playerId)
         break
       case 'CLAIM_DROPPED':
         claimDropped(next, action.playerId, action.cardIds)
@@ -676,6 +718,8 @@ export function actorId(state: GameState): PlayerId | null {
       return state.phase.reverserId
     case 'await_reverse_blank':
       return state.phase.attack.attackerId
+    case 'draw_card':
+      return state.phase.playerId
     case 'may_declare':
       return state.phase.playerId
     case 'review_hands':
@@ -707,8 +751,11 @@ export function instructionFor(state: GameState, viewerId?: PlayerId): string {
       const active = currentPlayer(state)
       const viewerTurn = viewerId ? active.id === viewerId : active.isHuman
       if (viewerTurn) {
-        return canDeclare(state, active.id)
-          ? 'Your turn. Declare your hand, play a special, or discard a card.'
+        if (canDeclare(state, active.id)) {
+          return 'Your turn. Declare your hand, play a special, or discard a card.'
+        }
+        return state.manualDraw
+          ? 'Your turn. Play one special or discard one card, then pick up from the draw pile.'
           : 'Your turn. Play one special or discard one card, then draw back to five.'
       }
       return `${active.name} is thinking…`
@@ -743,6 +790,14 @@ export function instructionFor(state: GameState, viewerId?: PlayerId): string {
       return viewerId && phase.attack.attackerId !== viewerId
         ? `${nameOf(state, phase.attack.attackerId)} is deciding whether to Blank the reverse…`
         : 'Blank the reverse or accept it.'
+    case 'draw_card':
+      return viewerId
+        ? phase.playerId === viewerId
+          ? 'Pick up your card: drag the top of the draw pile into your hand.'
+          : `${nameOf(state, phase.playerId)} is picking up a card…`
+        : playerById(state, phase.playerId).isHuman
+          ? 'Pick up your card: drag the top of the draw pile into your hand.'
+          : `${nameOf(state, phase.playerId)} is picking up a card…`
     case 'may_declare':
       return viewerId && phase.playerId !== viewerId
         ? `${nameOf(state, phase.playerId)} is deciding whether to declare…`

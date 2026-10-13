@@ -14,6 +14,7 @@ export function fixture(options: {
   revealed?: string[]
   seed?: number
   testMode?: boolean
+  manualDraw?: boolean
 }): GameState {
   const names: Record<string, string> = { human: 'You' }
   const ids = Object.keys(options.hands)
@@ -60,6 +61,8 @@ export function fixture(options: {
     matchPointGoal: MATCH_POINT_GOAL,
     rngState: seedFrom(options.seed ?? 7),
     selectedCardId: null,
+    manualDraw: options.manualDraw ?? false,
+    pendingDrawId: null,
   }
   return state
 }

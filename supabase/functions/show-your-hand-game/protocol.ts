@@ -12,6 +12,7 @@ const ALLOWED_BY_PHASE: Record<PhaseType, readonly ActionType[]> = {
   trim_hand: ['TRIM_HAND'],
   choose_reverse_color: ['CHOOSE_REVERSE_COLOR'],
   await_reverse_blank: ['RESPOND_REVERSE_BLANK'],
+  draw_card: ['DRAW_CARD'],
   may_declare: ['DECLARE', 'PASS_DECLARE'],
   review_hands: ['CONTINUE'],
   round_over: ['NEXT_ROUND'],

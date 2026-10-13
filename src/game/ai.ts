@@ -249,6 +249,8 @@ export function chooseAiAction(state: GameState): Action {
       }
       return { type: 'RESPOND_REVERSE_BLANK', playerId: id, response: 'accept' }
     }
+    case 'draw_card':
+      return { type: 'DRAW_CARD', playerId: id }
     case 'may_declare':
       return canDeclare(state, id)
         ? { type: 'DECLARE', playerId: id }
