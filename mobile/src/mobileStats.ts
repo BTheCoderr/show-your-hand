@@ -1,4 +1,4 @@
-import * as SecureStore from 'expo-secure-store'
+import { deleteSecureItem, getSecureItem, setSecureItem } from './secureStore'
 import { handCards } from '../../src/game/helpers'
 import { scoreHand } from '../../src/game/scoring'
 import type { Action, GameState } from '../../src/game/types'
@@ -27,7 +27,7 @@ export const EMPTY_MOBILE_STATS: MobileStats = {
 
 export async function loadMobileStats(): Promise<MobileStats> {
   try {
-    const raw = await SecureStore.getItemAsync(STATS_KEY)
+    const raw = await getSecureItem(STATS_KEY)
     if (!raw) return EMPTY_MOBILE_STATS
     return { ...EMPTY_MOBILE_STATS, ...(JSON.parse(raw) as Partial<MobileStats>) }
   } catch {
@@ -36,11 +36,11 @@ export async function loadMobileStats(): Promise<MobileStats> {
 }
 
 export async function saveMobileStats(stats: MobileStats): Promise<void> {
-  await SecureStore.setItemAsync(STATS_KEY, JSON.stringify(stats))
+  await setSecureItem(STATS_KEY, JSON.stringify(stats))
 }
 
 export async function clearMobileStats(): Promise<void> {
-  await SecureStore.deleteItemAsync(STATS_KEY)
+  await deleteSecureItem(STATS_KEY)
 }
 
 export function statsAfterAction(

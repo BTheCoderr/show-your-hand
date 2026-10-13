@@ -1,4 +1,4 @@
-import * as SecureStore from 'expo-secure-store'
+import { getSecureItem, setSecureItem } from './secureStore'
 
 const PREFS_KEY = 'show-your-hand:mobile-preferences:v1'
 
@@ -18,7 +18,7 @@ export const DEFAULT_MOBILE_PREFERENCES: MobilePreferences = {
 
 export async function loadMobilePreferences(): Promise<MobilePreferences> {
   try {
-    const raw = await SecureStore.getItemAsync(PREFS_KEY)
+    const raw = await getSecureItem(PREFS_KEY)
     if (!raw) return DEFAULT_MOBILE_PREFERENCES
     const parsed = JSON.parse(raw) as Partial<MobilePreferences>
     const count = Number(parsed.defaultOpponents)
@@ -39,5 +39,5 @@ export async function loadMobilePreferences(): Promise<MobilePreferences> {
 export async function saveMobilePreferences(
   preferences: MobilePreferences,
 ): Promise<void> {
-  await SecureStore.setItemAsync(PREFS_KEY, JSON.stringify(preferences))
+  await setSecureItem(PREFS_KEY, JSON.stringify(preferences))
 }

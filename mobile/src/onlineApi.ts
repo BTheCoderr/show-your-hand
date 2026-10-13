@@ -1,4 +1,4 @@
-import * as SecureStore from 'expo-secure-store'
+import { deleteSecureItem, getSecureItem, setSecureItem } from './secureStore'
 import type { Action, GameState } from '../../src/game/types'
 
 const SUPABASE_URL = (
@@ -278,7 +278,7 @@ export async function leaveRoom(session: OnlineSession): Promise<void> {
 
 export async function loadOnlineSession(): Promise<OnlineSession | null> {
   try {
-    const raw = await SecureStore.getItemAsync(SESSION_KEY)
+    const raw = await getSecureItem(SESSION_KEY)
     if (!raw) return null
 
     const parsed = JSON.parse(raw) as OnlineSession
@@ -301,10 +301,10 @@ export async function saveOnlineSession(
   session: OnlineSession | null,
 ): Promise<void> {
   if (!session) {
-    await SecureStore.deleteItemAsync(SESSION_KEY)
+    await deleteSecureItem(SESSION_KEY)
     return
   }
-  await SecureStore.setItemAsync(SESSION_KEY, JSON.stringify(session))
+  await setSecureItem(SESSION_KEY, JSON.stringify(session))
 }
 
 export function webJoinUrl(code: string): string {

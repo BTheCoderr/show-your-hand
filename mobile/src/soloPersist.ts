@@ -1,4 +1,4 @@
-import * as SecureStore from 'expo-secure-store'
+import { deleteSecureItem, getSecureItem, setSecureItem } from './secureStore'
 import type { GameState } from '../../src/game/types'
 
 const SOLO_SAVE_META_KEY = 'show-your-hand:mobile-solo-save:v1:meta'
@@ -17,7 +17,7 @@ type SoloSaveMeta = {
 }
 
 async function readSerialized(): Promise<string | null> {
-  const metaRaw = await SecureStore.getItemAsync(SOLO_SAVE_META_KEY)
+  const metaRaw = await getSecureItem(SOLO_SAVE_META_KEY)
   if (!metaRaw) return null
 
   const meta = JSON.parse(metaRaw) as SoloSaveMeta
@@ -27,7 +27,7 @@ async function readSerialized(): Promise<string | null> {
 
   const parts = await Promise.all(
     Array.from({ length: meta.chunks }, (_, index) =>
-      SecureStore.getItemAsync(`${SOLO_SAVE_CHUNK_PREFIX}${index}`),
+      getSecureItem(`${SOLO_SAVE_CHUNK_PREFIX}${index}`),
     ),
   )
 
@@ -65,14 +65,14 @@ export async function saveSoloSave(save: SoloSave): Promise<void> {
       serialized.slice(index * CHUNK_SIZE, (index + 1) * CHUNK_SIZE),
   )
 
-  const previousMetaRaw = await SecureStore.getItemAsync(SOLO_SAVE_META_KEY)
+  const previousMetaRaw = await getSecureItem(SOLO_SAVE_META_KEY)
   const previousChunks = previousMetaRaw
     ? (JSON.parse(previousMetaRaw) as SoloSaveMeta).chunks
     : 0
 
   await Promise.all(
     chunks.map((chunk, index) =>
-      SecureStore.setItemAsync(
+      setSecureItem(
         `${SOLO_SAVE_CHUNK_PREFIX}${index}`,
         chunk,
       ),
@@ -84,14 +84,14 @@ export async function saveSoloSave(save: SoloSave): Promise<void> {
       Array.from(
         { length: previousChunks - chunks.length },
         (_, offset) =>
-          SecureStore.deleteItemAsync(
+          deleteSecureItem(
             `${SOLO_SAVE_CHUNK_PREFIX}${chunks.length + offset}`,
           ),
       ),
     )
   }
 
-  await SecureStore.setItemAsync(
+  await setSecureItem(
     SOLO_SAVE_META_KEY,
     JSON.stringify({ chunks: chunks.length } satisfies SoloSaveMeta),
   )
@@ -99,17 +99,17 @@ export async function saveSoloSave(save: SoloSave): Promise<void> {
 
 export async function clearSoloSave(): Promise<void> {
   try {
-    const metaRaw = await SecureStore.getItemAsync(SOLO_SAVE_META_KEY)
+    const metaRaw = await getSecureItem(SOLO_SAVE_META_KEY)
     const chunks = metaRaw
       ? (JSON.parse(metaRaw) as SoloSaveMeta).chunks
       : 0
 
     await Promise.all(
       Array.from({ length: Math.max(0, chunks) }, (_, index) =>
-        SecureStore.deleteItemAsync(`${SOLO_SAVE_CHUNK_PREFIX}${index}`),
+        deleteSecureItem(`${SOLO_SAVE_CHUNK_PREFIX}${index}`),
       ),
     )
   } finally {
-    await SecureStore.deleteItemAsync(SOLO_SAVE_META_KEY)
+    await deleteSecureItem(SOLO_SAVE_META_KEY)
   }
 }
