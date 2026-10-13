@@ -1,9 +1,10 @@
+import { MOBILE_STORAGE_KEYS } from '../../src/deviceStore'
 import { deleteSecureItem, getSecureItem, setSecureItem } from './secureStore'
 import { handCards } from '../../src/game/helpers'
 import { scoreHand } from '../../src/game/scoring'
 import type { Action, GameState } from '../../src/game/types'
 
-const STATS_KEY = 'show-your-hand:mobile-stats:v1'
+export const STATS_KEY = MOBILE_STORAGE_KEYS.stats
 
 export type MobileStats = {
   matchesPlayed: number

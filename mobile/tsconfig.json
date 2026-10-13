@@ -12,6 +12,7 @@
     "../src/game/**/*.ts"
   ],
   "exclude": [
-    "../src/game/**/*.test.ts"
+    "../src/game/**/*.test.ts",
+    "**/*.test.ts"
   ]
 }

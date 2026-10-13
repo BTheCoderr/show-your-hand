@@ -1,8 +1,9 @@
+import { MOBILE_STORAGE_KEYS } from '../../src/deviceStore'
 import { deleteSecureItem, getSecureItem, setSecureItem } from './secureStore'
 import type { GameState } from '../../src/game/types'
 
-const SOLO_SAVE_META_KEY = 'show-your-hand:mobile-solo-save:v1:meta'
-const SOLO_SAVE_CHUNK_PREFIX = 'show-your-hand:mobile-solo-save:v1:chunk:'
+export const SOLO_SAVE_META_KEY = MOBILE_STORAGE_KEYS.soloMeta
+export const SOLO_SAVE_CHUNK_PREFIX = MOBILE_STORAGE_KEYS.soloChunk
 const CHUNK_SIZE = 1500
 
 export type SoloSave = {

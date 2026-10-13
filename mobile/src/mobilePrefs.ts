@@ -1,6 +1,7 @@
+import { MOBILE_STORAGE_KEYS } from '../../src/deviceStore'
 import { getSecureItem, setSecureItem } from './secureStore'
 
-const PREFS_KEY = 'show-your-hand:mobile-preferences:v1'
+export const PREFS_KEY = MOBILE_STORAGE_KEYS.prefs
 
 export type MobilePreferences = {
   beginnerMode: boolean

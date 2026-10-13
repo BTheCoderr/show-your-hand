@@ -1,3 +1,4 @@
+import { MOBILE_STORAGE_KEYS } from '../../src/deviceStore'
 import { deleteSecureItem, getSecureItem, setSecureItem } from './secureStore'
 import type { Action, GameState } from '../../src/game/types'
 
@@ -10,7 +11,7 @@ const SUPABASE_KEY =
   process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
   'sb_publishable_-AWzMm4BPIBFBFntMup0Qg_oJWhIUlH'
 
-const SESSION_KEY = 'show-your-hand:mobile-online-session:v1'
+export const SESSION_KEY = MOBILE_STORAGE_KEYS.session
 const ONLINE_REQUEST_TIMEOUT_MS = 12000
 
 export type OnlinePlayerStats = {
@@ -300,11 +301,19 @@ export async function loadOnlineSession(): Promise<OnlineSession | null> {
 export async function saveOnlineSession(
   session: OnlineSession | null,
 ): Promise<void> {
-  if (!session) {
-    await deleteSecureItem(SESSION_KEY)
-    return
+  try {
+    if (!session) {
+      await deleteSecureItem(SESSION_KEY)
+      return
+    }
+    await setSecureItem(SESSION_KEY, JSON.stringify(session))
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error)
+    if (detail.includes('Invalid key')) {
+      throw new Error('Could not save your seat on this device. Please try again.')
+    }
+    throw error
   }
-  await setSecureItem(SESSION_KEY, JSON.stringify(session))
 }
 
 export function webJoinUrl(code: string): string {

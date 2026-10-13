@@ -1,22 +1,20 @@
 import * as SecureStore from 'expo-secure-store'
+import {
+  deleteSecureItem as deleteItem,
+  getSecureItem as readItem,
+  setSecureItem as writeItem,
+} from '../../src/deviceStore'
 
-/**
- * iOS Keychain keys may only contain letters, numbers, ".", "-", and "_".
- * The app's logical keys use ":" separators, so every stored item is addressed
- * by a sanitized key.
- */
-export function secureStoreKey(key: string): string {
-  return key.replace(/[^A-Za-z0-9._-]/g, '_')
-}
+export { secureStoreKey } from '../../src/deviceStore'
 
 export function getSecureItem(key: string): Promise<string | null> {
-  return SecureStore.getItemAsync(secureStoreKey(key))
+  return readItem(key, SecureStore)
 }
 
 export function setSecureItem(key: string, value: string): Promise<void> {
-  return SecureStore.setItemAsync(secureStoreKey(key), value)
+  return writeItem(key, value, SecureStore)
 }
 
 export function deleteSecureItem(key: string): Promise<void> {
-  return SecureStore.deleteItemAsync(secureStoreKey(key))
+  return deleteItem(key, SecureStore)
 }

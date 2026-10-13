@@ -101,9 +101,10 @@ export default function OnlineScreen() {
         if (!cancelled) setRoom(nextRoom)
       } catch {
         if (!cancelled) {
-          await saveOnlineSession(null)
+          await saveOnlineSession(null).catch(() => undefined)
           setSession(null)
           setRoom(null)
+          setError(null)
         }
       } finally {
         if (!cancelled) setRestoring(false)
