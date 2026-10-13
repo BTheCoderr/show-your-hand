@@ -267,14 +267,12 @@ export async function submitAction(
 }
 
 export async function leaveRoom(session: OnlineSession): Promise<void> {
-  try {
-    await rpc<null>('syh_leave_room', {
-      p_room_id: session.roomId,
-      p_player_token: session.playerToken,
-    })
-  } finally {
-    await saveOnlineSession(null)
-  }
+  // Do not discard the saved seat token if the server failed to process leave.
+  await rpc<null>('syh_leave_room', {
+    p_room_id: session.roomId,
+    p_player_token: session.playerToken,
+  })
+  await saveOnlineSession(null)
 }
 
 export async function loadOnlineSession(): Promise<OnlineSession | null> {

@@ -87,7 +87,11 @@ export default function OnlineScreen() {
   const refresh = async (activeSession = session) => {
     if (!activeSession) return
     const nextRoom = await getRoom(activeSession)
-    setRoom(nextRoom)
+    setRoom((current) =>
+      !current || nextRoom.stateVersion >= current.stateVersion
+        ? nextRoom
+        : current,
+    )
   }
 
   useEffect(() => {
@@ -130,11 +134,19 @@ export default function OnlineScreen() {
     if (!session) return
 
     let cancelled = false
+    let pollInFlight = false
     const poll = async () => {
+      // A slow response must not create a queue of requests or roll back newer moves.
+      if (pollInFlight) return
+      pollInFlight = true
       try {
         const nextRoom = await getRoom(session)
         if (!cancelled) {
-          setRoom(nextRoom)
+          setRoom((current) =>
+            !current || nextRoom.stateVersion >= current.stateVersion
+              ? nextRoom
+              : current,
+          )
           setError(null)
         }
       } catch (pollError) {
@@ -143,6 +155,8 @@ export default function OnlineScreen() {
             pollError instanceof Error ? pollError.message : String(pollError),
           )
         }
+      } finally {
+        pollInFlight = false
       }
     }
 
@@ -196,7 +210,7 @@ export default function OnlineScreen() {
 
   const patchAuthoritativeRoom = (response: AuthoritativeResponse) => {
     setRoom((current) =>
-      current
+      current && response.stateVersion >= current.stateVersion
         ? {
             ...current,
             stateVersion: response.stateVersion,

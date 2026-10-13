@@ -46,20 +46,24 @@ export async function playMobileFeedback(
   if (!loaded) await initializeMobileFeedback()
   if (!enabled) return
 
-  if (kind === 'win') {
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-    return
-  }
+  try {
+    if (kind === 'win') {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      return
+    }
 
-  if (kind === 'defense' || kind === 'score') {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-    return
-  }
+    if (kind === 'defense' || kind === 'score') {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+      return
+    }
 
-  if (kind === 'attack') {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
-    return
-  }
+    if (kind === 'attack') {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
+      return
+    }
 
-  await Haptics.selectionAsync()
+    await Haptics.selectionAsync()
+  } catch {
+    // Haptics are optional. A device vibration failure must never block a move.
+  }
 }

@@ -1,10 +1,13 @@
 import { MOBILE_STORAGE_KEYS } from '../../src/deviceStore'
 import { deleteSecureItem, getSecureItem, setSecureItem } from './secureStore'
 import type { GameState } from '../../src/game/types'
+import { createSerialQueue } from '../../src/serialQueue'
 
 export const SOLO_SAVE_META_KEY = MOBILE_STORAGE_KEYS.soloMeta
 export const SOLO_SAVE_CHUNK_PREFIX = MOBILE_STORAGE_KEYS.soloChunk
 const CHUNK_SIZE = 1500
+// Serialize saves, reads, and clears to avoid mixing chunks from different turns.
+const serialize = createSerialQueue()
 
 export type SoloSave = {
   game: GameState
@@ -36,7 +39,8 @@ async function readSerialized(): Promise<string | null> {
   return parts.join('')
 }
 
-export async function loadSoloSave(): Promise<SoloSave | null> {
+export function loadSoloSave(): Promise<SoloSave | null> {
+  return serialize(async () => {
   try {
     const raw = await readSerialized()
     if (!raw) return null
@@ -56,9 +60,11 @@ export async function loadSoloSave(): Promise<SoloSave | null> {
   } catch {
     return null
   }
+  })
 }
 
-export async function saveSoloSave(save: SoloSave): Promise<void> {
+export function saveSoloSave(save: SoloSave): Promise<void> {
+  return serialize(async () => {
   const serialized = JSON.stringify(save)
   const chunks = Array.from(
     { length: Math.ceil(serialized.length / CHUNK_SIZE) },
@@ -96,9 +102,11 @@ export async function saveSoloSave(save: SoloSave): Promise<void> {
     SOLO_SAVE_META_KEY,
     JSON.stringify({ chunks: chunks.length } satisfies SoloSaveMeta),
   )
+  })
 }
 
-export async function clearSoloSave(): Promise<void> {
+export function clearSoloSave(): Promise<void> {
+  return serialize(async () => {
   try {
     const metaRaw = await getSecureItem(SOLO_SAVE_META_KEY)
     const chunks = metaRaw
@@ -113,4 +121,5 @@ export async function clearSoloSave(): Promise<void> {
   } finally {
     await deleteSecureItem(SOLO_SAVE_META_KEY)
   }
+  })
 }

@@ -15,29 +15,29 @@ export function useTurnTimer(
 ): number | null {
   const [seconds, setSeconds] = useState(TURN_SECONDS)
   const phaseKey = state
-    ? `${state.currentPlayerIndex}:${state.phase.type}`
+    ? `${state.roundStarterIndex}:${state.currentPlayerIndex}:${state.phase.type}`
     : 'waiting'
+  const running = Boolean(
+    state &&
+      !beginnerMode &&
+      !['round_over', 'match_over', 'menu'].includes(state.phase.type),
+  )
 
   useEffect(() => {
     setSeconds(TURN_SECONDS)
   }, [phaseKey])
 
   useEffect(() => {
-    if (!state || beginnerMode) return
-    if (
-      state.phase.type === 'round_over' ||
-      state.phase.type === 'match_over' ||
-      state.phase.type === 'menu'
-    ) {
-      return
-    }
+    if (!running) return
 
+    // Polling returns a fresh object every ~1.2s. Restarting this interval on
+    // each object used to keep interrupting the player's clock.
     const timer = setInterval(() => {
       setSeconds((current) => Math.max(0, current - 1))
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [state, beginnerMode, phaseKey])
+  }, [running, phaseKey])
 
   return beginnerMode ? null : seconds
 }
