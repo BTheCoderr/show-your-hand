@@ -50,10 +50,9 @@ import { OnlineLobby } from './ui/OnlineLobby'
 import { RulesPanel } from './ui/RulesPanel'
 import { StartScreen } from './ui/StartScreen'
 import { Tutorial } from './ui/Tutorial'
+import { APP_VERSION } from './version'
 
 const TURN_SECONDS = 120
-const APP_VERSION = 'Beta 0.1.2'
-
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>

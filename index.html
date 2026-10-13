@@ -9,15 +9,33 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="SHOW YOUR HAND" />
     <title>SHOW YOUR HAND</title>
-    <link rel="icon" href="/cards/show-your-hand.png" />
-    <link rel="apple-touch-icon" href="/cards/show-your-hand.png" />
+    <link rel="canonical" href="https://show-your-hand.netlify.app/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="SHOW YOUR HAND" />
+    <meta property="og:url" content="https://show-your-hand.netlify.app/" />
+    <meta property="og:title" content="SHOW YOUR HAND" />
+    <meta property="og:description" content="DROP. PICK UP. ATTACK. DEFEND. BUT NEVER SHOW YOUR HAND. An original 70-card competitive card game." />
+    <meta property="og:image" content="https://show-your-hand.netlify.app/brand/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="SHOW YOUR HAND logo above a fan of the game's special and numbered cards" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://show-your-hand.netlify.app/brand/og-image.png" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
   </head>
   <body>
-    <form name="feedback" netlify hidden>
-      <input type="text" name="name" />
+    <form name="feedback" netlify netlify-honeypot="bot-field" hidden>
+      <input type="text" name="topic" />
+      <input type="text" name="platform" />
       <textarea name="message"></textarea>
+      <input type="text" name="name" />
+      <input type="email" name="email" />
       <input type="text" name="room-code" />
+      <input type="text" name="page" />
+      <input type="text" name="bot-field" />
     </form>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

@@ -1,8 +1,10 @@
-const CACHE = 'show-your-hand-beta-0.1.2'
+const CACHE = 'show-your-hand-beta-0.1.2-site-2'
 const CORE = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
+  '/brand/logo-horizontal.webp',
+  '/brand/icon-192.png',
   '/cards/back.png',
   '/cards/show-your-hand.png',
   '/cards/drop-color.png',
@@ -56,11 +58,16 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const clone = response.clone()
-          caches.open(CACHE).then((cache) => cache.put('/index.html', clone))
+          if (response.ok) {
+            const clone = response.clone()
+            const key = url.pathname === '/' ? '/index.html' : url.pathname
+            caches.open(CACHE).then((cache) => cache.put(key, clone))
+          }
           return response
         })
-        .catch(() => caches.match('/index.html')),
+        .catch(() =>
+          caches.match(url.pathname).then((cached) => cached || caches.match('/index.html')),
+        ),
     )
     return
   }

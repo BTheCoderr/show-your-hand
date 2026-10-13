@@ -1,15 +1,27 @@
 import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
+import { createRoot, hydrateRoot } from 'react-dom/client'
 import { App } from './App'
-import { isProductPath, ProductPage } from './ui/ProductPage'
+import { ProductPage, productPathFor } from './ui/ProductPage'
 import './styles.css'
 
-const path = window.location.pathname
-const content = isProductPath(path) ? <ProductPage path={path} /> : <App />
+const productPath = productPathFor(window.location.pathname)
+const container = document.getElementById('root')!
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>{content}</StrictMode>,
-)
+if (productPath) {
+  const page = (
+    <StrictMode>
+      <ProductPage path={productPath} />
+    </StrictMode>
+  )
+  if (container.dataset.prerendered === productPath) hydrateRoot(container, page)
+  else createRoot(container).render(page)
+} else {
+  createRoot(container).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  )
+}
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {

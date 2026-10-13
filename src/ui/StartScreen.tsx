@@ -152,9 +152,10 @@ export function StartScreen({
         <span>SHOW YOUR HAND · {version}</span>
         <nav aria-label="Product links">
           <a href="/about">About</a>
+          <a href="/support">Help Center</a>
+          <a href="/feedback">Feedback</a>
           <a href="/privacy">Privacy</a>
           <a href="/terms">Terms</a>
-          <a href="/feedback">Feedback</a>
         </nav>
       </footer>
     </section>

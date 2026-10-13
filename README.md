@@ -229,14 +229,24 @@ This makes the browser beta usable like an app before a native App Store release
 
 ## Product pages
 
-The app includes:
+The public site includes:
 
-- `/about`
-- `/privacy`
-- `/terms`
-- `/feedback`
+- `/about` — marketing page with real gameplay previews
+- `/support` — Help Center (FAQ, troubleshooting, contact form)
+- `/privacy` — Privacy Policy for the browser game and iPhone app
+- `/terms` — Terms of Use
+- `/feedback` — contact and feedback form
 
-Feedback posts through a Netlify form so playtest reports can be collected without adding another backend.
+`npm run build` prerenders these pages to `dist/<page>.html` (via `src/prerender.tsx` and
+`scripts/prerender.mjs`) so they load without JavaScript and carry per-page titles, canonical URLs,
+and social metadata. Netlify serves those files before the SPA fallback; the client hydrates them.
+
+The contact form posts to the Netlify form named `feedback`. The hidden form in `index.html` must list
+the same fields as `src/ui/site/FeedbackForm.tsx` so Netlify registers them (a unit test checks this).
+
+Brand assets are generated from the originals in `branding/source/` with
+`python3 branding/build_assets.py`. App Store copy and the release checklist live in
+`docs/app-store-submission.md`.
 
 ## Digital playtest rules
 
@@ -269,7 +279,9 @@ The digital implementation keeps rule resolution deterministic:
 src/
   game/          deterministic rules engine, scoring, persistence, feedback, stats
   online/        browser room client
-  ui/            table, tutorial, lobby, product pages
+  ui/            table, tutorial, lobby
+  ui/site/       about, support, privacy, terms, feedback pages
+  prerender.tsx  static rendering entry for the public pages
 supabase/
   migrations/    database schema + room security
   functions/
@@ -277,6 +289,8 @@ supabase/
                   authoritative online game server
 public/
   cards/         card art
+  brand/         logo, icons, social image
+  screens/       real gameplay captures used on /about
   manifest.webmanifest
   sw.js
 ```
