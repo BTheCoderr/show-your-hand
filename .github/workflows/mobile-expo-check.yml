@@ -8,6 +8,8 @@ on:
     paths:
       - "mobile/**"
       - "src/game/**"
+      - "src/deviceStore.ts"
+      - "src/deviceStore.test.ts"
       - ".github/workflows/mobile-expo-check.yml"
 
 jobs:
@@ -22,6 +24,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
+
+      - name: Install shared engine test dependencies
+        run: npm ci
+
+      - name: Run game and SecureStore regression tests
+        run: npm test
 
       - name: Install mobile dependencies
         working-directory: mobile
