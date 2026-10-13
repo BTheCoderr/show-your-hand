@@ -9,9 +9,10 @@ A manual-only GitHub Actions workflow lives at `.github/workflows/show-your-hand
 1. Sign into the Expo account that owns Show Your Hand (`bferrell514`) at https://expo.dev/settings/access-tokens and create an access token for GitHub.
 2. In https://github.com/BTheCoderr/show-your-hand/settings/secrets/actions select **New repository secret**, set the name to `EXPO_TOKEN`, and paste the Expo token there. **Never paste it into a public issue, commit, screenshot, or ChatGPT conversation.**
 3. On your phone or desktop, open https://github.com/BTheCoderr/show-your-hand/actions/workflows/show-your-hand-eas.yml and tap **Run workflow**.
-4. Leave **mode = preflight** to validate the game tests, TypeScript, iOS JS export, and Expo project identity **without starting a cloud EAS build**.
-5. Only after you have expressly decided to use your EAS build allowance: set **mode = build_ios_preview** and type `BUILD_IOS_PREVIEW` in the confirmation field. This requests `eas build --platform ios --profile preview --non-interactive --no-wait`. **EAS usage may incur charges.**
-6. If there is no `Run workflow` button, make sure GitHub Actions are enabled, the workflow exists on the default branch, and you are signed in with repository write permission. The workflow never requests a TestFlight submission or production release.
+4. Use **mode = preflight** to validate game tests, TypeScript, the iOS JS export, and project identity. This requires **no Expo token** and uses no EAS build credits.
+5. After storing `EXPO_TOKEN`, use **mode = check_expo_connection** to run `eas whoami` and verify Expo authentication. This is **read-only and starts no EAS build**.
+6. Only after you expressly decide to use your EAS build allowance, set **mode = build_ios_preview** and type `BUILD_IOS_PREVIEW` in the confirmation field. This requests `eas build --platform ios --profile preview --non-interactive --no-wait`. **EAS usage may incur charges.**
+7. If there is no `Run workflow` button, make sure GitHub Actions are enabled, the workflow exists on the default branch, and you are signed in with repository write permission. The workflow never requests a TestFlight submission or production release.
 
 **Important:** Initial iOS credentials and internal distribution device registration may still need interactive setup in the Expo/Apple account. An access token doesn't bypass those requirements. The existing workflow queues a **preview** build, not an App Store binary; follow the TestFlight section below later. The currently connected GitHub tools here can edit/inspect GitHub workflows, but may not offer a direct manual-dispatch button. The GitHub website/app can do the manual dispatch.
 
