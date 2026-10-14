@@ -51,6 +51,7 @@ export default function RootLayout() {
         <Stack.Screen name="tutorial" options={{ title: 'HOW TO PLAY' }} />
         <Stack.Screen name="rules" options={{ title: 'QUICK RULES' }} />
         <Stack.Screen name="settings" options={{ title: 'SETTINGS + STATS' }} />
+        <Stack.Screen name="blocked" options={{ title: 'BLOCKED PLAYERS' }} />
       </Stack>
     </>
   )
