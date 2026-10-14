@@ -5,9 +5,12 @@ on:
   push:
     branches:
       - feature/mobile-expo-v0
+      - feature/online-player-safety-20261014
     paths:
       - "mobile/**"
       - "src/game/**"
+      - "src/online/**"
+      - "supabase/migrations/**"
       - "src/deviceStore.ts"
       - "src/deviceStore.test.ts"
       - "src/serialQueue.ts"
