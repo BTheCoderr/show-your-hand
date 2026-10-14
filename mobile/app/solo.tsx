@@ -41,7 +41,7 @@ import { theme } from '../src/theme'
 
 function parseOpponentCount(raw: string | string[] | undefined): OpponentCount {
   const value = Number(Array.isArray(raw) ? raw[0] : raw)
-  return value >= 1 && value <= 6 ? (value as OpponentCount) : 1
+  return value >= 1 && value <= 5 ? (value as OpponentCount) : 1
 }
 
 function freshMatch(opponentCount: OpponentCount): GameState {
