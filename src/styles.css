@@ -923,14 +923,14 @@ button:disabled {
   }
 
   .syh-board .syh-seat.is-left {
-    top: 35%;
-    left: -1.5%;
+    top: 38%;
+    left: 0%;
     transform: translateY(-50%) rotate(-6deg);
   }
 
   .syh-board .syh-seat.is-right {
-    top: 35%;
-    right: -1.5%;
+    top: 38%;
+    right: 0%;
     transform: translateY(-50%) rotate(6deg);
   }
 

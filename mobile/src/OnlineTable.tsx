@@ -13,6 +13,7 @@ import {
   validDefenseChoices,
 } from '../../src/game/engine'
 import { handCards, playerById } from '../../src/game/helpers'
+import { scoreHand } from '../../src/game/scoring'
 import type { Action, Color } from '../../src/game/types'
 import { COLORS } from '../../src/game/types'
 import type {
@@ -22,6 +23,7 @@ import type {
 } from './onlineApi'
 import { submitAction } from './onlineApi'
 import { CardTile } from './CardTile'
+import { GameTable, WinningHand } from './GameTable'
 import { playMobileFeedback } from './feedback'
 import { formatTurnSeconds, useTurnTimer } from './useTurnTimer'
 import { theme } from './theme'
@@ -364,203 +366,97 @@ export function OnlineTable({
       )
     }
 
-    if (phase.type === 'round_over') {
-      return (
-        <View style={styles.controls}>
-          <Text style={styles.controlTitle}>
-            {phase.winnerId === localId ? 'YOU WON THE ROUND' : 'OPPONENT WON THE ROUND'}
-          </Text>
-          <Text style={styles.controlHint}>
-            +{phase.points} · {phase.label}
-          </Text>
-          <ActionButton
-            label="DEAL NEXT ROUND"
-            disabled={busy}
-            onPress={() => void dispatch({ type: 'NEXT_ROUND' })}
-          />
-        </View>
-      )
-    }
+    if (phase.type === 'round_over') return null
 
     return null
   })()
 
+  const opponents = state.players.filter((player) => player.id !== localId)
+  const choosingTargets = phase.type === 'choose_targets' && active === localId
+  const winnerId =
+    phase.type === 'round_over' || phase.type === 'match_over' ? phase.winnerId : null
+  const winner = winnerId ? playerById(state, winnerId) : null
+  const winningCards = winnerId ? handCards(state, winnerId) : []
+  const winningScore = scoreHand(winningCards)
+
   return (
-    <ScrollView contentContainerStyle={styles.page}>
-      <View style={styles.scoreRow}>
-        <View>
-          <Text style={styles.scoreLabel}>YOU</Text>
-          <Text style={styles.score}>{local.score}</Text>
-        </View>
-
-        <View style={styles.turnCenter}>
-          <View style={styles.turnBadge}>
-            <Text style={styles.turnBadgeText}>
-              {active === localId
-                ? 'YOUR MOVE'
-                : active
-                  ? 'OPPONENT'
-                  : phase.type === 'match_over'
-                    ? 'MATCH OVER'
-                    : 'ROUND BREAK'}
-            </Text>
-          </View>
-          {turnSeconds !== null ? (
-            <Text style={[
-              styles.turnTimer,
-              turnSeconds === 0 && styles.turnTimerExpired,
-            ]}>
-              {formatTurnSeconds(turnSeconds)}
-            </Text>
-          ) : (
-            <Text style={styles.beginnerBadge}>BEGINNER</Text>
-          )}
-        </View>
-
-        <View style={styles.scoreRight}>
-          <Text style={styles.scoreLabel}>
-            {opponent?.name?.toUpperCase() ?? 'OPPONENT'}
-          </Text>
-          <Text style={styles.score}>{opponent?.score ?? 0}</Text>
-        </View>
-      </View>
-
-      {opponent ? (
-        <View style={styles.opponentArea}>
-          <Text style={styles.sectionLabel}>
-            {opponent.name.toUpperCase()} · {opponent.hand.length} CARDS
-          </Text>
-          <View style={styles.opponentHand}>
-            {opponent.hand.map((id) => {
-              const card = state.catalog[id]
-              const hidden = card?.art === '/cards/back.png'
-              return (
-                <CardTile
-                  key={id}
-                  card={card}
-                  hidden={hidden}
-                  compact
-                />
-              )
-            })}
-          </View>
-        </View>
-      ) : null}
-
-      <View style={styles.table}>
-        <View>
-          <Text style={styles.sectionLabel}>DRAW · {state.drawPile.length}</Text>
-          <CardTile hidden compact />
-        </View>
-        <View>
-          <Text style={styles.sectionLabel}>
-            DISCARD · {state.discardPile.length}
-          </Text>
-          <CardTile
-            card={topDiscard}
-            compact
-            disabled={busy || !canTakeDiscard}
-            onSwipeDown={
-              canTakeDiscard && !busy
-                ? () => void dispatch({ type: 'TAKE_DISCARD', playerId: localId })
-                : undefined
-            }
+    <GameTable
+      opponents={opponents.map((player) => ({
+        id: player.id,
+        name: player.name,
+        score: player.score,
+        active: active === player.id,
+        cards: handCards(state, player.id),
+        hidden: !state.revealedUntilTurnEnd.includes(player.id),
+        selected: choosingTargets,
+        tag: state.revealedUntilTurnEnd.includes(player.id) ? 'Revealed' : null,
+      }))}
+      yourName="YOU"
+      yourScore={local.score}
+      yourActive={active === localId}
+      yourCards={localHand}
+      selectedCardIds={
+        phase.type === 'choose_targets'
+          ? [phase.cardId]
+          : phase.type === 'claim_dropped'
+            ? claimIds
+            : trimIds
+      }
+      cardDisabled={busy || (!chooseAction && !trimming)}
+      onCardPress={
+        chooseAction
+          ? (card) => void dispatch({ type: 'SELECT_CARD', playerId: localId, cardId: card.id })
+          : trimming
+            ? (card) => setTrimIds((current) => {
+                const excess = local.hand.length - 5
+                if (current.includes(card.id)) return current.filter((id) => id !== card.id)
+                if (current.length >= excess) return current
+                return [...current, card.id]
+              })
+            : undefined
+      }
+      onCardSwipeUp={
+        chooseAction && !busy
+          ? (card) => void dispatch({ type: 'SELECT_CARD', playerId: localId, cardId: card.id })
+          : undefined
+      }
+      drawCount={state.drawPile.length}
+      discardCard={topDiscard}
+      discardCount={state.discardPile.length}
+      canTakeDiscard={canTakeDiscard && !busy}
+      onTakeDiscard={() => void dispatch({ type: 'TAKE_DISCARD', playerId: localId })}
+      turnLabel={
+        active === localId
+          ? 'YOUR TURN'
+          : active
+            ? 'OPPONENT\'S TURN'
+            : phase.type === 'match_over'
+              ? 'MATCH OVER'
+              : 'ROUND BREAK'
+      }
+      clockLabel={
+        turnSeconds === null
+          ? 'BEGINNER'
+          : formatTurnSeconds(turnSeconds)
+      }
+      instruction={instruction}
+      controls={controls}
+      winning={
+        winner && winnerId ? (
+          <WinningHand
+            eyebrow={phase.type === 'match_over' ? 'MATCH WINNER' : 'ROUND WINNER'}
+            title={`${winner.name} won ${phase.type === 'match_over' ? 'the match' : 'the round'}`}
+            reason={phase.type === 'round_over' ? phase.label : winningScore?.label ?? 'Scoring five-card hand'}
+            points={phase.type === 'round_over' ? phase.points : winningScore?.points}
+            totalLabel={`${winner.name}: ${winner.score} / ${state.matchPointGoal} match points`}
+            cards={winningCards}
+            actionLabel="DEAL NEXT ROUND"
+            disabled={busy || phase.type !== 'round_over'}
+            onAction={() => void dispatch({ type: 'NEXT_ROUND' })}
           />
-        </View>
-      </View>
-
-      <View style={styles.instruction}>
-        <Text style={styles.instructionText}>{instruction}</Text>
-        <Text style={styles.gestureHint}>
-          Swipe a hand card up to play · swipe the eligible discard down to pick it up.
-        </Text>
-        {turnSeconds === 0 ? (
-          <Text style={styles.timerHint}>
-            Clock expired — finish the turn when ready.
-          </Text>
-        ) : null}
-      </View>
-
-      {chooseAction ? (
-        <View style={styles.quickActions}>
-          <ActionButton
-            label="PICK UP DISCARD"
-            secondary
-            disabled={busy || !canTakeDiscard}
-            onPress={() =>
-              void dispatch({ type: 'TAKE_DISCARD', playerId: localId })
-            }
-          />
-          <ActionButton
-            label="DECLARE"
-            disabled={busy || !canDeclare(state, localId)}
-            onPress={() => void dispatch({ type: 'DECLARE', playerId: localId })}
-          />
-        </View>
-      ) : null}
-
-      {controls}
-
-      <View>
-        <Text style={styles.sectionLabel}>YOUR HAND</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={styles.hand}>
-            {localHand.map((card) => (
-              <CardTile
-                key={card.id}
-                card={card}
-                selected={
-                  (phase.type === 'choose_targets' && phase.cardId === card.id) ||
-                  claimIds.includes(card.id) ||
-                  trimIds.includes(card.id)
-                }
-                disabled={busy || (!chooseAction && !trimming)}
-                onPress={
-                  chooseAction
-                    ? () =>
-                        void dispatch({
-                          type: 'SELECT_CARD',
-                          playerId: localId,
-                          cardId: card.id,
-                        })
-                    : trimming
-                      ? () =>
-                          setTrimIds((current) => {
-                            const excess = local.hand.length - 5
-                            if (current.includes(card.id)) {
-                              return current.filter((id) => id !== card.id)
-                            }
-                            if (current.length >= excess) return current
-                            return [...current, card.id]
-                          })
-                      : undefined
-                }
-                onSwipeUp={
-                  chooseAction && !busy
-                    ? () =>
-                        void dispatch({
-                          type: 'SELECT_CARD',
-                          playerId: localId,
-                          cardId: card.id,
-                        })
-                    : undefined
-                }
-              />
-            ))}
-          </View>
-        </ScrollView>
-      </View>
-
-      <Text style={styles.historyTitle}>LAST MOVES</Text>
-      {state.history
-        .slice(-5)
-        .reverse()
-        .map((line, index) => (
-          <Text key={`${line}-${index}`} style={styles.historyLine}>
-            {line}
-          </Text>
-        ))}
-    </ScrollView>
+        ) : null
+      }
+    />
   )
 }
 

@@ -21,6 +21,7 @@ type Props = {
   onSwipeUp?: () => void
   onSwipeDown?: () => void
   compact?: boolean
+  frame?: { width: number; height: number }
 }
 
 export function CardTile({
@@ -32,6 +33,7 @@ export function CardTile({
   onSwipeUp,
   onSwipeDown,
   compact = false,
+  frame,
 }: Props) {
   const art = hidden ? '/cards/back.png' : card?.art ?? '/cards/back.png'
   const label = hidden
@@ -95,7 +97,12 @@ export function CardTile({
         onPress={onPress}
         style={({ pressed }) => [
           styles.wrap,
-          compact && styles.compact,
+          compact && !frame && styles.compact,
+          frame && {
+            width: frame.width,
+            height: frame.height,
+            borderRadius: frame.width >= 70 ? 12 : 8,
+          },
           selected && styles.selected,
           pressed && !disabled && styles.pressed,
           disabled && actionable && styles.disabled,
@@ -106,7 +113,7 @@ export function CardTile({
           style={styles.image}
           resizeMode="contain"
         />
-        {!hidden && !compact ? (
+        {!hidden && !compact && !frame ? (
           <View style={styles.caption}>
             <Text style={styles.captionText} numberOfLines={1}>
               {label.toUpperCase()}

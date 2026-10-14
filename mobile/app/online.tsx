@@ -397,14 +397,16 @@ export default function OnlineScreen() {
           />
         ) : null}
 
-        <OnlineTable
-          room={room}
-          session={session}
-          busy={busy}
-          onBusyChange={setBusy}
-          onRoomPatch={patchAuthoritativeRoom}
-          onError={setError}
-        />
+        <View style={styles.tableSlot}>
+          <OnlineTable
+            room={room}
+            session={session}
+            busy={busy}
+            onBusyChange={setBusy}
+            onRoomPatch={patchAuthoritativeRoom}
+            onError={setError}
+          />
+        </View>
       </SafeAreaView>
     )
   }
@@ -680,6 +682,9 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: theme.bg,
+  },
+  tableSlot: {
+    flex: 1,
   },
   loading: {
     flex: 1,

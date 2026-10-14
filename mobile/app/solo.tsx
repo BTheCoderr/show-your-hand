@@ -19,9 +19,11 @@ import {
   validDefenseChoices,
 } from '../../src/game/engine'
 import { handCards, playerById } from '../../src/game/helpers'
+import { scoreHand } from '../../src/game/scoring'
 import type { Action, Color, GameState } from '../../src/game/types'
 import { COLORS } from '../../src/game/types'
 import { CardTile } from '../src/CardTile'
+import { GameTable, WinningHand } from '../src/GameTable'
 import { playMobileFeedback } from '../src/feedback'
 import {
   EMPTY_MOBILE_STATS,
@@ -235,34 +237,6 @@ export default function SoloScreen() {
     })
   }
 
-  const winnerPanel = (
-    winnerId: string,
-    label: string,
-    points?: number,
-  ) => {
-    const winner = playerById(game, winnerId)
-    const cards = handCards(game, winnerId)
-
-    return (
-      <View style={styles.winnerPanel}>
-        <Text style={styles.winnerEyebrow}>
-          {winnerId === 'human' ? 'YOUR HAND' : `${winner.name.toUpperCase()}'S HAND`}
-        </Text>
-        <Text style={styles.winnerTitle}>{label}</Text>
-        {typeof points === 'number' ? (
-          <Text style={styles.winnerPoints}>+{points} POINTS</Text>
-        ) : null}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={styles.winnerCards}>
-            {cards.map((card) => (
-              <CardTile key={card.id} card={card} compact />
-            ))}
-          </View>
-        </ScrollView>
-      </View>
-    )
-  }
-
   const renderControls = () => {
     if (phase.type === 'choose_targets' && active === 'human') {
       const card = game.catalog[phase.cardId]
@@ -276,36 +250,8 @@ export default function SoloScreen() {
             {card.kind.replaceAll('-', ' ').toUpperCase()}
           </Text>
           <Text style={styles.controlHint}>
-            Choose {maxTargets === 2 ? 'one or two opponents' : 'one opponent'}.
+            Tap {maxTargets === 2 ? 'one or two seats' : 'a seat'} around the table.
           </Text>
-
-          <View style={styles.targetGrid}>
-            {opponents.map((opponent) => {
-              const selected = targetIds.includes(opponent.id)
-              return (
-                <Pressable
-                  key={opponent.id}
-                  onPress={() => toggleTarget(opponent.id, maxTargets)}
-                  style={[
-                    styles.targetChip,
-                    selected && styles.targetChipActive,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.targetChipText,
-                      selected && styles.targetChipTextActive,
-                    ]}
-                  >
-                    {opponent.name.toUpperCase()}
-                  </Text>
-                  <Text style={styles.targetScore}>
-                    {opponent.score} PTS
-                  </Text>
-                </Pressable>
-              )
-            })}
-          </View>
 
           {card.kind === 'drop-color' ? (
             <View style={styles.colors}>
@@ -537,45 +483,8 @@ export default function SoloScreen() {
       )
     }
 
-    if (phase.type === 'round_over') {
-      return (
-        <View style={styles.controls}>
-          {winnerPanel(
-            phase.winnerId,
-            phase.label,
-            phase.points,
-          )}
-          <ActionButton
-            label="DEAL NEXT ROUND"
-            disabled={busy}
-            onPress={() => void dispatch({ type: 'NEXT_ROUND' })}
-          />
-        </View>
-      )
-    }
-
-    if (phase.type === 'match_over') {
-      return (
-        <View style={styles.controls}>
-          {winnerPanel(
-            phase.winnerId,
-            phase.winnerId === 'human' ? 'YOU WON THE MATCH' : 'MATCH WINNER',
-          )}
-          <ActionButton
-            label="NEW MATCH"
-            disabled={busy}
-            onPress={async () => {
-              await playMobileFeedback(
-                phase.winnerId === 'human' ? 'win' : 'tap',
-              )
-              setGame(freshMatch(opponentCount))
-              setClaimIds([])
-              setTrimIds([])
-              setTargetIds([])
-            }}
-          />
-        </View>
-      )
+    if (phase.type === 'round_over' || phase.type === 'match_over') {
+      return null
     }
 
     return null
@@ -592,227 +501,138 @@ export default function SoloScreen() {
     )
   }
 
+  const choosingTargets = phase.type === 'choose_targets' && active === 'human'
+  const targetCard = choosingTargets ? game.catalog[phase.cardId] : null
+  const selectedCardIds =
+    phase.type === 'choose_targets'
+      ? [phase.cardId]
+      : phase.type === 'claim_dropped'
+        ? claimIds
+        : trimIds
+  const winnerId =
+    phase.type === 'round_over' || phase.type === 'match_over' ? phase.winnerId : null
+  const winner = winnerId ? playerById(game, winnerId) : null
+  const winningCards = winnerId ? handCards(game, winnerId) : []
+  const winningScore = scoreHand(winningCards)
+
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.page}>
-        <View style={styles.topMeta}>
-          <View>
-            <Text style={styles.modeLabel}>
-              {beginnerMode ? 'BEGINNER MODE' : 'STANDARD'}
-            </Text>
-            <Text style={styles.tableLabel}>
-              1 VS {opponentCount}
-            </Text>
-          </View>
-
-          {turnSeconds !== null ? (
-            <View
-              style={[
-                styles.timerBadge,
-                turnSeconds === 0 && styles.timerExpired,
-              ]}
-            >
-              <Text style={styles.timerLabel}>TURN CLOCK</Text>
-              <Text style={styles.timerValue}>
-                {formatTurnSeconds(turnSeconds)}
-              </Text>
-            </View>
-          ) : null}
-        </View>
-
-        {saveError ? (
-          <Text accessibilityRole="alert" style={styles.saveWarning}>
-            {saveError}
-          </Text>
-        ) : null}
-
-        <View style={styles.scoreBoard}>
-          <View style={styles.scoreCell}>
-            <Text style={styles.scoreLabel}>YOU</Text>
-            <Text style={styles.score}>{human.score}</Text>
-          </View>
-
-          <View style={styles.turnBadge}>
-            <Text style={styles.turnBadgeText}>
-              {active === 'human'
-                ? 'YOUR MOVE'
-                : activePlayer
-                  ? `${activePlayer.name.toUpperCase()} MOVE`
-                  : phase.type === 'match_over'
-                    ? 'MATCH OVER'
-                    : 'ROUND BREAK'}
-            </Text>
-          </View>
-
-          <View style={[styles.scoreCell, styles.scoreCellRight]}>
-            <Text style={styles.scoreLabel}>FIRST TO</Text>
-            <Text style={styles.score}>{game.matchPointGoal}</Text>
-          </View>
-        </View>
-
+      <View style={styles.topMeta}>
         <View>
-          <Text style={styles.sectionLabel}>OPPONENTS</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.opponentsRow}>
-              {opponents.map((opponent) => {
-                const revealed = game.revealedUntilTurnEnd.includes(opponent.id)
-                return (
-                  <View
-                    key={opponent.id}
-                    style={[
-                      styles.opponentCard,
-                      active === opponent.id && styles.opponentCardActive,
-                    ]}
-                  >
-                    <View style={styles.opponentNameRow}>
-                      <Text style={styles.opponentName}>{opponent.name}</Text>
-                      <Text style={styles.opponentScore}>{opponent.score} PTS</Text>
-                    </View>
-                    <View style={styles.opponentHand}>
-                      {opponent.hand.map((id) => (
-                        <CardTile
-                          key={id}
-                          hidden={!revealed}
-                          card={game.catalog[id]}
-                          compact
-                        />
-                      ))}
-                    </View>
-                  </View>
-                )
-              })}
-            </View>
-          </ScrollView>
-        </View>
-
-        <View style={styles.table}>
-          <View>
-            <Text style={styles.sectionLabel}>DRAW · {game.drawPile.length}</Text>
-            <CardTile hidden compact />
-          </View>
-          <View>
-            <Text style={styles.sectionLabel}>
-              DISCARD · {game.discardPile.length}
-            </Text>
-            <CardTile
-              card={topDiscard}
-              compact
-              disabled={!canTakeDiscard}
-              onSwipeDown={
-                canTakeDiscard
-                  ? () => void dispatch({ type: 'TAKE_DISCARD', playerId: 'human' })
-                  : undefined
-              }
-            />
-          </View>
-        </View>
-
-        <View style={styles.instruction}>
-          <Text style={styles.instructionText}>{instruction}</Text>
-          <Text style={styles.gestureHint}>
-            Swipe a hand card up to play · swipe the eligible discard down to pick it up.
+          <Text style={styles.modeLabel}>
+            {beginnerMode ? 'BEGINNER MODE' : 'STANDARD'}
           </Text>
-          {turnSeconds === 0 ? (
-            <Text style={styles.timerHint}>
-              Clock expired — finish the turn when ready.
-            </Text>
-          ) : null}
+          <Text style={styles.tableLabel}>1 VS {opponentCount}</Text>
         </View>
-
-        {humanChooseAction ? (
-          <View style={styles.quickActions}>
-            <ActionButton
-              label="PICK UP DISCARD"
-              secondary
-              disabled={busy || !canTakeDiscard}
-              onPress={() =>
-                void dispatch({ type: 'TAKE_DISCARD', playerId: 'human' })
-              }
-            />
-            <ActionButton
-              label="DECLARE"
-              disabled={busy || !canDeclare(game, 'human')}
-              onPress={() => void dispatch({ type: 'DECLARE', playerId: 'human' })}
-            />
+        {turnSeconds !== null ? (
+          <View style={[styles.timerBadge, turnSeconds === 0 && styles.timerExpired]}>
+            <Text style={styles.timerLabel}>TURN CLOCK</Text>
+            <Text style={styles.timerValue}>{formatTurnSeconds(turnSeconds)}</Text>
           </View>
         ) : null}
+      </View>
 
-        {renderControls()}
+      {saveError ? (
+        <Text accessibilityRole="alert" style={styles.saveWarning}>{saveError}</Text>
+      ) : null}
 
-        <View>
-          <View style={styles.handHeading}>
-            <Text style={styles.sectionLabel}>YOUR HAND</Text>
-            <Text style={styles.handCount}>{human.hand.length} CARDS</Text>
-          </View>
+      <GameTable
+        opponents={opponents.map((opponent) => ({
+          id: opponent.id,
+          name: opponent.name,
+          score: opponent.score,
+          active: active === opponent.id,
+          cards: handCards(game, opponent.id),
+          hidden: !game.testMode && !game.revealedUntilTurnEnd.includes(opponent.id),
+          selected: targetIds.includes(opponent.id),
+          tag: game.revealedUntilTurnEnd.includes(opponent.id)
+            ? 'Revealed'
+            : targetIds.includes(opponent.id)
+              ? 'Selected'
+              : null,
+        }))}
+        yourName="YOU"
+        yourScore={human.score}
+        yourActive={active === 'human'}
+        yourCards={humanHand}
+        selectedCardIds={selectedCardIds}
+        cardDisabled={busy || (!humanChooseAction && !trimming)}
+        onCardPress={
+          humanChooseAction
+            ? (card) => void dispatch({ type: 'SELECT_CARD', playerId: 'human', cardId: card.id })
+            : trimming
+              ? (card) => setTrimIds((current) => {
+                  const excess = human.hand.length - 5
+                  if (current.includes(card.id)) return current.filter((id) => id !== card.id)
+                  if (current.length >= excess) return current
+                  return [...current, card.id]
+                })
+              : undefined
+        }
+        onCardSwipeUp={
+          humanChooseAction
+            ? (card) => void dispatch({ type: 'SELECT_CARD', playerId: 'human', cardId: card.id })
+            : undefined
+        }
+        onOpponentPress={
+          choosingTargets && targetCard
+            ? (id) => toggleTarget(id, targetCard.kind === 'shuffle' ? 2 : 1)
+            : undefined
+        }
+        drawCount={game.drawPile.length}
+        discardCard={topDiscard}
+        discardCount={game.discardPile.length}
+        canTakeDiscard={canTakeDiscard && !busy}
+        onTakeDiscard={() => void dispatch({ type: 'TAKE_DISCARD', playerId: 'human' })}
+        turnLabel={
+          active === 'human'
+            ? 'YOUR TURN'
+            : activePlayer
+              ? `${activePlayer.name.toUpperCase()}'S TURN`
+              : phase.type === 'match_over'
+                ? 'MATCH OVER'
+                : 'ROUND BREAK'
+        }
+        clockLabel={
+          beginnerMode
+            ? 'BEGINNER'
+            : turnSeconds === null
+              ? null
+              : formatTurnSeconds(turnSeconds)
+        }
+        instruction={instruction}
+        controls={renderControls()}
+        winning={
+          winner && winnerId ? (
+            <WinningHand
+              eyebrow={phase.type === 'match_over' ? 'MATCH WINNER' : 'ROUND WINNER'}
+              title={`${winner.name} won ${phase.type === 'match_over' ? 'the match' : 'the round'}`}
+              reason={phase.type === 'round_over' ? phase.label : winningScore?.label ?? 'Scoring five-card hand'}
+              points={phase.type === 'round_over' ? phase.points : winningScore?.points}
+              totalLabel={`${winner.name}: ${winner.score} / ${game.matchPointGoal} match points`}
+              cards={winningCards}
+              actionLabel={phase.type === 'match_over' ? 'NEW MATCH' : 'DEAL NEXT ROUND'}
+              disabled={busy}
+              onAction={() => {
+                if (phase.type === 'match_over') {
+                  void playMobileFeedback(phase.winnerId === 'human' ? 'win' : 'tap')
+                  setGame(freshMatch(opponentCount))
+                  setClaimIds([])
+                  setTrimIds([])
+                  setTargetIds([])
+                  return
+                }
+                void dispatch({ type: 'NEXT_ROUND' })
+              }}
+            />
+          ) : null
+        }
+      />
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.hand}>
-              {humanHand.map((card) => {
-                const selected =
-                  (phase.type === 'choose_targets' && phase.cardId === card.id) ||
-                  claimIds.includes(card.id) ||
-                  trimIds.includes(card.id)
-
-                return (
-                  <CardTile
-                    key={card.id}
-                    card={card}
-                    selected={selected}
-                    disabled={busy || (!humanChooseAction && !trimming)}
-                    onPress={
-                      humanChooseAction
-                        ? () =>
-                            void dispatch({
-                              type: 'SELECT_CARD',
-                              playerId: 'human',
-                              cardId: card.id,
-                            })
-                        : trimming
-                          ? () =>
-                              setTrimIds((current) => {
-                                const excess = human.hand.length - 5
-                                if (current.includes(card.id)) {
-                                  return current.filter((id) => id !== card.id)
-                                }
-                                if (current.length >= excess) return current
-                                return [...current, card.id]
-                              })
-                          : undefined
-                    }
-                    onSwipeUp={
-                      humanChooseAction
-                        ? () =>
-                            void dispatch({
-                              type: 'SELECT_CARD',
-                              playerId: 'human',
-                              cardId: card.id,
-                            })
-                        : undefined
-                    }
-                  />
-                )
-              })}
-            </View>
-          </ScrollView>
-        </View>
-
-        <View style={styles.statsStrip}>
-          <Text style={styles.statsTitle}>DEVICE STATS</Text>
-          <Text style={styles.statsText}>
-            {stats.wins} wins · {stats.roundsWon} rounds · {stats.attacksPlayed} attacks · best {stats.bestHandPoints} pts
-          </Text>
-        </View>
-
-        <Text style={styles.historyTitle}>LAST MOVES</Text>
-        {game.history
-          .slice(-6)
-          .reverse()
-          .map((line, index) => (
-            <Text key={`${line}-${index}`} style={styles.historyLine}>
-              {line}
-            </Text>
-          ))}
-      </ScrollView>
+      <Text style={styles.statsText}>
+        {stats.wins} wins · {stats.roundsWon} rounds · best {stats.bestHandPoints} pts
+        {game.history.length ? ` · ${game.history[game.history.length - 1]}` : ''}
+      </Text>
     </SafeAreaView>
   )
 }

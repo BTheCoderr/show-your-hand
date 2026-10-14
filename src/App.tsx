@@ -47,6 +47,7 @@ import {
 import type { Action, Color, GameState } from './game/types'
 import { COLORS } from './game/types'
 import { CardView } from './ui/CardView'
+import { opponentSeat } from './ui/tableSeats'
 import { FirstVisitPrompt } from './ui/FirstVisitPrompt'
 import { InstallHelp } from './ui/InstallHelp'
 import { OnlineLobby } from './ui/OnlineLobby'
@@ -182,14 +183,7 @@ function actionLabel(state: GameState, action: Action): string {
 }
 
 function opponentSeatClass(index: number, total: number) {
-  const layouts: Record<number, string[]> = {
-    1: ['is-top'],
-    2: ['is-top-left', 'is-top-right'],
-    3: ['is-left', 'is-top', 'is-right'],
-    4: ['is-left', 'is-top-left', 'is-top-right', 'is-right'],
-    5: ['is-left', 'is-top-left', 'is-top', 'is-top-right', 'is-right'],
-  }
-  return layouts[total]?.[index] ?? 'is-top'
+  return `is-${opponentSeat(index, total)}`
 }
 
 export function App() {
