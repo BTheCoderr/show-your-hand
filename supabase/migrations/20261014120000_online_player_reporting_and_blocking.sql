@@ -130,8 +130,8 @@ begin
      for update;
   if not found then raise exception 'Room not found or no longer joinable'; end if;
 
-  select * into v_host from public.syh_room_players
-   where room_id = v_room.id and seat = 0;
+  select rp.* into v_host from public.syh_room_players rp
+   where rp.room_id = v_room.id and rp.seat = 0;
   if not found then raise exception 'Room host not found'; end if;
 
   if v_host.safety_install_id = p_safety_install_id then
@@ -146,8 +146,8 @@ begin
     raise exception 'This room is unavailable because a player is blocked';
   end if;
 
-  select count(*) into v_count from public.syh_room_players
-   where room_id = v_room.id;
+  select count(*) into v_count from public.syh_room_players rp
+   where rp.room_id = v_room.id;
   if v_count >= v_room.max_players then raise exception 'Room is full'; end if;
 
   insert into public.syh_room_players
@@ -196,8 +196,8 @@ begin
     raise exception 'Please update Show Your Hand to join this protected room';
   end if;
 
-  select count(*) into v_count from public.syh_room_players
-   where room_id = v_room.id;
+  select count(*) into v_count from public.syh_room_players rp
+   where rp.room_id = v_room.id;
   if v_count >= v_room.max_players then raise exception 'Room is full'; end if;
 
   insert into public.syh_room_players(room_id, seat, game_player_id, display_name)
