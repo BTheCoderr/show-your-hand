@@ -13,9 +13,9 @@
 
 These are **installation/browser-profile blocks**, not verified account bans. A reinstallation, clearing browser storage, using another device, or modifying an anonymous client can bypass them. Don't claim users are permanently blocked across all devices. Abuse escalation needs active moderation by an authorized operator.
 
-Players using older clients without a safety installation identity can be reported but cannot be persistently blocked. When the safety-enabled host is in a room, older clients are instructed to update. Deploy the new web client before distributing the new iOS binary so QR and invite-link joins continue to work.
+Players using older clients without a safety installation identity can be reported but cannot be persistently blocked. When the safety-enabled host is in a room, older clients are instructed to update. Deploy the new web client before relying on mobile-to-web invitations. The live site checked on October 14, 2026 still calls the older join path and cannot enter a room created by the safety-enabled app.
 
-The currently submitted App Store binary 1.0.0 (3) predates these changes. It must be rebuilt, physically tested, and resubmitted before telling Apple these new controls are available in the submitted build.
+TestFlight build 1.0.0 (4), commit 39adcb9, contains these controls and Apple marked the upload valid. The App Store review submission is still 1.0.0 (3). Build 4 has not been submitted for review. Physical-device testing and Apple's screen recording are still required before telling Apple these controls are available in the reviewed binary. The public privacy page does not yet describe anonymous installation IDs or moderation reports.
 
 ## Moderator review and response
 
