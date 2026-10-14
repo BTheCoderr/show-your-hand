@@ -52,7 +52,7 @@ export function StartScreen({
         <span className="syh-version">{version}</span>
       </div>
       <p className="syh-lede">
-        Play solo against one to six computer opponents, or open a private table for two to seven players. First to 5 points wins.
+        Play solo against one to five computer opponents, or open a private table for two to six players. First to 5 points wins.
       </p>
 
       <div className="syh-local-stats" aria-label="Local player stats">
@@ -66,7 +66,7 @@ export function StartScreen({
       <fieldset>
         <legend>Players</legend>
         <div className="syh-count">
-          {([1, 2, 3, 4, 5, 6] as const).map((count) => (
+          {([1, 2, 3, 4, 5] as const).map((count) => (
             <button
               key={count}
               type="button"
@@ -126,7 +126,7 @@ export function StartScreen({
         </button>
         <button type="button" className="syh-secondary syh-online-cta" onClick={onOnline}>
           Play Online
-          <span>2–7 players</span>
+          <span>2–6 players</span>
         </button>
         {hasSave ? (
           <button type="button" className="syh-secondary" onClick={onResume}>

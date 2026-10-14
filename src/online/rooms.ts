@@ -203,7 +203,7 @@ function sessionFrom(row: JoinRow): OnlineSession {
 }
 
 export async function createRoom(displayName: string, maxPlayers = 2): Promise<OnlineSession> {
-  const seats = Math.min(7, Math.max(2, Math.round(maxPlayers)))
+  const seats = Math.min(6, Math.max(2, Math.round(maxPlayers)))
   const rows = await rpc<JoinRow[]>('syh_create_safe_room', {
     p_safety_install_id: await loadSafetyIdentity(),
     p_display_name: displayName,

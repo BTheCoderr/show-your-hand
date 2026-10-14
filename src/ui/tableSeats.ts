@@ -15,7 +15,6 @@ const ANGLE_BOUNDS: Record<number, readonly [number, number]> = {
   3: [190, 350],
   4: [185, 355],
   5: [180, 360],
-  6: [160, 380],
 }
 
 /**
@@ -28,7 +27,7 @@ export function opponentSeatPosition(
 ): TableSeatPosition {
   const bounds = ANGLE_BOUNDS[opponentCount]
   if (!bounds || !Number.isInteger(index) || index < 0 || index >= opponentCount) {
-    throw new RangeError('Expected an opponent seat in a 2–7-player table')
+    throw new RangeError('Expected an opponent seat in a 2–6-player table')
   }
 
   const [start, end] = bounds

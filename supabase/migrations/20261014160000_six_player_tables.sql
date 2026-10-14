@@ -1,16 +1,16 @@
--- Private tables hold 2–7 players. Seat 0 stays "human"; later seats stay
+-- Private tables hold 2–6 players. Seat 0 stays "human"; later seats stay
 -- "cpu-N" so the existing engine identity map does not change. This does not
 -- enable team rules.
 
 alter table public.syh_rooms
   drop constraint if exists syh_rooms_max_players_check;
 alter table public.syh_rooms
-  add constraint syh_rooms_max_players_check check (max_players between 2 and 7);
+  add constraint syh_rooms_max_players_check check (max_players between 2 and 6);
 
 alter table public.syh_room_players
   drop constraint if exists syh_room_players_seat_check;
 alter table public.syh_room_players
-  add constraint syh_room_players_seat_check check (seat between 0 and 6);
+  add constraint syh_room_players_seat_check check (seat between 0 and 5);
 
 drop function if exists public.syh_create_safe_room(uuid, text);
 
@@ -37,8 +37,8 @@ begin
   end if;
 
   v_max := coalesce(p_max_players, 2);
-  if v_max < 2 or v_max > 7 then
-    raise exception 'Tables hold two to seven players';
+  if v_max < 2 or v_max > 6 then
+    raise exception 'Tables hold two to six players';
   end if;
 
   loop
@@ -122,7 +122,7 @@ begin
   select coalesce(max(rp.seat), -1) + 1 into v_seat
     from public.syh_room_players rp
    where rp.room_id = v_room.id;
-  if v_seat < 1 or v_seat > 6 then raise exception 'Room is full'; end if;
+  if v_seat < 1 or v_seat > 5 then raise exception 'Room is full'; end if;
 
   insert into public.syh_room_players
     (room_id, seat, game_player_id, display_name, safety_install_id)
@@ -185,7 +185,7 @@ begin
   from public.syh_room_players
   where room_id = p_room_id;
 
-  if v_total between 2 and 7 and v_ready = v_total then
+  if v_total between 2 and 6 and v_ready = v_total then
     update public.syh_rooms
     set status = 'waiting',
         game_state = null,

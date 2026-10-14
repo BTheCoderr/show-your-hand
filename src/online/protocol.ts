@@ -38,11 +38,11 @@ export function onlineActionError(state: GameState, action: Action): string | nu
 }
 
 export const MIN_TABLE_PLAYERS = 2
-export const MAX_TABLE_PLAYERS = 7
+export const MAX_TABLE_PLAYERS = 6
 
 export function seatGamePlayerId(seat: number): string {
   if (!Number.isInteger(seat) || seat < 0 || seat > MAX_TABLE_PLAYERS - 1) {
-    throw new Error('Seat is outside the seven-player table')
+    throw new Error('Seat is outside the six-player table')
   }
   return seat === 0 ? 'human' : `cpu-${seat}`
 }
@@ -52,7 +52,7 @@ export function onlineRosterError(
   maxPlayers: number,
 ): string | null {
   if (!Number.isInteger(maxPlayers) || maxPlayers < MIN_TABLE_PLAYERS || maxPlayers > MAX_TABLE_PLAYERS) {
-    return 'Tables hold two to seven players'
+    return 'Tables hold two to six players'
   }
   if (players.length !== maxPlayers) return 'Every seat at this table must be filled before the deal'
   if (!players.every((player) => player.ready)) return 'Every player must be ready'
@@ -67,7 +67,7 @@ export function onlineRosterError(
 
 export function onlineStateInvariantError(before: GameState, after: GameState): string | null {
   if (after.players.length < MIN_TABLE_PLAYERS || after.players.length > MAX_TABLE_PLAYERS) {
-    return 'Online matches must keep between two and seven players'
+    return 'Online matches must keep between two and six players'
   }
   if (after.players.map((player) => player.id).join('|') !== before.players.map((player) => player.id).join('|')) {
     return 'Online player identities cannot change during a match'
