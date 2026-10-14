@@ -47,7 +47,7 @@ import {
 import type { Action, Color, GameState } from './game/types'
 import { COLORS } from './game/types'
 import { CardView } from './ui/CardView'
-import { opponentSeat } from './ui/tableSeats'
+import { opponentSeatPosition } from './ui/tableSeats'
 import { FirstVisitPrompt } from './ui/FirstVisitPrompt'
 import { InstallHelp } from './ui/InstallHelp'
 import { OnlineLobby } from './ui/OnlineLobby'
@@ -180,10 +180,6 @@ function actionLabel(state: GameState, action: Action): string {
       : `${playerName} accepts the reversal`
   }
   return `${playerName} made a move`
-}
-
-function opponentSeatClass(index: number, total: number) {
-  return `is-${opponentSeat(index, total)}`
 }
 
 export function App() {
@@ -964,10 +960,15 @@ export function App() {
                 const reveal =
                   state.testMode || state.revealedUntilTurnEnd.includes(player.id)
                 const active = state.players[state.currentPlayerIndex].id === player.id
+                const seat = opponentSeatPosition(index, opponents.length)
                 return (
                   <article
                     key={player.id}
-                    className={`syh-seat ${opponentSeatClass(index, opponents.length)} ${active ? 'is-active' : ''}`}
+                    className={`syh-seat syh-oval-seat ${active ? 'is-active' : ''}`}
+                    style={{
+                      left: `${(seat.x * 100).toFixed(3)}%`,
+                      top: `${(seat.y * 100).toFixed(3)}%`,
+                    }}
                   >
                     <div className="syh-row">
                       {handCards(state, player.id).map((card) => (

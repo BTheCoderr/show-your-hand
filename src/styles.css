@@ -4099,3 +4099,13 @@ button,
   font-family: 'DIN Condensed', 'Arial Narrow', sans-serif;
   font-size: 0.7rem;
 }
+
+
+/* Canonical oval seats. Inline coordinates come from shared tableSeats.ts.
+   The opponent card fans are centered at each assigned perimeter position,
+   rather than scattered by one-off left/right/top CSS classes. */
+.syh-board .syh-seat.syh-oval-seat {
+  transform: translate(-50%, -50%);
+  right: auto;
+  bottom: auto;
+}

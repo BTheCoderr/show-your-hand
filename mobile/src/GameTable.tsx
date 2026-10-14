@@ -9,7 +9,7 @@ import {
   type ViewStyle,
 } from 'react-native'
 import type { Card } from '../../src/game/types'
-import { opponentSeat, type TableSeat } from '../../src/ui/tableSeats'
+import { opponentSeatPosition } from '../../src/ui/tableSeats'
 import { CardTile } from './CardTile'
 import { theme } from './theme'
 
@@ -52,48 +52,25 @@ type Props = {
 const FAN = [-7, -3.5, 0, 3.5, 7]
 const FAN_DROP = [8, 3, 0, 3, 8]
 
-function seatStyle(place: TableSeat, tablet: boolean): ViewStyle {
-  const shared: ViewStyle = { position: 'absolute', zIndex: 3, alignItems: 'center' }
-  if (place === 'top') {
-    return { ...shared, top: tablet ? '4%' : '2%', left: 0, right: 0 }
-  }
-  if (place === 'top-left') {
-    return {
-      ...shared,
-      top: tablet ? '6%' : '2%',
-      left: tablet ? '8%' : 4,
-      transform: [{ rotate: '-4deg' }],
-    }
-  }
-  if (place === 'top-right') {
-    return {
-      ...shared,
-      top: tablet ? '6%' : '2%',
-      right: tablet ? '8%' : 4,
-      transform: [{ rotate: '4deg' }],
-    }
-  }
-  if (place === 'left') {
-    return {
-      ...shared,
-      top: tablet ? '24%' : '22%',
-      left: tablet ? 16 : 4,
-      transform: [{ rotate: '-4deg' }],
-    }
-  }
-  if (place === 'lower-right') {
-    return {
-      ...shared,
-      top: tablet ? '46%' : '40%',
-      right: tablet ? 16 : 4,
-      transform: [{ rotate: '4deg' }],
-    }
-  }
+/** A centered opponent fan, anchored to the same ellipse on every screen. */
+function seatStyle(
+  index: number,
+  opponentCount: number,
+  fanWidth: number,
+  cardHeight: number,
+): ViewStyle {
+  const point = opponentSeatPosition(index, opponentCount)
   return {
-    ...shared,
-    top: tablet ? '24%' : '22%',
-    right: tablet ? 16 : 4,
-    transform: [{ rotate: '4deg' }],
+    position: 'absolute',
+    zIndex: 3,
+    width: fanWidth,
+    alignItems: 'center',
+    left: `${(point.x * 100).toFixed(3)}%`,
+    top: `${(point.y * 100).toFixed(3)}%`,
+    transform: [
+      { translateX: -Math.round(fanWidth / 2) },
+      { translateY: -Math.round(cardHeight / 2) },
+    ],
   }
 }
 
@@ -172,7 +149,7 @@ export function GameTable({
     () => frames(width, opponents.length),
     [opponents.length, width],
   )
-  const radius = Math.round(width * (size.tablet ? 0.16 : 0.12))
+  const radius = Math.round(width * (size.tablet ? 0.32 : 0.40))
 
   return (
     <View style={styles.fill}>
@@ -191,7 +168,12 @@ export function GameTable({
         </Text>
 
         {opponents.map((opponent, index) => {
-          const place = opponentSeat(index, opponents.length)
+          const displayedCards = opponent.cards.length
+          const fanWidth = Math.max(
+            94,
+            size.opponent.width +
+              Math.max(0, displayedCards - 1) * (size.opponent.width - size.overlap),
+          )
           return (
             <Pressable
               key={opponent.id}
@@ -199,7 +181,7 @@ export function GameTable({
               accessibilityLabel={`${opponent.name}, ${opponent.score} points${opponent.active ? ', their turn' : ''}`}
               disabled={!onOpponentPress}
               onPress={() => onOpponentPress?.(opponent.id)}
-              style={seatStyle(place, size.tablet)}
+              style={seatStyle(index, opponents.length, fanWidth, size.opponent.height)}
             >
               <OpponentFan
                 cards={opponent.cards}
