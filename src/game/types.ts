@@ -109,7 +109,7 @@ export type GameState = {
   selectedCardId: string | null
 }
 
-export type OpponentCount = 1 | 2 | 3 | 4 | 5 | 6
+export type OpponentCount = 1 | 2 | 3 | 4 | 5
 
 export type Action =
   | { type: 'START_MATCH'; opponentCount: OpponentCount; testMode?: boolean; seed?: number }
