@@ -20,7 +20,7 @@ import {
 } from '../../src/game/engine'
 import { handCards, playerById } from '../../src/game/helpers'
 import { scoreHand } from '../../src/game/scoring'
-import type { Action, Color, GameState } from '../../src/game/types'
+import type { Action, Color, GameState, OpponentCount } from '../../src/game/types'
 import { COLORS } from '../../src/game/types'
 import { CardTile } from '../src/CardTile'
 import { GameTable, WinningHand } from '../src/GameTable'
@@ -39,11 +39,9 @@ import {
 import { clearSoloSave, loadSoloSave, saveSoloSave } from '../src/soloPersist'
 import { theme } from '../src/theme'
 
-type OpponentCount = 1 | 2 | 3 | 4 | 5
-
 function parseOpponentCount(raw: string | string[] | undefined): OpponentCount {
   const value = Number(Array.isArray(raw) ? raw[0] : raw)
-  return value >= 1 && value <= 5 ? (value as OpponentCount) : 1
+  return value >= 1 && value <= 6 ? (value as OpponentCount) : 1
 }
 
 function freshMatch(opponentCount: OpponentCount): GameState {

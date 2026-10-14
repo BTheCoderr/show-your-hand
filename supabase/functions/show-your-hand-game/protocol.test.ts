@@ -39,7 +39,9 @@ describe('show-your-hand-game online protocol', () => {
   it('rejects a mutated table shape before commit', () => {
     const before = onlineState()
     const after = structuredClone(before)
-    after.players.push({ ...after.players[1], id: 'phantom', name: 'Phantom' })
-    expect(onlineStateInvariantError(before, after)).toMatch(/exactly two/)
+    for (let seat = 2; seat <= 7; seat += 1) {
+      after.players.push({ ...after.players[1], id: `cpu-${seat}`, name: `Phantom ${seat}` })
+    }
+    expect(onlineStateInvariantError(before, after)).toMatch(/between two and seven/)
   })
 })

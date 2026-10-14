@@ -17,6 +17,18 @@ describe('table seating', () => {
     expect(teammateSeatIndex(3)).toBe(1)
   })
 
+  it('adds the sixth opponent on the lower right, still clockwise from the left', () => {
+    expect([0, 1, 2, 3, 4, 5].map((index) => opponentSeat(index, 6))).toEqual([
+      'left',
+      'top-left',
+      'top',
+      'top-right',
+      'right',
+      'lower-right',
+    ])
+    expect(teammateSeatIndex(6)).toBe(2)
+  })
+
   it('spreads five opponents around the table instead of one row', () => {
     expect([0, 1, 2, 3, 4].map((index) => opponentSeat(index, 5))).toEqual([
       'left',

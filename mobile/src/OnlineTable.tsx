@@ -12,7 +12,7 @@ import {
   instructionFor,
   validDefenseChoices,
 } from '../../src/game/engine'
-import { handCards, playerById } from '../../src/game/helpers'
+import { clockwiseOthers, handCards, nextOpponent, playerById } from '../../src/game/helpers'
 import { scoreHand } from '../../src/game/scoring'
 import type { Action, Color } from '../../src/game/types'
 import { COLORS } from '../../src/game/types'
@@ -76,6 +76,7 @@ export function OnlineTable({
   const [dropColor, setDropColor] = useState<Color>('orange')
   const [claimIds, setClaimIds] = useState<string[]>([])
   const [trimIds, setTrimIds] = useState<string[]>([])
+  const [targetIds, setTargetIds] = useState<string[]>([])
   const turnSeconds = useTurnTimer(state, room.beginnerMode)
 
   if (!state) {
@@ -88,7 +89,6 @@ export function OnlineTable({
 
   const localId = session.gamePlayerId
   const local = playerById(state, localId)
-  const opponent = state.players.find((player) => player.id !== localId)
   const localHand = handCards(state, localId)
   const active = actorId(state)
   const topDiscardId = state.discardPile.at(-1)
@@ -121,6 +121,7 @@ export function OnlineTable({
       const response = await submitAction(session, room.stateVersion, action)
       setClaimIds([])
       setTrimIds([])
+      setTargetIds([])
       onRoomPatch(response)
     } catch (error) {
       onError(error instanceof Error ? error.message : String(error))
@@ -132,10 +133,18 @@ export function OnlineTable({
   const controls = (() => {
     if (phase.type === 'choose_targets' && active === localId) {
       const card = state.catalog[phase.cardId]
+      const maxTargets = card.kind === 'shuffle' ? 2 : 1
+      const skipTarget = card.kind === 'skip' ? [nextOpponent(state, localId).id] : targetIds
+      const validSelection = card.kind === 'skip' || (skipTarget.length >= 1 && skipTarget.length <= maxTargets)
       return (
         <View style={styles.controls}>
           <Text style={styles.controlTitle}>
             {card.kind.replaceAll('-', ' ').toUpperCase()}
+          </Text>
+          <Text style={styles.controlHint}>
+            {card.kind === 'skip'
+              ? 'Skip hits the next player clockwise.'
+              : `Tap ${maxTargets === 2 ? 'one or two seats' : 'a seat'} around the table.`}
           </Text>
 
           {card.kind === 'drop-color' ? (
@@ -159,15 +168,17 @@ export function OnlineTable({
             label={
               card.kind === 'drop-color'
                 ? `ATTACK · ${dropColor.toUpperCase()}`
-                : 'ATTACK'
+                : card.kind === 'shuffle'
+                  ? `SHUFFLE ${targetIds.length || ''}`.trim()
+                  : 'ATTACK'
             }
-            disabled={busy}
+            disabled={busy || !validSelection}
             onPress={() =>
               void dispatch({
                 type: 'CONFIRM_ATTACK',
                 playerId: localId,
                 cardId: phase.cardId,
-                targetIds: opponent ? [opponent.id] : [],
+                targetIds: skipTarget,
                 ...(card.kind === 'drop-color' ? { color: dropColor } : {}),
               })
             }
@@ -371,8 +382,9 @@ export function OnlineTable({
     return null
   })()
 
-  const opponents = state.players.filter((player) => player.id !== localId)
+  const opponents = clockwiseOthers(state, localId)
   const choosingTargets = phase.type === 'choose_targets' && active === localId
+  const targetCard = choosingTargets ? state.catalog[phase.cardId] : null
   const winnerId =
     phase.type === 'round_over' || phase.type === 'match_over' ? phase.winnerId : null
   const winner = winnerId ? playerById(state, winnerId) : null
@@ -388,8 +400,12 @@ export function OnlineTable({
         active: active === player.id,
         cards: handCards(state, player.id),
         hidden: !state.revealedUntilTurnEnd.includes(player.id),
-        selected: choosingTargets,
-        tag: state.revealedUntilTurnEnd.includes(player.id) ? 'Revealed' : null,
+        selected: targetIds.includes(player.id),
+        tag: targetIds.includes(player.id)
+          ? 'Selected'
+          : state.revealedUntilTurnEnd.includes(player.id)
+            ? 'Revealed'
+            : null,
       }))}
       yourName="YOU"
       yourScore={local.score}
@@ -414,6 +430,18 @@ export function OnlineTable({
                 return [...current, card.id]
               })
             : undefined
+      }
+      onOpponentPress={
+        choosingTargets && targetCard && targetCard.kind !== 'skip'
+          ? (id) => {
+              const maxTargets = targetCard.kind === 'shuffle' ? 2 : 1
+              setTargetIds((current) => {
+                if (current.includes(id)) return current.filter((target) => target !== id)
+                if (current.length >= maxTargets) return maxTargets === 1 ? [id] : current
+                return [...current, id]
+              })
+            }
+          : undefined
       }
       onCardSwipeUp={
         chooseAction && !busy

@@ -83,7 +83,7 @@ export default function SoloSetupScreen() {
         <View style={styles.card}>
           <Text style={styles.label}>CPU OPPONENTS</Text>
           <View style={styles.countRow}>
-            {[1, 2, 3, 4, 5].map((count) => {
+            {[1, 2, 3, 4, 5, 6].map((count) => {
               const active = prefs.defaultOpponents === count
               return (
                 <Pressable

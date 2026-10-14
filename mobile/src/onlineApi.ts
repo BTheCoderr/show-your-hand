@@ -244,9 +244,12 @@ function sessionFrom(row: JoinRow): OnlineSession {
   }
 }
 
-export async function createRoom(_displayName: string): Promise<OnlineSession> {
+export async function createRoom(displayName: string, maxPlayers = 2): Promise<OnlineSession> {
+  const seats = Math.min(7, Math.max(2, Math.round(maxPlayers)))
   const rows = await rpc<JoinRow[]>('syh_create_safe_room', {
     p_safety_install_id: await loadSafetyIdentity(),
+    p_display_name: displayName,
+    p_max_players: seats,
   })
   const row = rows[0]
   if (!row) throw new Error('Room creation returned no session.')

@@ -81,6 +81,14 @@ function seatStyle(place: TableSeat, tablet: boolean): ViewStyle {
       transform: [{ rotate: '-4deg' }],
     }
   }
+  if (place === 'lower-right') {
+    return {
+      ...shared,
+      top: tablet ? '46%' : '40%',
+      right: tablet ? 16 : 4,
+      transform: [{ rotate: '4deg' }],
+    }
+  }
   return {
     ...shared,
     top: tablet ? '24%' : '22%',
@@ -92,19 +100,24 @@ function seatStyle(place: TableSeat, tablet: boolean): ViewStyle {
 function frames(width: number, opponentCount: number) {
   const tablet = width >= 768
   const headsUp = opponentCount <= 1
+  const fullTable = opponentCount >= 6
   const crowded = opponentCount >= 4
   const opponent: Frame = tablet
     ? headsUp
       ? { width: 74, height: 104 }
-      : crowded
-        ? { width: 48, height: 68 }
-        : { width: 58, height: 82 }
+      : fullTable
+        ? { width: 42, height: 60 }
+        : crowded
+          ? { width: 48, height: 68 }
+          : { width: 58, height: 82 }
     : headsUp
       ? { width: 44, height: 62 }
-      : crowded
-        ? { width: 30, height: 42 }
-        : { width: 36, height: 50 }
-  const overlap = Math.round(opponent.width * (headsUp ? 0.18 : 0.36))
+      : fullTable
+        ? { width: 26, height: 36 }
+        : crowded
+          ? { width: 30, height: 42 }
+          : { width: 36, height: 50 }
+  const overlap = Math.round(opponent.width * (headsUp ? 0.18 : fullTable ? 0.28 : 0.36))
   const you: Frame = tablet ? { width: 108, height: 152 } : { width: 74, height: 106 }
   const pile: Frame = tablet ? { width: 82, height: 116 } : { width: 54, height: 76 }
   return { tablet, opponent, overlap, you, pile }

@@ -1,14 +1,15 @@
 import type { LocalStats } from '../game/stats'
+import type { OpponentCount } from '../game/types'
 
 type Props = {
-  opponentCount: 1 | 2 | 3 | 4 | 5
+  opponentCount: OpponentCount
   testMode: boolean
   beginnerMode: boolean
   feedbackEnabled: boolean
   version: string
   stats: LocalStats
   hasSave: boolean
-  onCount: (count: 1 | 2 | 3 | 4 | 5) => void
+  onCount: (count: OpponentCount) => void
   onTestMode: (value: boolean) => void
   onBeginnerMode: (value: boolean) => void
   onFeedback: (value: boolean) => void
@@ -45,13 +46,13 @@ export function StartScreen({
     <section className="syh-start">
       <div className="syh-start-title-row">
         <div>
-          <p className="syh-kicker">Solo + online 1v1</p>
+          <p className="syh-kicker">Solo + private tables</p>
           <h1>SHOW YOUR HAND</h1>
         </div>
         <span className="syh-version">{version}</span>
       </div>
       <p className="syh-lede">
-        Play solo against one to five computer opponents, or open a private 1v1 room on two devices. First to 5 points wins.
+        Play solo against one to six computer opponents, or open a private table for two to seven players. First to 5 points wins.
       </p>
 
       <div className="syh-local-stats" aria-label="Local player stats">
@@ -65,7 +66,7 @@ export function StartScreen({
       <fieldset>
         <legend>Players</legend>
         <div className="syh-count">
-          {([1, 2, 3, 4, 5] as const).map((count) => (
+          {([1, 2, 3, 4, 5, 6] as const).map((count) => (
             <button
               key={count}
               type="button"
@@ -125,7 +126,7 @@ export function StartScreen({
         </button>
         <button type="button" className="syh-secondary syh-online-cta" onClick={onOnline}>
           Play Online
-          <span>1v1 beta</span>
+          <span>2–7 players</span>
         </button>
         {hasSave ? (
           <button type="button" className="syh-secondary" onClick={onResume}>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { emptyMenuState, reduce } from '../game/engine'
-import { onlineActionError, onlineStateInvariantError } from './protocol'
+import { onlineActionError, onlineRosterError, onlineStateInvariantError, seatGamePlayerId } from './protocol'
 
 function onlineState() {
   const state = reduce(emptyMenuState(false), {
@@ -41,11 +41,26 @@ describe('online action protocol', () => {
   it('rejects online state changes that alter table identity or enable test mode', () => {
     const before = onlineState()
     const tooMany = structuredClone(before)
-    tooMany.players.push({ ...tooMany.players[1], id: 'cpu-9', name: 'Phantom' })
-    expect(onlineStateInvariantError(before, tooMany)).toMatch(/exactly two/)
+    for (let seat = 2; seat <= 7; seat += 1) {
+      tooMany.players.push({ ...tooMany.players[1], id: `cpu-${seat}`, name: `Phantom ${seat}` })
+    }
+    expect(onlineStateInvariantError(before, tooMany)).toMatch(/between two and seven/)
 
     const testMode = structuredClone(before)
     testMode.testMode = true
     expect(onlineStateInvariantError(before, testMode)).toMatch(/Test mode/)
+  })
+
+  it('accepts a full seven-player roster and rejects a short or mis-seated table', () => {
+    const full = Array.from({ length: 7 }, (_, seat) => ({
+      seat,
+      gamePlayerId: seatGamePlayerId(seat),
+      ready: true,
+    }))
+    expect(onlineRosterError(full, 7)).toBeNull()
+    expect(onlineRosterError(full.slice(0, 3), 7)).toMatch(/filled/)
+    expect(onlineRosterError(full.map((player) => ({ ...player, ready: player.seat === 0 })), 7)).toMatch(/ready/)
+    expect(onlineRosterError([{ ...full[0] }, { ...full[1], gamePlayerId: 'cpu-9' }], 2)).toMatch(/mapping/)
+    expect(onlineRosterError(full, 8)).toMatch(/two to seven/)
   })
 })

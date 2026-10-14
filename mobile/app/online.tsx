@@ -77,13 +77,15 @@ export default function OnlineScreen() {
   const [busy, setBusy] = useState(false)
   const [restoring, setRestoring] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [tableSize, setTableSize] = useState(2)
 
   const localPlayer = room?.players.find(
     (player) => player.gamePlayerId === session?.gamePlayerId,
   )
-  const opponent = room?.players.find(
+  const opponents = room?.players.filter(
     (player) => player.gamePlayerId !== session?.gamePlayerId,
-  )
+  ) ?? []
+  const disconnected = opponents.find((player) => !player.connected)
 
   const refresh = async (activeSession = session) => {
     if (!activeSession) return
@@ -194,7 +196,7 @@ export default function OnlineScreen() {
 
   const handleCreate = () =>
     run(async () => {
-      const created = await createRoom('Player 1')
+      const created = await createRoom('Player 1', tableSize)
       setSession(created)
       setRoom(await getRoom(created))
     })
@@ -314,18 +316,29 @@ export default function OnlineScreen() {
       <SafeAreaView style={styles.safe} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.page}>
           <Text style={styles.eyebrow}>PRIVATE MULTIPLAYER</Text>
-          <Text style={styles.title}>ONLINE 1V1</Text>
+          <Text style={styles.title}>ONLINE TABLE</Text>
           <Text style={styles.body}>
-            Create a private table and invite a friend, or enter a six-character
-            code to join a game on another device.
+            Create a private table for 2–7 players and share the code, or enter
+            a six-character code to take an open seat.
           </Text>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <View style={styles.formCard}>
-            <Text style={styles.body}>
-              No signup or chat required. Seats are labeled Player 1 and Player 2.
-            </Text>
+            <Text style={styles.label}>TABLE SIZE</Text>
+            <View style={styles.countRow}>
+              {[2, 3, 4, 5, 6, 7].map((size) => (
+                <Pressable
+                  key={size}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${size} players`}
+                  onPress={() => setTableSize(size)}
+                  style={[styles.countButton, tableSize === size && styles.countButtonActive]}
+                >
+                  <Text style={[styles.countText, tableSize === size && styles.countTextActive]}>{size}</Text>
+                </Pressable>
+              ))}
+            </View>
             <ActionButton
               label={busy ? 'CREATING…' : 'CREATE PRIVATE ROOM'}
               disabled={busy}
@@ -369,10 +382,10 @@ export default function OnlineScreen() {
   if (room.status === 'in_game') {
     return (
       <SafeAreaView style={styles.safe} edges={['bottom']}>
-        {opponent && !opponent.connected ? (
+        {disconnected ? (
           <View style={styles.disconnectBanner}>
             <Text style={styles.disconnectText}>
-              Opponent disconnected · {opponent.disconnectGraceSeconds}s grace
+              {disconnected.displayName} disconnected · {disconnected.disconnectGraceSeconds}s grace
             </Text>
           </View>
         ) : null}
@@ -389,13 +402,11 @@ export default function OnlineScreen() {
           <Text style={styles.liveLeaveText}>LEAVE TABLE</Text>
         </Pressable>
 
-        {opponent ? (
-          <PlayerSafetyActions
-            session={session}
-            opponent={opponent}
-            onBlocked={() => refresh(session)}
-          />
-        ) : null}
+        <PlayerSafetyActions
+          session={session}
+          opponents={opponents}
+          onBlocked={() => refresh(session)}
+        />
 
         <View style={styles.tableSlot}>
           <OnlineTable
@@ -486,13 +497,11 @@ export default function OnlineScreen() {
             ))}
           </View>
 
-          {opponent ? (
-            <PlayerSafetyActions
-              session={session}
-              opponent={opponent}
-              onBlocked={() => refresh(session)}
-            />
-          ) : null}
+          <PlayerSafetyActions
+            session={session}
+            opponents={opponents}
+            onBlocked={() => refresh(session)}
+          />
 
           <ActionButton
             label={
@@ -524,16 +533,13 @@ export default function OnlineScreen() {
           <Text style={styles.eyebrow}>TABLE CLOSED</Text>
           <Text style={styles.title}>MATCH ENDED</Text>
           <Text style={styles.body}>
-            The other player did not reconnect during the grace period, or the
-            table was left.
+            A player did not reconnect during the grace period, or the table was left.
           </Text>
-          {opponent ? (
-            <PlayerSafetyActions
-              session={session}
-              opponent={opponent}
-              onBlocked={() => refresh(session)}
-            />
-          ) : null}
+          <PlayerSafetyActions
+            session={session}
+            opponents={opponents}
+            onBlocked={() => refresh(session)}
+          />
           <ActionButton
             label="BACK TO ONLINE"
             onPress={handleLeave}
@@ -545,7 +551,10 @@ export default function OnlineScreen() {
   }
 
   const bothReady =
-    room.players.length === 2 && room.players.every((player) => player.ready)
+    room.players.length === room.maxPlayers &&
+    room.players.length >= 2 &&
+    room.players.every((player) => player.ready)
+  const openSeats = Math.max(0, room.maxPlayers - room.players.length)
 
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
@@ -553,8 +562,7 @@ export default function OnlineScreen() {
         <Text style={styles.eyebrow}>PRIVATE TABLE</Text>
         <Text style={styles.roomCode}>{room.code}</Text>
         <Text style={styles.body}>
-          Share the code or invite link. Both players ready up before the host
-          can deal.
+          Share the code or invite link. Every open seat has to be filled and ready before the host can deal.
         </Text>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -600,18 +608,18 @@ export default function OnlineScreen() {
             </View>
           ))}
 
-          {room.players.length < 2 ? (
-            <Text style={styles.waitingText}>Waiting for opponent…</Text>
+          {openSeats > 0 ? (
+            <Text style={styles.waitingText}>
+              Waiting for {openSeats} more {openSeats === 1 ? 'player' : 'players'}…
+            </Text>
           ) : null}
         </View>
 
-        {opponent ? (
-          <PlayerSafetyActions
-            session={session}
-            opponent={opponent}
-            onBlocked={() => refresh(session)}
-          />
-        ) : null}
+        <PlayerSafetyActions
+          session={session}
+          opponents={opponents}
+          onBlocked={() => refresh(session)}
+        />
 
         {session.isHost ? (
           <View style={styles.optionCard}>
@@ -651,7 +659,7 @@ export default function OnlineScreen() {
 
         {session.isHost ? (
           <ActionButton
-            label={bothReady ? 'DEAL THE MATCH' : 'WAITING FOR BOTH PLAYERS'}
+            label={bothReady ? 'DEAL THE MATCH' : 'WAITING FOR THE TABLE'}
             secondary={!bothReady}
             disabled={busy || !bothReady}
             onPress={() =>
@@ -663,7 +671,7 @@ export default function OnlineScreen() {
           />
         ) : (
           <Text style={styles.waitingText}>
-            {bothReady ? 'Host can deal now.' : 'Waiting for both players to ready up.'}
+            {bothReady ? 'Host can deal now.' : 'Waiting for every seated player to ready up.'}
           </Text>
         )}
 
@@ -746,6 +754,19 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 1.4,
   },
+  countRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  countButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.line,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  countButtonActive: { borderColor: theme.orange, backgroundColor: '#3a2414' },
+  countText: { color: theme.text, fontWeight: '900' },
+  countTextActive: { color: theme.orange },
   input: {
     minHeight: 52,
     borderRadius: 12,

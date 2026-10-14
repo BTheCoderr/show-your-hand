@@ -9,7 +9,7 @@ import {
   reduce,
   validDefenseChoices,
 } from './game/engine'
-import { currentPlayer, handCards, nameOf, playerById } from './game/helpers'
+import { clockwiseOthers, currentPlayer, handCards, nameOf, playerById } from './game/helpers'
 import {
   feedbackKindForAction,
   loadFeedbackEnabled,
@@ -200,7 +200,7 @@ export function App() {
       new URLSearchParams(window.location.search).get('tutorial') === '1',
     [],
   )
-  const [menuCount, setMenuCount] = useState<1 | 2 | 3 | 4 | 5>(2)
+  const [menuCount, setMenuCount] = useState<1 | 2 | 3 | 4 | 5 | 6>(2)
   const [menuTest, setMenuTest] = useState(false)
   const [showStart, setShowStart] = useState(
     () => Boolean(restoredOnlineSession) || !saved || saved.phase.type === 'menu',
@@ -445,11 +445,11 @@ export function App() {
     if (shouldOpenTutorial) openTutorial()
   }
 
-  const createOnlineRoom = async (name: string) => {
+  const createOnlineRoom = async (name: string, maxPlayers = 2) => {
     setOnlineBusy(true)
     setOnlineError(null)
     try {
-      const session = await createRoom(name)
+      const session = await createRoom(name, maxPlayers)
       updateOnlineSession(session)
       const room = await getRoom(session)
       setOnlineRoom(room)
@@ -477,24 +477,32 @@ export function App() {
     }
   }
 
-  const reportOnlinePlayer = async (reason: ReportReason, details: string) => {
+  const reportOnlinePlayer = async (targetPlayerId: string, reason: ReportReason, details: string) => {
     if (!onlineSession || !onlineRoom) throw new Error('No current online match')
-    const opponent = onlineRoom.players.find(p => p.gamePlayerId !== onlineSession.gamePlayerId)
-    if (!opponent) throw new Error('No opponent to report')
+    const opponent = onlineRoom.players.find((player) => player.id === targetPlayerId)
+    if (!opponent || opponent.gamePlayerId === onlineSession.gamePlayerId) {
+      throw new Error('Choose another player at the table')
+    }
     await reportOpponent(onlineSession, opponent.id, reason, details)
   }
 
-  const blockOnlinePlayer = async () => {
+  const blockOnlinePlayer = async (targetPlayerId: string) => {
     if (!onlineSession || !onlineRoom) throw new Error('No current online match')
-    const opponent = onlineRoom.players.find(p => p.gamePlayerId !== onlineSession.gamePlayerId)
-    if (!opponent) throw new Error('No opponent to block')
+    const opponent = onlineRoom.players.find((player) => player.id === targetPlayerId)
+    if (!opponent || opponent.gamePlayerId === onlineSession.gamePlayerId) {
+      throw new Error('Choose another player at the table')
+    }
     await blockOpponent(onlineSession, opponent.id)
     await refreshOnlineRoom(onlineSession)
   }
 
   const startOnlineMatch = async () => {
     if (!onlineSession || !onlineRoom || !onlineSession.isHost) return
-    if (onlineRoom.players.length !== 2 || !onlineRoom.players.every((player) => player.ready)) return
+    if (
+      onlineRoom.players.length !== onlineRoom.maxPlayers ||
+      onlineRoom.players.length < 2 ||
+      !onlineRoom.players.every((player) => player.ready)
+    ) return
 
     setOnlineBusy(true)
     setOnlineError(null)
@@ -775,7 +783,9 @@ export function App() {
     actorId(state) === localPlayerId &&
     (state.phase.type === 'choose_action' || state.phase.type === 'choose_targets')
   const waiting = Boolean(actorId(state) && actorId(state) !== localPlayerId)
-  const opponents = state.players.filter((player) => player.id !== localPlayerId)
+  const opponents = state.players.some((player) => player.id === localPlayerId)
+    ? clockwiseOthers(state, localPlayerId)
+    : []
   const topDiscardId = state.discardPile.at(-1)
   const topDiscard = topDiscardId ? state.catalog[topDiscardId] : undefined
   const canTakeDiscard =
@@ -1378,8 +1388,8 @@ export function App() {
         error={onlineError}
         initialCode={invitedCode}
         onClose={() => setOnlineLobbyOpen(false)}
-        onCreate={(name) => {
-          void createOnlineRoom(name)
+        onCreate={(name, maxPlayers) => {
+          void createOnlineRoom(name, maxPlayers)
         }}
         onJoin={(code, name) => {
           void joinOnlineRoom(code, name)

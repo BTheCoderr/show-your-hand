@@ -13,7 +13,7 @@ type Props = {
   error: string | null
   initialCode?: string | null
   onClose: () => void
-  onCreate: (name: string) => void
+  onCreate: (name: string, maxPlayers: number) => void
   onJoin: (code: string, name: string) => void
   onReady: (ready: boolean) => void
   onOptions: (options: { beginnerMode: boolean; mode: 'standard' | 'hardcore' }) => void
@@ -21,8 +21,8 @@ type Props = {
   onRematch: (ready: boolean) => void
   onNewOpponent: () => void
   onLeave: () => void
-  onReport: (reason: ReportReason, details: string) => Promise<void>
-  onBlock: () => Promise<void>
+  onReport: (targetPlayerId: string, reason: ReportReason, details: string) => Promise<void>
+  onBlock: (targetPlayerId: string) => Promise<void>
 }
 
 export function OnlineLobby({
@@ -46,6 +46,8 @@ export function OnlineLobby({
   onBlock,
 }: Props) {
   const [name, setName] = useState('Player')
+  const [tableSize, setTableSize] = useState(2)
+  const [safetyTargetId, setSafetyTargetId] = useState<string | null>(null)
   const [code, setCode] = useState(initialCode ?? '')
   const [copied, setCopied] = useState<'code' | 'link' | null>(null)
   const [reportReason, setReportReason] = useState<ReportReason>('harassment')
@@ -78,15 +80,23 @@ export function OnlineLobby({
   }
 
   const self = room?.players.find((player) => player.gamePlayerId === session?.gamePlayerId)
-  const bothReady = Boolean(room && room.players.length === 2 && room.players.every((player) => player.ready))
-  const opponent = room?.players.find((player) => player.gamePlayerId !== session?.gamePlayerId)
+  const opponents = (room?.players ?? []).filter((player) => player.gamePlayerId !== session?.gamePlayerId)
+  const safetyTarget = opponents.find((player) => player.id === safetyTargetId) ?? opponents[0] ?? null
+  const tableReady = Boolean(
+    room &&
+    room.players.length === room.maxPlayers &&
+    room.players.length >= 2 &&
+    room.players.every((player) => player.ready),
+  )
+  const openSeats = room ? Math.max(0, room.maxPlayers - room.players.length) : 0
 
   const sendReport = async () => {
     if (safetyBusy) return
     setSafetyBusy(true)
     setSafetyMessage(null)
     try {
-      await onReport(reportReason, reportDetails)
+      if (!safetyTarget) throw new Error('Choose another player at the table')
+      await onReport(safetyTarget.id, reportReason, reportDetails)
       setSafetyMessage('Report received for moderator review.')
       setReportDetails('')
       setShowReport(false)
@@ -98,11 +108,11 @@ export function OnlineLobby({
   }
 
   const blockPlayer = async () => {
-    if (safetyBusy || !window.confirm('Block this opponent? The table will close, and these installations cannot join future rooms together.')) return
+    if (safetyBusy || !safetyTarget || !window.confirm(`Block ${safetyTarget.displayName}? The table will close, and these installations cannot join future rooms together.`)) return
     setSafetyBusy(true)
     setSafetyMessage(null)
     try {
-      await onBlock()
+      await onBlock(safetyTarget.id)
       setSafetyMessage('Player blocked. Manage blocked players before starting another room.')
     } catch (error) {
       setSafetyMessage(error instanceof Error ? error.message : 'Could not block player')
@@ -143,7 +153,7 @@ export function OnlineLobby({
         <header>
           <div>
             <p className="syh-kicker">Private multiplayer beta</p>
-            <h2 id="online-title">PLAY ONLINE · 1V1</h2>
+            <h2 id="online-title">PLAY ONLINE</h2>
           </div>
           {!session ? (
             <button type="button" className="syh-text-btn" onClick={onClose}>
@@ -200,12 +210,24 @@ export function OnlineLobby({
             <div className="syh-online-choice">
               <article>
                 <h3>Host a table</h3>
-                <p>Create a private room, send the invite link or QR code, then both players ready up.</p>
+                <p>Create a private room for 2–7 players, send the invite, then everyone ready up.</p>
+                <div className="syh-count" aria-label="Table size">
+                  {[2, 3, 4, 5, 6, 7].map((size) => (
+                    <button
+                      key={size}
+                      type="button"
+                      className={tableSize === size ? 'is-on' : ''}
+                      onClick={() => setTableSize(size)}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
                 <button
                   type="button"
                   className="syh-primary"
                   disabled={busy || !name.trim()}
-                  onClick={() => onCreate(name.trim())}
+                  onClick={() => onCreate(name.trim(), tableSize)}
                 >
                   {busy ? 'Creating…' : 'Create room'}
                 </button>
@@ -288,7 +310,7 @@ export function OnlineLobby({
               <h3>At the table</h3>
               {(room?.players ?? []).map((player) => (
                 <div key={player.id} className={!player.connected ? 'is-disconnected' : ''}>
-                  <span className="syh-online-seat">{player.seat === 0 ? 'HOST' : 'GUEST'}</span>
+                  <span className="syh-online-seat">{player.seat === 0 ? 'HOST' : `SEAT ${player.seat + 1}`}</span>
                   <b>{player.displayName}</b>
                   <span className={`syh-connection-dot ${player.connected ? 'is-online' : 'is-offline'}`}>
                     {player.connected ? 'Connected' : 'Reconnecting…'}
@@ -298,17 +320,31 @@ export function OnlineLobby({
                   {player.gamePlayerId === session.gamePlayerId ? <em>You</em> : null}
                 </div>
               ))}
-              {!room || room.players.length < 2 ? (
+              {openSeats > 0 && room?.status === 'waiting' ? (
                 <div className="syh-online-waiting">
                   <span className="syh-online-pulse" />
-                  Waiting for Player 2…
+                  Waiting for {openSeats} more {openSeats === 1 ? 'player' : 'players'}…
                 </div>
               ) : null}
             </div>
 
-            {opponent ? (
+            {safetyTarget ? (
               <section className="syh-online-safety" aria-label="Player safety controls">
                 <h3>Player safety</h3>
+                {opponents.length > 1 ? (
+                  <div className="syh-count" aria-label="Choose a player">
+                    {opponents.map((player) => (
+                      <button
+                        key={player.id}
+                        type="button"
+                        className={safetyTarget?.id === player.id ? 'is-on' : ''}
+                        onClick={() => setSafetyTargetId(player.id)}
+                      >
+                        {player.displayName}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
                 <div className="syh-post-match-actions">
                   <button type="button" className="syh-secondary"
                     disabled={safetyBusy} onClick={() => setShowReport(current => !current)}>
@@ -357,10 +393,10 @@ export function OnlineLobby({
                   <button
                     type="button"
                     className="syh-primary syh-online-start"
-                    disabled={busy || !bothReady}
+                    disabled={busy || !tableReady}
                     onClick={onStart}
                   >
-                    {bothReady ? 'Start online match' : 'Both players must be ready'}
+                    {tableReady ? 'Start online match' : 'Every seated player must be ready'}
                   </button>
                 ) : (
                   <p className="syh-online-message">
@@ -400,9 +436,9 @@ export function OnlineLobby({
                 <div className="syh-rematch-panel">
                   <h3>Run it back?</h3>
                   <p>
-                    {opponent?.rematchReady
-                      ? `${opponent.displayName} wants a rematch.`
-                      : 'Both players can stay at this table and rematch without a new code.'}
+                    {opponents.some((player) => player.rematchReady)
+                      ? `${opponents.filter((player) => player.rematchReady).map((player) => player.displayName).join(', ')} ready for a rematch.`
+                      : 'Everyone at the table can rematch without a new code.'}
                   </p>
                   <div className="syh-post-match-actions">
                     <button
@@ -428,7 +464,7 @@ export function OnlineLobby({
 
             {room?.status === 'abandoned' ? (
               <p className="syh-online-error">
-                Your opponent left the table. Return to the menu and start a new room.
+                A player left the table or did not reconnect. Return to the menu and start a new room.
               </p>
             ) : null}
 

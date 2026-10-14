@@ -1,8 +1,8 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { actorId, emptyMenuState, reduce } from './game/engine.ts'
 import { validPublicApiKey } from './auth.ts'
-import { onlineActionError, onlineStateInvariantError } from './protocol.ts'
-import type { Action, GameState } from './game/types.ts'
+import { onlineActionError, onlineRosterError, onlineStateInvariantError } from './protocol.ts'
+import type { Action, GameState, OpponentCount } from './game/types.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -260,16 +260,22 @@ Deno.serve(async (req: Request) => {
         .select('*')
         .eq('room_id', roomId)
         .order('seat')
-      if (playersError || !players || players.length !== 2) {
-        return json({ error: 'Two players are required to start' }, 409)
-      }
-      if (!players.every((player) => player.ready)) {
-        return json({ error: 'Both players must be ready' }, 409)
+      const rosterError = onlineRosterError(
+        (players ?? []).map((player) => ({
+          seat: Number(player.seat),
+          gamePlayerId: String(player.game_player_id),
+          ready: Boolean(player.ready),
+        })),
+        Number(room.max_players),
+      )
+      if (playersError || !players || rosterError) {
+        return json({ error: rosterError ?? 'Every seat at this table must be filled before the deal' }, 409)
       }
 
+      const opponentCount = (players.length - 1) as OpponentCount
       let state = reduce(emptyMenuState(false), {
         type: 'START_MATCH',
-        opponentCount: 1,
+        opponentCount,
         testMode: false,
       })
       state.players = state.players.map((player, index) => ({

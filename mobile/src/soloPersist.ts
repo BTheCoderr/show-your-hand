@@ -11,7 +11,7 @@ const serialize = createSerialQueue()
 
 export type SoloSave = {
   game: GameState
-  opponentCount: 1 | 2 | 3 | 4 | 5
+  opponentCount: 1 | 2 | 3 | 4 | 5 | 6
   beginnerMode: boolean
   updatedAt: string
 }
@@ -51,7 +51,7 @@ export function loadSoloSave(): Promise<SoloSave | null> {
       parsed.game.version !== 1 ||
       !parsed.opponentCount ||
       parsed.opponentCount < 1 ||
-      parsed.opponentCount > 5
+      parsed.opponentCount > 6
     ) {
       return null
     }

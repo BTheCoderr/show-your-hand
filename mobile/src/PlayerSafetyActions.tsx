@@ -17,19 +17,21 @@ const REASONS: { value: ReportReason; label: string }[] = [
 ]
 
 export function PlayerSafetyActions({
-  session, opponent, onBlocked,
+  session, opponents, onBlocked,
 }: {
   session: OnlineSession
-  opponent: OnlineRoomPlayer
+  opponents: OnlineRoomPlayer[]
   onBlocked: () => Promise<void>
 }) {
+  const [targetId, setTargetId] = useState(opponents[0]?.id ?? '')
+  const opponent = opponents.find((player) => player.id === targetId) ?? opponents[0]
   const [reportOpen, setReportOpen] = useState(false)
   const [reason, setReason] = useState<ReportReason>('harassment')
   const [details, setDetails] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   const submitReport = async () => {
-    if (submitting) return
+    if (submitting || !opponent) return
     setSubmitting(true)
     try {
       await reportOpponent(session, opponent.id, reason, details)
@@ -44,8 +46,9 @@ export function PlayerSafetyActions({
   }
 
   const confirmBlock = () => {
+    if (!opponent) return
     Alert.alert(
-      'Block this player?',
+      `Block ${opponent.displayName}?`,
       'This ends the current online table. Future invitations between these installations will be refused. You can unblock later in Settings.',
       [
         { text: 'Cancel', style: 'cancel' },
@@ -71,9 +74,26 @@ export function PlayerSafetyActions({
     )
   }
 
+  if (!opponent) return null
+
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.heading}>PLAYER SAFETY</Text>
+      <Text style={styles.heading}>PLAYER SAFETY · {opponent.displayName}</Text>
+      {opponents.length > 1 ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.targetRow}>
+          {opponents.map((player) => (
+            <Pressable
+              key={player.id}
+              accessibilityRole="button"
+              accessibilityLabel={`Safety actions for ${player.displayName}`}
+              onPress={() => setTargetId(player.id)}
+              style={[styles.target, opponent.id === player.id && styles.targetActive]}
+            >
+              <Text style={styles.targetText}>{player.displayName}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      ) : null}
       <View style={styles.actions}>
         <Pressable
           accessibilityRole="button"
@@ -162,6 +182,13 @@ export function PlayerSafetyActions({
 const styles = StyleSheet.create({
   wrapper: { marginHorizontal: 12, marginVertical: 8, gap: 7 },
   heading: { color: theme.muted, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
+  targetRow: { gap: 6, paddingBottom: 2 },
+  target: {
+    borderWidth: 1, borderColor: theme.line, borderRadius: 999,
+    paddingHorizontal: 10, minHeight: 32, justifyContent: 'center',
+  },
+  targetActive: { borderColor: theme.orange },
+  targetText: { color: theme.text, fontSize: 11, fontWeight: '800' },
   actions: { flexDirection: 'row', gap: 8 },
   control: {
     flex: 1, borderRadius: 12, borderWidth: 1, borderColor: theme.line,
