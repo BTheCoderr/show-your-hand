@@ -43,6 +43,16 @@ Check the branch and Expo project carefully: owner `bferrell514`, project `show-
 9. Test the deliberate "Leave table" confirmation and verify a failed network request never silently discards a seat.
 10. Confirm that blue 1–5 and Shuffle still show their old art: no matching new designs were provided.
 
+## Apple App Review Guideline 2.1: required evidence
+
+See [APP_REVIEW_2_1.md](./APP_REVIEW_2_1.md) for the fact-checked purpose, access steps, external services, regional explanation, rights check, exact iPhone recording shot list, and an App Review response draft.
+
+**Do not resubmit solely on the strength of green TypeScript/export checks.** Apple's October 14 request requires a recording of the build actually being reviewed, captured from a current-OS **physical iPhone**, plus written answers in BOTH the Resolution Center reply and the App Review Information Notes field.
+
+The existing submission is iOS 1.0 / Expo 0.1.0 / build 2, submitted October 12. The October 13-14 mobile fixes are source changes, so build 2 does not contain them. Upload/select a newer signed production build if you want Apple to review those fixes. Verify the selected build number and test it on a physical device before replying.
+
+**Open compliance risk:** online display names are free text. In-app user-content reporting and blocking have not been verified, so do not tell Apple they exist; resolve this issue before claiming compliance with any applicable UGC requirements.
+
 ## TestFlight/App Store
 
 Only after physical tests and any necessary credential checks:
