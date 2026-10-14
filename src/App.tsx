@@ -196,7 +196,7 @@ export function App() {
       new URLSearchParams(window.location.search).get('tutorial') === '1',
     [],
   )
-  const [menuCount, setMenuCount] = useState<1 | 2 | 3 | 4 | 5 | 6>(2)
+  const [menuCount, setMenuCount] = useState<1 | 2 | 3 | 4 | 5>(2)
   const [menuTest, setMenuTest] = useState(false)
   const [showStart, setShowStart] = useState(
     () => Boolean(restoredOnlineSession) || !saved || saved.phase.type === 'menu',
