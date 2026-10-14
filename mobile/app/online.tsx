@@ -70,7 +70,6 @@ export default function OnlineScreen() {
     [params.code],
   )
 
-  const [displayName, setDisplayName] = useState('Player')
   const [joinCode, setJoinCode] = useState(invitedCode)
   const [session, setSession] = useState<OnlineSession | null>(null)
   const [room, setRoom] = useState<OnlineRoom | null>(null)
@@ -194,7 +193,7 @@ export default function OnlineScreen() {
 
   const handleCreate = () =>
     run(async () => {
-      const created = await createRoom(displayName.trim() || 'Player 1')
+      const created = await createRoom('Player 1')
       setSession(created)
       setRoom(await getRoom(created))
     })
@@ -204,7 +203,7 @@ export default function OnlineScreen() {
       if (!/^[A-F0-9]{6}$/.test(joinCode)) {
         throw new Error('Enter the six-character room code.')
       }
-      const joined = await joinRoom(joinCode, displayName.trim() || 'Player 2')
+      const joined = await joinRoom(joinCode, 'Player 2')
       setSession(joined)
       setRoom(await getRoom(joined))
     })
@@ -323,17 +322,9 @@ export default function OnlineScreen() {
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <View style={styles.formCard}>
-            <Text style={styles.label}>DISPLAY NAME</Text>
-            <TextInput
-              value={displayName}
-              onChangeText={setDisplayName}
-              maxLength={24}
-              placeholder="Player"
-              placeholderTextColor="#6f6963"
-              autoCapitalize="words"
-              style={styles.input}
-            />
-
+            <Text style={styles.body}>
+              No signup or chat required. Seats are labeled Player 1 and Player 2.
+            </Text>
             <ActionButton
               label={busy ? 'CREATING…' : 'CREATE PRIVATE ROOM'}
               disabled={busy}
