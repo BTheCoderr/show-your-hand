@@ -87,6 +87,9 @@ function startMatch(
   testMode = false,
   seed?: number,
 ): GameState {
+  if (!Number.isInteger(opponentCount) || opponentCount < 1 || opponentCount > 5) {
+    throw new RangeError('Show Your Hand supports 2–6 total players')
+  }
   const state = emptyMenuState(testMode)
   state.rngState = seedFrom(seed)
   state.players = makePlayers(opponentCount)
