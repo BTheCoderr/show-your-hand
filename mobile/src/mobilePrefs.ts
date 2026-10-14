@@ -7,7 +7,7 @@ export type MobilePreferences = {
   beginnerMode: boolean
   feedbackEnabled: boolean
   tutorialSeen: boolean
-  defaultOpponents: 1 | 2 | 3 | 4 | 5 | 6
+  defaultOpponents: 1 | 2 | 3 | 4 | 5
 }
 
 export const DEFAULT_MOBILE_PREFERENCES: MobilePreferences = {
@@ -28,7 +28,7 @@ export async function loadMobilePreferences(): Promise<MobilePreferences> {
       feedbackEnabled: parsed.feedbackEnabled !== false,
       tutorialSeen: parsed.tutorialSeen === true,
       defaultOpponents:
-        count >= 1 && count <= 6
+        count >= 1 && count <= 5
           ? (count as MobilePreferences['defaultOpponents'])
           : 1,
     }
