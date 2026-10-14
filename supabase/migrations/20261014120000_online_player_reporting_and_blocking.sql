@@ -61,7 +61,9 @@ $$;
 
 -- The "safe" room endpoints are distinct from the existing legacy RPCs so
 -- existing web builds keep functioning while the clients are updated.
-create or replace function public.syh_create_safe_room(p_safety_install_id uuid)
+create or replace function public.syh_create_safe_room(
+  p_safety_install_id uuid, p_display_name text default 'Player 1'
+)
 returns table (
   room_id uuid, room_code text, player_id uuid, player_token uuid,
   seat integer, game_player_id text, state_version bigint
@@ -91,7 +93,7 @@ begin
 
   insert into public.syh_room_players
     (room_id, seat, game_player_id, display_name, safety_install_id)
-  values (v_room.id, 0, 'human', 'Player 1', p_safety_install_id)
+  values (v_room.id, 0, 'human', left(coalesce(nullif(trim(p_display_name), ''), 'Player 1'), 24), p_safety_install_id)
   returning * into v_player;
 
   return query
@@ -101,7 +103,7 @@ end;
 $$;
 
 create or replace function public.syh_join_safe_room(
-  p_code text, p_safety_install_id uuid
+  p_code text, p_safety_install_id uuid, p_display_name text default 'Player 2'
 )
 returns table (
   room_id uuid, room_code text, player_id uuid, player_token uuid,
@@ -150,7 +152,7 @@ begin
 
   insert into public.syh_room_players
     (room_id, seat, game_player_id, display_name, safety_install_id)
-  values (v_room.id, 1, 'cpu-1', 'Player 2', p_safety_install_id)
+  values (v_room.id, 1, 'cpu-1', left(coalesce(nullif(trim(p_display_name), ''), 'Player 2'), 24), p_safety_install_id)
   returning * into v_player;
 
   return query
@@ -333,16 +335,16 @@ end;
 $$;
 
 revoke all on function public.syh_issue_safety_id() from public, authenticated;
-revoke all on function public.syh_create_safe_room(uuid) from public, authenticated;
-revoke all on function public.syh_join_safe_room(text,uuid) from public, authenticated;
+revoke all on function public.syh_create_safe_room(uuid,text) from public, authenticated;
+revoke all on function public.syh_join_safe_room(text,uuid,text) from public, authenticated;
 revoke all on function public.syh_report_opponent(uuid,uuid,uuid,text,text) from public, authenticated;
 revoke all on function public.syh_block_opponent(uuid,uuid,uuid) from public, authenticated;
 revoke all on function public.syh_list_blocked_players(uuid) from public, authenticated;
 revoke all on function public.syh_unblock_player(uuid,uuid) from public, authenticated;
 revoke execute on function public.syh_join_room(text,text) from authenticated;
 grant execute on function public.syh_issue_safety_id() to anon;
-grant execute on function public.syh_create_safe_room(uuid) to anon;
-grant execute on function public.syh_join_safe_room(text,uuid) to anon;
+grant execute on function public.syh_create_safe_room(uuid,text) to anon;
+grant execute on function public.syh_join_safe_room(text,uuid,text) to anon;
 grant execute on function public.syh_report_opponent(uuid,uuid,uuid,text,text) to anon;
 grant execute on function public.syh_block_opponent(uuid,uuid,uuid) to anon;
 grant execute on function public.syh_list_blocked_players(uuid) to anon;
