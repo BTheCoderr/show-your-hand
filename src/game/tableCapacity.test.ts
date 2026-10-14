@@ -4,9 +4,9 @@ import { emptyMenuState, reduce } from './engine'
 import { clockwiseOthers, drawOne } from './helpers'
 import type { OpponentCount } from './types'
 
-describe('tables from 1v1 through 1v6', () => {
+describe('tables from 1v1 through 1v5', () => {
   it('deals five cards to every seat and keeps the 70-card deck intact', () => {
-    for (const opponentCount of [1, 2, 3, 4, 5, 6] as OpponentCount[]) {
+    for (const opponentCount of [1, 2, 3, 4, 5] as OpponentCount[]) {
       const state = reduce(emptyMenuState(false), {
         type: 'START_MATCH',
         opponentCount,
@@ -26,26 +26,33 @@ describe('tables from 1v1 through 1v6', () => {
     }
   })
 
+  it('rejects a seventh total player even from a malformed action', () => {
+    expect(() => reduce(emptyMenuState(false), {
+      type: 'START_MATCH',
+      opponentCount: 6 as OpponentCount,
+      seed: 13,
+    })).toThrow(/2–6 total players/)
+  })
+
   it('keeps clockwise order when the viewer is not the host', () => {
     const state = reduce(emptyMenuState(false), {
       type: 'START_MATCH',
-      opponentCount: 6,
+      opponentCount: 5,
       seed: 7,
     })
     expect(clockwiseOthers(state, 'cpu-3').map((player) => player.id)).toEqual([
       'cpu-4',
       'cpu-5',
-      'cpu-6',
       'human',
       'cpu-1',
       'cpu-2',
     ])
   })
 
-  it('sends Skip to the next clockwise seat at a seven-player table', () => {
+  it('sends Skip to the next clockwise seat at a six-player table', () => {
     const state = reduce(emptyMenuState(false), {
       type: 'START_MATCH',
-      opponentCount: 6,
+      opponentCount: 5,
       seed: 11,
     })
     const drawIndex = state.drawPile.findIndex((id) => state.catalog[id].kind === 'skip')
@@ -68,7 +75,7 @@ describe('tables from 1v1 through 1v6', () => {
   it('shuffles the discard back in when a full table empties the draw pile', () => {
     const state = reduce(emptyMenuState(false), {
       type: 'START_MATCH',
-      opponentCount: 6,
+      opponentCount: 5,
       seed: 7,
     })
     state.discardPile.push(...state.drawPile.splice(0))
