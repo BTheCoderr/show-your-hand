@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { joinUrl, type OnlineRoom, type OnlineSession } from '../online/rooms'
+import {
+  joinUrl, listBlockedPlayers, unblockPlayer,
+  type BlockedPlayer, type OnlineRoom, type OnlineSession, type ReportReason,
+} from '../online/rooms'
 
 type Props = {
   open: boolean
@@ -18,6 +21,8 @@ type Props = {
   onRematch: (ready: boolean) => void
   onNewOpponent: () => void
   onLeave: () => void
+  onReport: (reason: ReportReason, details: string) => Promise<void>
+  onBlock: () => Promise<void>
 }
 
 export function OnlineLobby({
@@ -37,10 +42,19 @@ export function OnlineLobby({
   onRematch,
   onNewOpponent,
   onLeave,
+  onReport,
+  onBlock,
 }: Props) {
   const [name, setName] = useState('Player')
   const [code, setCode] = useState(initialCode ?? '')
   const [copied, setCopied] = useState<'code' | 'link' | null>(null)
+  const [reportReason, setReportReason] = useState<ReportReason>('harassment')
+  const [reportDetails, setReportDetails] = useState('')
+  const [showReport, setShowReport] = useState(false)
+  const [showBlocks, setShowBlocks] = useState(false)
+  const [blockedPlayers, setBlockedPlayers] = useState<BlockedPlayer[]>([])
+  const [safetyBusy, setSafetyBusy] = useState(false)
+  const [safetyMessage, setSafetyMessage] = useState<string | null>(null)
 
   useEffect(() => {
     if (initialCode) setCode(initialCode)
@@ -67,6 +81,62 @@ export function OnlineLobby({
   const bothReady = Boolean(room && room.players.length === 2 && room.players.every((player) => player.ready))
   const opponent = room?.players.find((player) => player.gamePlayerId !== session?.gamePlayerId)
 
+  const sendReport = async () => {
+    if (safetyBusy) return
+    setSafetyBusy(true)
+    setSafetyMessage(null)
+    try {
+      await onReport(reportReason, reportDetails)
+      setSafetyMessage('Report received for moderator review.')
+      setReportDetails('')
+      setShowReport(false)
+    } catch (error) {
+      setSafetyMessage(error instanceof Error ? error.message : 'Could not submit report')
+    } finally {
+      setSafetyBusy(false)
+    }
+  }
+
+  const blockPlayer = async () => {
+    if (safetyBusy || !window.confirm('Block this opponent? The table will close, and these installations cannot join future rooms together.')) return
+    setSafetyBusy(true)
+    setSafetyMessage(null)
+    try {
+      await onBlock()
+      setSafetyMessage('Player blocked. Manage blocked players before starting another room.')
+    } catch (error) {
+      setSafetyMessage(error instanceof Error ? error.message : 'Could not block player')
+    } finally {
+      setSafetyBusy(false)
+    }
+  }
+
+  const manageBlocks = async () => {
+    setSafetyBusy(true)
+    setSafetyMessage(null)
+    try {
+      setBlockedPlayers(await listBlockedPlayers())
+      setShowBlocks(true)
+    } catch (error) {
+      setSafetyMessage(error instanceof Error ? error.message : 'Could not load blocked players')
+    } finally {
+      setSafetyBusy(false)
+    }
+  }
+
+  const removeBlock = async (blockId: string) => {
+    setSafetyBusy(true)
+    try {
+      await unblockPlayer(blockId)
+      setBlockedPlayers(await listBlockedPlayers())
+      setSafetyMessage('Player unblocked.')
+    } catch (error) {
+      setSafetyMessage(error instanceof Error ? error.message : 'Could not unblock')
+    } finally {
+      setSafetyBusy(false)
+    }
+  }
+
   return (
     <div className="syh-modal syh-online-modal" role="dialog" aria-modal="true" aria-labelledby="online-title">
       <section className="syh-online-card">
@@ -90,6 +160,26 @@ export function OnlineLobby({
 
         {configured && !session ? (
           <>
+            <button type="button" className="syh-secondary" disabled={safetyBusy}
+              onClick={() => void manageBlocks()}>
+              Manage blocked players
+            </button>
+            {showBlocks ? (
+              <section aria-label="Blocked players">
+                <h3>Blocked players</h3>
+                {blockedPlayers.length === 0 ? <p>No blocked players.</p> : (
+                  <ul>
+                    {blockedPlayers.map(blocked => (
+                      <li key={blocked.id}>
+                        {blocked.playerLabel} · room {blocked.roomCode}{' '}
+                        <button type="button" disabled={safetyBusy}
+                          onClick={() => void removeBlock(blocked.id)}>Unblock</button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            ) : null}
             {initialCode ? (
               <p className="syh-online-invite-banner">
                 You were invited to room <b>{initialCode}</b>. Enter your table name and join.
@@ -216,6 +306,42 @@ export function OnlineLobby({
               ) : null}
             </div>
 
+            {opponent ? (
+              <section className="syh-online-safety" aria-label="Player safety controls">
+                <h3>Player safety</h3>
+                <div className="syh-post-match-actions">
+                  <button type="button" className="syh-secondary"
+                    disabled={safetyBusy} onClick={() => setShowReport(current => !current)}>
+                    Report opponent
+                  </button>
+                  <button type="button" className="syh-secondary"
+                    disabled={safetyBusy} onClick={() => void blockPlayer()}>
+                    Block opponent
+                  </button>
+                </div>
+                {showReport ? (
+                  <div className="syh-online-settings">
+                    <label>
+                      Reason
+                      <select value={reportReason} onChange={event => setReportReason(event.target.value as ReportReason)}>
+                        <option value="harassment">Harassment or threats</option>
+                        <option value="inappropriate_name">Inappropriate name/content</option>
+                        <option value="cheating">Cheating or exploits</option>
+                        <option value="other">Other safety concern</option>
+                      </select>
+                    </label>
+                    <label>
+                      Details (optional, max 500 characters)
+                      <textarea maxLength={500} rows={3} value={reportDetails}
+                        onChange={event => setReportDetails(event.target.value)} />
+                    </label>
+                    <button type="button" className="syh-primary" disabled={safetyBusy}
+                      onClick={() => void sendReport()}>Submit report</button>
+                  </div>
+                ) : null}
+              </section>
+            ) : null}
+
             {room?.status === 'waiting' ? (
               <>
                 <button
@@ -312,6 +438,7 @@ export function OnlineLobby({
           </div>
         ) : null}
 
+        {safetyMessage ? <p className="syh-online-message" role="status">{safetyMessage}</p> : null}
         {error ? <p className="syh-online-error" role="alert">{error}</p> : null}
       </section>
     </div>
