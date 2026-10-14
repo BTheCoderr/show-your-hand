@@ -210,9 +210,9 @@ export function OnlineLobby({
             <div className="syh-online-choice">
               <article>
                 <h3>Host a table</h3>
-                <p>Create a private room for 2–7 players, send the invite, then everyone ready up.</p>
+                <p>Create a private room for 2–6 players, send the invite, then everyone ready up.</p>
                 <div className="syh-count" aria-label="Table size">
-                  {[2, 3, 4, 5, 6, 7].map((size) => (
+                  {[2, 3, 4, 5, 6].map((size) => (
                     <button
                       key={size}
                       type="button"
