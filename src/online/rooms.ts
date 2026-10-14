@@ -14,6 +14,15 @@ export type OnlinePlayerStats = {
   matchWins: number
 }
 
+export type ReportReason = 'harassment' | 'inappropriate_name' | 'cheating' | 'other'
+
+export type BlockedPlayer = {
+  id: string
+  roomCode: string
+  playerLabel: string
+  createdAt: string
+}
+
 export type OnlineSession = {
   roomId: string
   roomCode: string
@@ -193,23 +202,58 @@ function sessionFrom(row: JoinRow): OnlineSession {
   }
 }
 
-export async function createRoom(_displayName: string): Promise<OnlineSession> {
+export async function createRoom(displayName: string): Promise<OnlineSession> {
   const rows = await rpc<JoinRow[]>('syh_create_safe_room', {
     p_safety_install_id: await loadSafetyIdentity(),
+    p_display_name: displayName,
   })
   const row = rows[0]
   if (!row) throw new Error('Room creation returned no session.')
   return sessionFrom(row)
 }
 
-export async function joinRoom(code: string, _displayName: string): Promise<OnlineSession> {
+export async function joinRoom(code: string, displayName: string): Promise<OnlineSession> {
   const rows = await rpc<JoinRow[]>('syh_join_safe_room', {
     p_code: code.trim().toUpperCase(),
     p_safety_install_id: await loadSafetyIdentity(),
+    p_display_name: displayName,
   })
   const row = rows[0]
   if (!row) throw new Error('Room join returned no session.')
   return sessionFrom(row)
+}
+
+export async function reportOpponent(
+  session: OnlineSession, targetPlayerId: string, reason: ReportReason, details: string
+): Promise<string> {
+  return rpc<string>('syh_report_opponent', {
+    p_room_id: session.roomId,
+    p_player_token: session.playerToken,
+    p_target_player_id: targetPlayerId,
+    p_reason: reason,
+    p_details: details.trim().slice(0, 500),
+  })
+}
+
+export async function blockOpponent(session: OnlineSession, targetPlayerId: string): Promise<string> {
+  return rpc<string>('syh_block_opponent', {
+    p_room_id: session.roomId,
+    p_player_token: session.playerToken,
+    p_target_player_id: targetPlayerId,
+  })
+}
+
+export async function listBlockedPlayers(): Promise<BlockedPlayer[]> {
+  return rpc<BlockedPlayer[]>('syh_list_blocked_players', {
+    p_safety_install_id: await loadSafetyIdentity(),
+  })
+}
+
+export async function unblockPlayer(blockId: string): Promise<boolean> {
+  return rpc<boolean>('syh_unblock_player', {
+    p_safety_install_id: await loadSafetyIdentity(),
+    p_block_id: blockId,
+  })
 }
 
 export async function getRoom(session: OnlineSession): Promise<OnlineRoom> {

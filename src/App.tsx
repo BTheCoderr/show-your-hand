@@ -27,6 +27,8 @@ import {
 import {
   createRoom,
   getRoom,
+  reportOpponent,
+  blockOpponent,
   joinCodeFromPath,
   joinRoom,
   leaveRoom,
@@ -40,6 +42,7 @@ import {
   submitAction,
   type OnlineRoom,
   type OnlineSession,
+  type ReportReason,
 } from './online/rooms'
 import type { Action, Color, GameState } from './game/types'
 import { COLORS } from './game/types'
@@ -478,6 +481,21 @@ export function App() {
     } finally {
       setOnlineBusy(false)
     }
+  }
+
+  const reportOnlinePlayer = async (reason: ReportReason, details: string) => {
+    if (!onlineSession || !onlineRoom) throw new Error('No current online match')
+    const opponent = onlineRoom.players.find(p => p.gamePlayerId !== onlineSession.gamePlayerId)
+    if (!opponent) throw new Error('No opponent to report')
+    await reportOpponent(onlineSession, opponent.id, reason, details)
+  }
+
+  const blockOnlinePlayer = async () => {
+    if (!onlineSession || !onlineRoom) throw new Error('No current online match')
+    const opponent = onlineRoom.players.find(p => p.gamePlayerId !== onlineSession.gamePlayerId)
+    if (!opponent) throw new Error('No opponent to block')
+    await blockOpponent(onlineSession, opponent.id)
+    await refreshOnlineRoom(onlineSession)
   }
 
   const startOnlineMatch = async () => {
