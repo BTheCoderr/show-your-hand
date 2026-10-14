@@ -1,6 +1,7 @@
 import { MOBILE_STORAGE_KEYS } from '../../src/deviceStore'
 import { deleteSecureItem, getSecureItem, setSecureItem } from './secureStore'
 import type { Action, GameState } from '../../src/game/types'
+import { maskNamesForNative, seatLabel } from '../../src/online/mobileDisplay'
 
 const SUPABASE_URL = (
   process.env.EXPO_PUBLIC_SUPABASE_URL ??
@@ -201,10 +202,18 @@ export async function joinRoom(
 }
 
 export async function getRoom(session: OnlineSession): Promise<OnlineRoom> {
-  return rpc<OnlineRoom>('syh_get_room', {
+  const room = await rpc<OnlineRoom>('syh_get_room', {
     p_code: session.roomCode,
     p_player_token: session.playerToken,
   })
+  return {
+    ...room,
+    players: room.players.map((player) => ({
+      ...player,
+      displayName: seatLabel(player.seat),
+    })),
+    gameState: room.gameState ? maskNamesForNative(room.gameState) : null,
+  }
 }
 
 export async function setReady(
@@ -245,11 +254,12 @@ export async function requestRematch(
 export async function startRoom(
   session: OnlineSession,
 ): Promise<AuthoritativeResponse> {
-  return gameFunction<AuthoritativeResponse>({
+  const response = await gameFunction<AuthoritativeResponse>({
     op: 'start',
     roomId: session.roomId,
     playerToken: session.playerToken,
   })
+  return { ...response, gameState: maskNamesForNative(response.gameState) }
 }
 
 export async function submitAction(
@@ -257,13 +267,14 @@ export async function submitAction(
   expectedVersion: number,
   action: Action,
 ): Promise<AuthoritativeResponse> {
-  return gameFunction<AuthoritativeResponse>({
+  const response = await gameFunction<AuthoritativeResponse>({
     op: 'action',
     roomId: session.roomId,
     playerToken: session.playerToken,
     expectedVersion,
     action,
   })
+  return { ...response, gameState: maskNamesForNative(response.gameState) }
 }
 
 export async function leaveRoom(session: OnlineSession): Promise<void> {
