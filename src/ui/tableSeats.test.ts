@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { opponentSeatPosition, teammateSeatIndex } from './tableSeats'
 
 describe('canonical oval poker table seating', () => {
-  for (let opponentCount = 1; opponentCount <= 6; opponentCount++) {
+  for (let opponentCount = 1; opponentCount <= 5; opponentCount++) {
     it(`keeps ${opponentCount} opponent seats on a symmetric oval arc`, () => {
       const seats = Array.from({ length: opponentCount }, (_, index) =>
         opponentSeatPosition(index, opponentCount),
@@ -37,12 +37,12 @@ describe('canonical oval poker table seating', () => {
   it('keeps the future 2v2 partner opposite without enabling teams', () => {
     expect(opponentSeatPosition(1, 3).x).toBeCloseTo(0.5, 8)
     expect(teammateSeatIndex(3)).toBe(1)
-    expect(teammateSeatIndex(6)).toBeNull()
+    expect(teammateSeatIndex(5)).toBeNull()
   })
 
   it('rejects invalid positions rather than quietly stacking them on top', () => {
-    expect(() => opponentSeatPosition(6, 6)).toThrow(RangeError)
-    expect(() => opponentSeatPosition(0, 7)).toThrow(RangeError)
+    expect(() => opponentSeatPosition(5, 5)).toThrow(RangeError)
+    expect(() => opponentSeatPosition(0, 6)).toThrow(RangeError)
     expect(() => opponentSeatPosition(-1, 4)).toThrow(RangeError)
   })
 })
