@@ -47,7 +47,7 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.page}>
         <View>
-          <Text style={styles.kicker}>BETA MOBILE · 0.1.0</Text>
+          <Text style={styles.kicker}>THE CARD GAME · SOLO + ONLINE</Text>
           <View style={styles.titleBlock}>
             <Text style={styles.title}>SHOW</Text>
             <Text style={styles.title}>YOUR</Text>
@@ -84,12 +84,12 @@ export default function HomeScreen() {
           ) : null}
           <ActionButton
             title="PLAY SOLO"
-            subtitle="1–5 CPU opponents · same shared game engine"
+            subtitle="1–5 computer opponents · play your way"
             onPress={() => router.push('/solo-setup')}
           />
           <ActionButton
             title="ONLINE 1V1"
-            subtitle="Create, join, play, reconnect, rematch"
+            subtitle="Invite a friend · play on two devices"
             onPress={() => router.push('/online')}
             secondary
           />
@@ -108,7 +108,7 @@ export default function HomeScreen() {
         </View>
 
         <Text style={styles.footer}>
-          Native Expo build · shared rules + shared online backend
+          DROP. PICK UP. ATTACK. DEFEND.
         </Text>
       </ScrollView>
     </SafeAreaView>
