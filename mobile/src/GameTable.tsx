@@ -60,32 +60,32 @@ function seatStyle(place: TableSeat, tablet: boolean): ViewStyle {
   if (place === 'top-left') {
     return {
       ...shared,
-      top: tablet ? '10%' : '6%',
-      left: tablet ? '8%' : '0%',
+      top: tablet ? '6%' : '2%',
+      left: tablet ? '8%' : 4,
       transform: [{ rotate: '-4deg' }],
     }
   }
   if (place === 'top-right') {
     return {
       ...shared,
-      top: tablet ? '10%' : '6%',
-      right: tablet ? '8%' : '0%',
+      top: tablet ? '6%' : '2%',
+      right: tablet ? '8%' : 4,
       transform: [{ rotate: '4deg' }],
     }
   }
   if (place === 'left') {
     return {
       ...shared,
-      top: tablet ? '40%' : '36%',
-      left: tablet ? 18 : 2,
-      transform: [{ rotate: '-7deg' }],
+      top: tablet ? '24%' : '22%',
+      left: tablet ? 16 : 4,
+      transform: [{ rotate: '-4deg' }],
     }
   }
   return {
     ...shared,
-    top: tablet ? '40%' : '36%',
-    right: tablet ? 18 : 2,
-    transform: [{ rotate: '7deg' }],
+    top: tablet ? '24%' : '22%',
+    right: tablet ? 16 : 4,
+    transform: [{ rotate: '4deg' }],
   }
 }
 
@@ -104,9 +104,7 @@ function frames(width: number, opponentCount: number) {
       : crowded
         ? { width: 30, height: 42 }
         : { width: 36, height: 50 }
-  const overlap = tablet
-    ? headsUp ? 6 : crowded ? 30 : 24
-    : headsUp ? 8 : crowded ? 19 : 20
+  const overlap = Math.round(opponent.width * (headsUp ? 0.18 : 0.36))
   const you: Frame = tablet ? { width: 108, height: 152 } : { width: 74, height: 106 }
   const pile: Frame = tablet ? { width: 82, height: 116 } : { width: 54, height: 76 }
   return { tablet, opponent, overlap, you, pile }
@@ -161,7 +159,7 @@ export function GameTable({
     () => frames(width, opponents.length),
     [opponents.length, width],
   )
-  const radius = size.tablet ? 220 : 150
+  const radius = Math.round(width * (size.tablet ? 0.16 : 0.12))
 
   return (
     <View style={styles.fill}>
@@ -170,7 +168,7 @@ export function GameTable({
           styles.felt,
           {
             borderRadius: radius,
-            borderWidth: size.tablet ? 16 : 8,
+            borderWidth: size.tablet ? 14 : 7,
           },
         ]}
       >
@@ -356,8 +354,8 @@ const styles = StyleSheet.create({
   fill: { flex: 1, minHeight: 520 },
   felt: {
     flex: 1,
-    marginHorizontal: 6,
-    marginBottom: 6,
+    marginHorizontal: 2,
+    marginBottom: 2,
     borderColor: '#17140f',
     backgroundColor: '#114429',
     overflow: 'hidden',
@@ -436,13 +434,13 @@ const styles = StyleSheet.create({
   },
   center: {
     position: 'absolute',
-    top: '40%',
+    top: '48%',
     left: 0,
     right: 0,
     alignItems: 'center',
     zIndex: 2,
   },
-  centerTablet: { top: '42%' },
+  centerTablet: { top: '44%' },
   piles: { flexDirection: 'row', gap: 16, alignItems: 'flex-start' },
   pile: { alignItems: 'center', gap: 4 },
   pileLabel: {
@@ -469,11 +467,12 @@ const styles = StyleSheet.create({
   clock: { color: theme.text, fontSize: 10, fontWeight: '900' },
   you: {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: '1.5%',
+    left: 8,
+    right: 8,
+    bottom: 16,
     zIndex: 4,
     alignItems: 'center',
+    gap: 12,
   },
   instruction: {
     marginTop: 4,
@@ -488,8 +487,8 @@ const styles = StyleSheet.create({
     zIndex: 6,
     left: 16,
     right: 16,
-    bottom: '27%',
-    maxHeight: 168,
+    bottom: '31%',
+    maxHeight: 150,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(243, 111, 33, 0.7)',
