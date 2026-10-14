@@ -51,7 +51,7 @@ See [APP_REVIEW_2_1.md](./APP_REVIEW_2_1.md) for the fact-checked purpose, acces
 
 The existing submission is iOS 1.0 / Expo 0.1.0 / build 2, submitted October 12. The October 13-14 mobile fixes are source changes, so build 2 does not contain them. Upload/select a newer signed production build if you want Apple to review those fixes. Verify the selected build number and test it on a physical device before replying.
 
-**Open compliance risk:** online display names are free text. In-app user-content reporting and blocking have not been verified, so do not tell Apple they exist; resolve this issue before claiming compliance with any applicable UGC requirements.
+**Native naming mitigation:** the mobile branch now uses fixed Player 1 / Player 2 labels in private rooms and masks remotely supplied names and names in move history. The browser counterpart still has custom names. Verify this behavior on the signed replacement build before stating to Apple that the native app contains no user-submitted names, posts or chat. Reporting/blocking controls are not implemented; do not claim that they exist.
 
 ## TestFlight/App Store
 
