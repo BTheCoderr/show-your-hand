@@ -3,6 +3,7 @@ const VALID_KEY = /^[A-Za-z0-9._-]+$/
 /** Logical storage keys. iOS Keychain rejects the ":" separators, so they are sanitized before use. */
 export const MOBILE_STORAGE_KEYS = {
   session: 'show-your-hand:mobile-online-session:v1',
+  safetyIdentity: 'show-your-hand:mobile-safety-installation:v1',
   prefs: 'show-your-hand:mobile-preferences:v1',
   stats: 'show-your-hand:mobile-stats:v1',
   soloMeta: 'show-your-hand:mobile-solo-save:v1:meta',

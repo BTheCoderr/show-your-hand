@@ -13,6 +13,75 @@ const SUPABASE_KEY =
   'sb_publishable_-AWzMm4BPIBFBFntMup0Qg_oJWhIUlH'
 
 export const SESSION_KEY = MOBILE_STORAGE_KEYS.session
+const SAFETY_KEY = MOBILE_STORAGE_KEYS.safetyIdentity
+const UUID_FORMAT = /^[a-f\d]{8}-(?:[a-f\d]{4}-){3}[a-f\d]{12}$/i
+let safetyIdInFlight: Promise<string> | null = null
+
+export type ReportReason =
+  | 'harassment'
+  | 'inappropriate_name'
+  | 'cheating'
+  | 'other'
+
+export type BlockedPlayer = {
+  id: string
+  roomCode: string
+  playerLabel: string
+  createdAt: string
+}
+
+export async function loadSafetyIdentity(): Promise<string> {
+  if (!safetyIdInFlight) {
+    safetyIdInFlight = (async () => {
+      const existing = await getSecureItem(SAFETY_KEY)
+      if (existing && UUID_FORMAT.test(existing)) return existing
+      const issued = await rpc<string>('syh_issue_safety_id', {})
+      if (!UUID_FORMAT.test(issued)) throw new Error('Could not establish player safety identity')
+      await setSecureItem(SAFETY_KEY, issued)
+      return issued
+    })().finally(() => { safetyIdInFlight = null })
+  }
+  return safetyIdInFlight
+}
+
+export async function reportOpponent(
+  session: OnlineSession,
+  targetPlayerId: string,
+  reason: ReportReason,
+  details = '',
+): Promise<string> {
+  return rpc<string>('syh_report_opponent', {
+    p_room_id: session.roomId,
+    p_player_token: session.playerToken,
+    p_target_player_id: targetPlayerId,
+    p_reason: reason,
+    p_details: details.trim().slice(0, 500),
+  })
+}
+
+export async function blockOpponent(
+  session: OnlineSession,
+  targetPlayerId: string,
+): Promise<string> {
+  return rpc<string>('syh_block_opponent', {
+    p_room_id: session.roomId,
+    p_player_token: session.playerToken,
+    p_target_player_id: targetPlayerId,
+  })
+}
+
+export async function listBlockedPlayers(): Promise<BlockedPlayer[]> {
+  return rpc<BlockedPlayer[]>('syh_list_blocked_players', {
+    p_safety_install_id: await loadSafetyIdentity(),
+  })
+}
+
+export async function unblockPlayer(blockId: string): Promise<boolean> {
+  return rpc<boolean>('syh_unblock_player', {
+    p_safety_install_id: await loadSafetyIdentity(),
+    p_block_id: blockId,
+  })
+}
 const ONLINE_REQUEST_TIMEOUT_MS = 12000
 
 export type OnlinePlayerStats = {
@@ -175,9 +244,9 @@ function sessionFrom(row: JoinRow): OnlineSession {
   }
 }
 
-export async function createRoom(displayName: string): Promise<OnlineSession> {
-  const rows = await rpc<JoinRow[]>('syh_create_room', {
-    p_display_name: displayName,
+export async function createRoom(_displayName: string): Promise<OnlineSession> {
+  const rows = await rpc<JoinRow[]>('syh_create_safe_room', {
+    p_safety_install_id: await loadSafetyIdentity(),
   })
   const row = rows[0]
   if (!row) throw new Error('Room creation returned no session.')
@@ -188,11 +257,11 @@ export async function createRoom(displayName: string): Promise<OnlineSession> {
 
 export async function joinRoom(
   code: string,
-  displayName: string,
+  _displayName: string,
 ): Promise<OnlineSession> {
-  const rows = await rpc<JoinRow[]>('syh_join_room', {
+  const rows = await rpc<JoinRow[]>('syh_join_safe_room', {
     p_code: code.trim().toUpperCase(),
-    p_display_name: displayName,
+    p_safety_install_id: await loadSafetyIdentity(),
   })
   const row = rows[0]
   if (!row) throw new Error('Room join returned no session.')

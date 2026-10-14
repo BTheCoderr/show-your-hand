@@ -73,6 +73,27 @@ type AuthoritativeResponse = {
 }
 
 const SESSION_KEY = 'show-your-hand:online-session:v2'
+const SAFETY_KEY = 'show-your-hand:online-safety-installation:v1'
+const UUID_FORMAT = /^[a-f\d]{8}-(?:[a-f\d]{4}-){3}[a-f\d]{12}$/i
+
+async function loadSafetyIdentity(): Promise<string> {
+  if (typeof window === 'undefined') throw new Error('Online safety ID requires a browser')
+  let saved: string | null
+  try {
+    saved = window.localStorage.getItem(SAFETY_KEY)
+  } catch {
+    throw new Error('Enable local storage to use online player safety controls')
+  }
+  if (saved && UUID_FORMAT.test(saved)) return saved
+  const issued = await rpc<string>('syh_issue_safety_id', {})
+  if (!UUID_FORMAT.test(issued)) throw new Error('Could not establish player safety identity')
+  try {
+    window.localStorage.setItem(SAFETY_KEY, issued)
+  } catch {
+    throw new Error('Enable local storage to join safely')
+  }
+  return issued
+}
 const ONLINE_REQUEST_TIMEOUT_MS = 12000
 
 async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit): Promise<Response> {
@@ -172,17 +193,19 @@ function sessionFrom(row: JoinRow): OnlineSession {
   }
 }
 
-export async function createRoom(displayName: string): Promise<OnlineSession> {
-  const rows = await rpc<JoinRow[]>('syh_create_room', { p_display_name: displayName })
+export async function createRoom(_displayName: string): Promise<OnlineSession> {
+  const rows = await rpc<JoinRow[]>('syh_create_safe_room', {
+    p_safety_install_id: await loadSafetyIdentity(),
+  })
   const row = rows[0]
   if (!row) throw new Error('Room creation returned no session.')
   return sessionFrom(row)
 }
 
-export async function joinRoom(code: string, displayName: string): Promise<OnlineSession> {
-  const rows = await rpc<JoinRow[]>('syh_join_room', {
+export async function joinRoom(code: string, _displayName: string): Promise<OnlineSession> {
+  const rows = await rpc<JoinRow[]>('syh_join_safe_room', {
     p_code: code.trim().toUpperCase(),
-    p_display_name: displayName,
+    p_safety_install_id: await loadSafetyIdentity(),
   })
   const row = rows[0]
   if (!row) throw new Error('Room join returned no session.')
