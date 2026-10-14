@@ -313,11 +313,11 @@ export default function OnlineScreen() {
     return (
       <SafeAreaView style={styles.safe} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.page}>
-          <Text style={styles.eyebrow}>NATIVE ONLINE BETA</Text>
+          <Text style={styles.eyebrow}>PRIVATE MULTIPLAYER</Text>
           <Text style={styles.title}>ONLINE 1V1</Text>
           <Text style={styles.body}>
-            Create a private table or join the same rooms used by the web game.
-            Every move is still validated by the production game server.
+            Create a private table and invite a friend, or enter a six-character
+            code to join a game on another device.
           </Text>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
