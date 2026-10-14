@@ -318,7 +318,7 @@ export default function OnlineScreen() {
           <Text style={styles.eyebrow}>PRIVATE MULTIPLAYER</Text>
           <Text style={styles.title}>ONLINE TABLE</Text>
           <Text style={styles.body}>
-            Create a private table for 2–7 players and share the code, or enter
+            Create a private table for 2–6 players and share the code, or enter
             a six-character code to take an open seat.
           </Text>
 
@@ -327,7 +327,7 @@ export default function OnlineScreen() {
           <View style={styles.formCard}>
             <Text style={styles.label}>TABLE SIZE</Text>
             <View style={styles.countRow}>
-              {[2, 3, 4, 5, 6, 7].map((size) => (
+              {[2, 3, 4, 5, 6].map((size) => (
                 <Pressable
                   key={size}
                   accessibilityRole="button"
