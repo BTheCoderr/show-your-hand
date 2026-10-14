@@ -1408,6 +1408,8 @@ export function App() {
         onLeave={() => {
           void leaveOnlineMatch()
         }}
+        onReport={reportOnlinePlayer}
+        onBlock={blockOnlinePlayer}
       />
 
       <InstallHelp open={installHelpOpen} onClose={() => setInstallHelpOpen(false)} />
