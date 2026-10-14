@@ -77,7 +77,7 @@ function seatStyle(
 function frames(width: number, opponentCount: number) {
   const tablet = width >= 768
   const headsUp = opponentCount <= 1
-  const fullTable = opponentCount >= 6
+  const fullTable = opponentCount >= 5
   const crowded = opponentCount >= 4
   const opponent: Frame = tablet
     ? headsUp
