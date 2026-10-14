@@ -17,6 +17,7 @@ import { handCards, playerById } from '../../src/game/helpers'
 import { CardTile } from '../src/CardTile'
 import { playMobileFeedback } from '../src/feedback'
 import { OnlineTable } from '../src/OnlineTable'
+import { PlayerSafetyActions } from '../src/PlayerSafetyActions'
 import {
   createRoom,
   getRoom,
@@ -388,6 +389,14 @@ export default function OnlineScreen() {
           <Text style={styles.liveLeaveText}>LEAVE TABLE</Text>
         </Pressable>
 
+        {opponent ? (
+          <PlayerSafetyActions
+            session={session}
+            opponent={opponent}
+            onBlocked={() => refresh(session)}
+          />
+        ) : null}
+
         <OnlineTable
           room={room}
           session={session}
@@ -475,6 +484,14 @@ export default function OnlineScreen() {
             ))}
           </View>
 
+          {opponent ? (
+            <PlayerSafetyActions
+              session={session}
+              opponent={opponent}
+              onBlocked={() => refresh(session)}
+            />
+          ) : null}
+
           <ActionButton
             label={
               localPlayer?.rematchReady ? 'CANCEL REMATCH' : 'READY FOR REMATCH'
@@ -508,6 +525,13 @@ export default function OnlineScreen() {
             The other player did not reconnect during the grace period, or the
             table was left.
           </Text>
+          {opponent ? (
+            <PlayerSafetyActions
+              session={session}
+              opponent={opponent}
+              onBlocked={() => refresh(session)}
+            />
+          ) : null}
           <ActionButton
             label="BACK TO ONLINE"
             onPress={handleLeave}
@@ -578,6 +602,14 @@ export default function OnlineScreen() {
             <Text style={styles.waitingText}>Waiting for opponent…</Text>
           ) : null}
         </View>
+
+        {opponent ? (
+          <PlayerSafetyActions
+            session={session}
+            opponent={opponent}
+            onBlocked={() => refresh(session)}
+          />
+        ) : null}
 
         {session.isHost ? (
           <View style={styles.optionCard}>

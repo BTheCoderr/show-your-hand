@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { router } from 'expo-router'
 import {
   Alert,
   Linking,
@@ -136,6 +137,18 @@ export default function SettingsScreen() {
         <Pressable accessibilityRole="button" style={styles.resetButton} onPress={resetStats}>
           <Text style={styles.resetText}>RESET LOCAL STATS</Text>
         </Pressable>
+
+        <View style={styles.linksCard}>
+          <Text style={styles.sectionTitle}>ONLINE PLAYER SAFETY</Text>
+          <Pressable
+            accessibilityRole="button"
+            style={styles.linkRow}
+            onPress={() => router.push('/blocked')}
+          >
+            <Text style={styles.linkText}>Blocked players · Manage / unblock</Text>
+            <Text style={styles.linkArrow}>→</Text>
+          </Pressable>
+        </View>
 
         <View style={styles.linksCard}>
           <Text style={styles.sectionTitle}>SUPPORT + LEGAL</Text>
