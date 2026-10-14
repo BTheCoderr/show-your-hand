@@ -16,7 +16,7 @@ No registration or login is currently used in this native app. No account deleti
 2. Tap HOW TO PLAY for an eight-step interactive tutorial. Finish it and return Home.
 3. Tap PLAY SOLO, choose 1 CPU (beginner mode optional), then DEAL THE CARDS. Tap a card to select/play, swipe up to play, use eligible numbered discard pickup or draw, respond to attacks when prompted, and declare a scoring five-card hand when available. Play until a round ends. The solo game saves locally for resume.
 4. Tap SETTINGS + STATS to test haptics, beginner settings, local statistics and the support, privacy and terms links.
-5. To test private online 1v1, use TWO devices. On one iPhone tap ONLINE 1V1, enter a display name, then CREATE PRIVATE ROOM. On the second device (or the web app at https://show-your-hand.netlify.app), choose online play and enter the displayed six-character code. Both players tap READY UP, then the host taps DEAL THE MATCH. Play, disconnect/reconnect, and rematch as needed. This requires an internet connection. The room code is temporary and must be created fresh during review.
+5. To test private online 1v1, use TWO devices. On one iPhone tap ONLINE 1V1 and CREATE PRIVATE ROOM. The native app assigns fixed labels PLAYER 1 and PLAYER 2 instead of asking for usernames. On the second device (or the web app at https://show-your-hand.netlify.app), choose online play and enter the displayed six-character code. Both players tap READY UP, then the host taps DEAL THE MATCH. Play, disconnect/reconnect, and rematch as needed. This requires an internet connection. The room code is temporary and must be created fresh during review.
 
 No reviewer login credentials or sample files are required to play solo or access the tutorial. For multiplayer, there is no permanent demo room code; create a fresh private room as described.
 
@@ -50,9 +50,11 @@ Record the EXACT build selected for Apple review on a supported physical iPhone 
 
 Turn on Do Not Disturb, use example names, and avoid exposing private room seat tokens, personal notifications and passwords. Upload the recording where App Review can access it and attach or link it in both the reply and App Review Information > Notes.
 
-## Important open risk: custom display names are UGC
+## Native online naming and content safety
 
-The mobile Online screen accepts a free-text player display name and shows player names received from other clients. A Settings link to feedback is not proof of in-app report/block controls. Apple's Guideline 1.2 may apply to this feature. The inspected mobile code does not demonstrate an in-app report/block system. Resolve this before claiming compliance or filming those flows. Options are (a) ship a properly moderated name/report/block experience with verified server enforcement, or (b) replace exposed user-entered names with fixed seat labels throughout the native UI and stop accepting arbitrary name input if product requirements permit. Do not silently claim there is no UGC.
+The mobile branch now removes the arbitrary display-name input. The native app creates and joins rooms with fixed labels (Player 1 / Player 2), and applies a display-only sanitization to player names and game history returned from the shared server. Private matches have no native chat, public feeds, posts or user media upload. This is a reduced-surface App Store release choice, not a claim that the browser counterpart has moderation features.
+
+IMPORTANT: This safety change came after Apple's build 2 submission. Do not tell Apple it is in build 2. Confirm the exact replacement binary, inspect the live UI and TestFlight recording, and check that no remotely supplied usernames are displayed. If custom usernames, chat, or other user-generated content are reintroduced, filtering, report and block systems must be implemented and verified under Apple's Guideline 1.2 before describing that functionality as supported.
 
 ## Physical QA signoff (fill with real results)
 
@@ -63,7 +65,7 @@ The mobile Online screen accepts a free-text player display name and shows playe
 - No-crash launch, tutorial, solo full match, save/resume: NOT VERIFIED ON PHYSICAL DEVICE
 - Two-device online create/join/ready/play/reconnect/rematch: NOT VERIFIED ON PHYSICAL DEVICE
 - Support, privacy and terms links: NOT VERIFIED ON PHYSICAL DEVICE
-- Report/block mitigation or proof that no user-generated material is exposed: OPEN
+- Native app fixed-name projection and no-UGC UI: SOURCE UPDATED, PHYSICAL DEVICE / REPLACEMENT BUILD NOT YET VERIFIED
 - Physical-device screen recording attached: NO
 
 ## Paste into App Review reply / Notes after completing recording and QA
@@ -72,11 +74,11 @@ Hello App Review Team,
 
 Thank you for the opportunity to provide more information for SHOW YOUR HAND (iOS 1.0).
 
-A physical-device screen recording of build [BUILD NUMBER] is attached: [ATTACHMENT OR ACCESSIBLE LINK]. It begins at app launch and demonstrates the onboarding tutorial, solo gameplay, special card actions, scoring, settings, and [online 1v1 and report/block features if present]. We tested this build on [DEVICE MODEL] running [iOS VERSION] and [IPAD DETAILS, IF SUPPORTED].
+A physical-device screen recording of build [BUILD NUMBER] is attached: [ATTACHMENT OR ACCESSIBLE LINK]. It begins at app launch and demonstrates the onboarding tutorial, solo gameplay, special card actions, scoring, settings, and [private online 1v1 showing fixed player labels; any additional UGC safety flows only if actually implemented]. We tested this build on [DEVICE MODEL] running [iOS VERSION] and [IPAD DETAILS, IF SUPPORTED].
 
 Purpose and audience: SHOW YOUR HAND is an original strategy card game for players who enjoy casual competitive games. Players compete to build five-card scoring hands. It offers solo play against one to five computer opponents and private, invite-only online 1v1. It has no real-money wagering.
 
-Access: No account or login is required. From Home, tap HOW TO PLAY for the tutorial, PLAY SOLO to begin a CPU match, SETTINGS + STATS for preferences and records, or ONLINE 1V1 to create or join a private two-device room. For online review, create a room on one device, enter the displayed six-character code on another device or at https://show-your-hand.netlify.app, tap READY on both, and have the host deal. No permanent credentials or sample files are required. [DESCRIBE VERIFIED USER-GENERATED CONTENT SAFETY FLOWS OR STATE THAT FREE-TEXT NAMES WERE REMOVED.]
+Access: No account or login is required. From Home, tap HOW TO PLAY for the tutorial, PLAY SOLO to begin a CPU match, SETTINGS + STATS for preferences and records, or ONLINE 1V1 to create or join a private two-device room. For online review, create a room on one device, enter the displayed six-character code on another device or at https://show-your-hand.netlify.app, tap READY on both, and have the host deal. No permanent credentials or sample files are required. [AFTER TESTING REPLACEMENT BUILD: The native game has no player-submitted text, chat, posts or uploads; online opponents are displayed using fixed seat labels.]
 
 Services: The app uses Supabase for private game-room state and action validation, Netlify for its optional web counterpart and support/legal pages, and on-device storage/haptic features. Expo/EAS is used to build and distribute the native app. It does not integrate payment, ads, or AI services.
 
