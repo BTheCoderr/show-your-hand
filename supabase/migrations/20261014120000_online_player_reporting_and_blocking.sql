@@ -25,7 +25,7 @@ create index if not exists syh_blocks_blocked_idx on public.syh_player_blocks(bl
 
 create table if not exists public.syh_player_reports (
   id uuid primary key default gen_random_uuid(),
-  room_id uuid not null references public.syh_rooms(id) on delete cascade,
+  room_id uuid not null,
   reporting_player_id uuid not null,
   reported_player_id uuid not null,
   reporting_install_id uuid,
