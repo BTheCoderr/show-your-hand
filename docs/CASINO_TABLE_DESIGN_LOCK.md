@@ -28,3 +28,22 @@ The request is **a recognizable casino-style card table**, NOT merely a green re
 ## Current implementation gap
 
 As of the baseline at commit `281d4bda9`, `mobile/src/GameTable.tsx` renders `styles.felt` as a flex-filling tall rectangle with width-derived border radius and flat green fill, whereas `src/styles.css` uses an independently sized pseudo-oval. Changing `src/ui/tableSeats.ts` alone cannot satisfy the requested poker/blackjack table presentation. This requires a deliberate responsive visual composition and device previews.
+
+
+## Implementation candidate (October 14, 2026)
+
+The code-side visual repair is developed on `fix/casino-poker-table-ui-20261014` and is intended to merge into `feature/mobile-expo-v0` after automated checks.
+
+- `mobile/src/GameTable.tsx`: fixed-width, wide casino table instead of a height-filling vertical felt rectangle; upholstered rail, metallic trim, inset green playing area and one consistent seat map for Solo/Online. Player hand overlaps front of table at its own dock and the action panel sits below it, no longer over the center pile.
+- `src/ui/casinoTableGeometry.ts`: aspect-ratio lock at phone (1.28:1) and tablet (1.52:1) widths, shared calculation imported by mobile component and covered with tests at widths 320–1366.
+- `src/styles.css`: browser tabletop returns to a horizontal upholstered oval at phone and tablet widths, no longer a vertical mobile `flex: 1` pill. Web player hand attaches at the front rail.
+- `src/ui/tableSeats.ts`: existing clockwise 2–6-player seat map remains unchanged. No seventh player. Team mode not enabled.
+- Full game rules, cards, blocking/reporting, online game networking and Solo CPU logic are preserved.
+
+**Still required before public release:**
+1. Capture actual Xcode iOS simulator screenshots for 2–6 players (portrait phone + iPad) and inspect interaction states for card clipping. A JavaScript bundle check alone does not prove pixel-perfect visual output.
+2. Have user approve the screenshots. Only then create an EAS signed release and validate on two physical devices.
+3. Coordinate six-player SQL migration + matching Edge Function + current public website deployment. These are not performed by this purely visual update.
+4. Mixed online human/CPU rooms remain a separate unimplemented feature and must not be portrayed as supported.
+
+Do not mark the design QA gate as complete on the strength of browser captures alone.

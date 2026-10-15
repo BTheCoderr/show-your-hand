@@ -1,0 +1,40 @@
+name: Casino Table Design Validation
+
+on:
+  push:
+    branches: [fix/casino-poker-table-ui-20261014]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install locked web/game dependencies
+        run: npm ci
+      - name: Run seating and gameplay regression tests
+        run: npm test
+      - name: Check shared online game/Edge Function source
+        run: npm run check:edge-sync
+      - name: Build web casino table
+        run: npm run build
+      - name: Install native dependencies
+        working-directory: mobile
+        run: npm install
+      - name: Typecheck native casino table
+        working-directory: mobile
+        run: npm run typecheck
+      - name: Export iOS JS bundle (no EAS build)
+        working-directory: mobile
+        run: npx expo export --platform ios --output-dir dist-ios
+      - name: Export Android JS bundle (no EAS build)
+        working-directory: mobile
+        run: npx expo export --platform android --output-dir dist-android
