@@ -149,23 +149,33 @@ export function GameTable({
     () => frames(width, opponents.length),
     [opponents.length, width],
   )
-  const radius = Math.round(width * (size.tablet ? 0.32 : 0.40))
+  // The table is a piece of casino furniture, never a flex-filling portrait pill.
+  // 1.25:1 on phones and 1.5:1 on iPad preserves its horizontal curved rail.
+  const tableWidth = Math.min(Math.max(width - (size.tablet ? 32 : 12), 240), size.tablet ? 900 : 520)
+  const tableHeight = Math.round(tableWidth * (size.tablet ? 0.66 : 0.78))
+  const railRadius = Math.round(tableHeight / 2)
+  const trimRadius = Math.max(railRadius - (size.tablet ? 15 : 11), 20)
+  const feltRadius = Math.max(trimRadius - 7, 18)
 
   return (
     <View style={styles.fill}>
-      <View
-        style={[
-          styles.felt,
-          {
-            borderRadius: radius,
-            borderWidth: size.tablet ? 14 : 7,
-          },
-        ]}
+      <ScrollView
+        style={styles.tableViewport}
+        contentContainerStyle={styles.tableViewportContent}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
       >
-        <View pointerEvents="none" style={[styles.ring, { borderRadius: radius - 12 }]} />
-        <Text pointerEvents="none" style={[styles.mark, size.tablet && styles.markTablet]}>
-          SHOW YOUR HAND
-        </Text>
+        <View
+          style={[styles.tableShell, { width: tableWidth, height: tableHeight, borderRadius: railRadius }]}
+        >
+          <View style={[styles.paddedRail, { borderRadius: railRadius }]}>
+            <View style={[styles.brassTrim, { borderRadius: trimRadius }]}>
+              <View style={[styles.felt, { borderRadius: feltRadius }]}>
+                <View pointerEvents="none" style={[styles.innerLine, { borderRadius: feltRadius }]} />
+                <View pointerEvents="none" style={[styles.feltInset, { borderRadius: feltRadius }]} />
+                <Text pointerEvents="none" style={[styles.mark, size.tablet && styles.markTablet]}>
+                  SHOW YOUR HAND
+                </Text>
 
         {opponents.map((opponent, index) => {
           const displayedCards = opponent.cards.length
@@ -223,8 +233,11 @@ export function GameTable({
             {clockLabel ? <Text style={styles.clock}>{clockLabel}</Text> : null}
           </View>
         </View>
-
-        <View style={styles.you}>
+              </View>
+            </View>
+          </View>
+        </View>
+        <View style={[styles.you, { maxWidth: tableWidth }]}>
           <View style={[styles.nameplate, yourActive && styles.nameplateActive]}>
             <Text style={styles.seatName}>{yourName}</Text>
             <Text style={styles.seatScore}>{yourScore}</Text>
@@ -263,9 +276,12 @@ export function GameTable({
           ) : null}
         </View>
 
+      </ScrollView>
+
         {controls ? (
           <View style={[styles.controls, size.tablet && styles.controlsTablet]}>
             <ScrollView
+              nestedScrollEnabled
               keyboardShouldPersistTaps="handled"
               contentContainerStyle={styles.controlsInner}
             >
@@ -276,7 +292,6 @@ export function GameTable({
 
         {winning}
       </View>
-    </View>
   )
 }
 
@@ -346,27 +361,66 @@ export function WinningHand({
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1, minHeight: 520 },
-  felt: {
+  fill: { flex: 1, minHeight: 0, backgroundColor: '#090909' },
+  tableViewport: { flex: 1, width: '100%' },
+  tableViewportContent: {
+    paddingTop: 10,
+    paddingBottom: 10,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  // Layers approximate a real upholstered poker/blackjack table rail.
+  tableShell: {
+    backgroundColor: '#050806',
+    shadowColor: '#000',
+    shadowOpacity: 0.68,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 14,
+  },
+  paddedRail: {
     flex: 1,
-    marginHorizontal: 2,
-    marginBottom: 2,
-    borderColor: '#17140f',
-    backgroundColor: '#114429',
+    borderWidth: 11,
+    borderColor: '#221a15',
+    backgroundColor: '#15110c',
     overflow: 'hidden',
   },
-  ring: {
+  brassTrim: {
+    flex: 1,
+    borderWidth: 3,
+    borderColor: '#bb9956',
+    backgroundColor: '#091d13',
+    overflow: 'hidden',
+  },
+  felt: {
+    flex: 1,
+    backgroundColor: '#155235',
+    borderWidth: 5,
+    borderColor: '#0d301f',
+    overflow: 'hidden',
+  },
+  innerLine: {
     position: 'absolute',
-    top: 7,
-    right: 7,
-    bottom: 7,
-    left: 7,
-    borderWidth: 2,
-    borderColor: 'rgba(224, 190, 119, 0.28)',
+    top: 4,
+    right: 4,
+    bottom: 4,
+    left: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(242,207,127,0.35)',
+  },
+  feltInset: {
+    position: 'absolute',
+    top: '16%',
+    right: '11%',
+    bottom: '12%',
+    left: '11%',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
+    backgroundColor: 'rgba(8,43,25,0.13)',
   },
   mark: {
     position: 'absolute',
-    top: '28%',
+    top: '31%',
     left: 12,
     right: 12,
     textAlign: 'center',
@@ -461,13 +515,12 @@ const styles = StyleSheet.create({
   turnText: { color: theme.text, fontSize: 10, fontWeight: '800', flexShrink: 1 },
   clock: { color: theme.text, fontSize: 10, fontWeight: '900' },
   you: {
-    position: 'absolute',
-    left: 8,
-    right: 8,
-    bottom: 16,
-    zIndex: 4,
+    width: '100%',
+    zIndex: 5,
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
+    marginTop: -19,
+    paddingBottom: 6,
   },
   instruction: {
     marginTop: 4,
@@ -478,19 +531,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   controls: {
-    position: 'absolute',
-    zIndex: 6,
-    left: 16,
-    right: 16,
-    bottom: '31%',
-    maxHeight: 150,
+    width: '96%',
+    maxHeight: 170,
+    alignSelf: 'center',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(243, 111, 33, 0.7)',
-    backgroundColor: 'rgba(8, 9, 8, 0.94)',
+    borderColor: 'rgba(243, 111, 33, 0.56)',
+    backgroundColor: 'rgba(13, 15, 12, 0.97)',
+    marginBottom: 3,
   },
-  controlsTablet: { left: '18%', right: '18%', bottom: '24%', maxHeight: 210 },
-  controlsInner: { padding: 10, gap: 8 },
+  controlsTablet: { width: '72%', maxHeight: 230 },
+  controlsInner: { padding: 12, gap: 8 },
   winScrim: {
     position: 'absolute',
     top: 0,
