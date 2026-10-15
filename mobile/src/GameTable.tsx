@@ -10,6 +10,7 @@ import {
 } from 'react-native'
 import type { Card } from '../../src/game/types'
 import { opponentSeatPosition } from '../../src/ui/tableSeats'
+import { casinoTableDimensions } from '../../src/ui/casinoTableGeometry'
 import { CardTile } from './CardTile'
 import { theme } from './theme'
 
@@ -151,9 +152,7 @@ export function GameTable({
   )
   // The table is a piece of casino furniture, never a flex-filling portrait pill.
   // 1.25:1 on phones and 1.5:1 on iPad preserves its horizontal curved rail.
-  const tableWidth = Math.min(Math.max(width - (size.tablet ? 32 : 12), 240), size.tablet ? 900 : 520)
-  const tableHeight = Math.round(tableWidth * (size.tablet ? 0.66 : 0.78))
-  const railRadius = Math.round(tableHeight / 2)
+  const { width: tableWidth, height: tableHeight, railRadius } = casinoTableDimensions(width)
   const trimRadius = Math.max(railRadius - (size.tablet ? 15 : 11), 20)
   const feltRadius = Math.max(trimRadius - 7, 18)
 
