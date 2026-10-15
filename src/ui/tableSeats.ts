@@ -37,7 +37,11 @@ export function opponentSeatPosition(
   const radians = angle * Math.PI / 180
   const horizontalRadius = opponentCount <= 3 ? 0.27 : 0.32
   const x = 0.5 + horizontalRadius * Math.cos(radians)
-  const y = 0.43 + 0.29 * Math.sin(radians)
+  // Six-seat phones need an additional vertical step between adjacent
+  // side/top corners so compact card fans and nameplates do not collide.
+  const y = opponentCount === 5
+    ? 0.46 + 0.34 * Math.sin(radians)
+    : 0.43 + 0.29 * Math.sin(radians)
   return { x, y }
 }
 

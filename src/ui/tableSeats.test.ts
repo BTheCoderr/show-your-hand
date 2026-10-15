@@ -29,6 +29,42 @@ describe('canonical oval poker table seating', () => {
     })
   }
 
+
+  it('keeps all five opposing card fans and nameplates apart at narrow iPhone widths', () => {
+    for (const screenWidth of [320, 375, 390, 430]) {
+      const tableWidth = screenWidth - 12
+      // Native table shell: 11px padded rail + 3px trim + 5px felt, each side.
+      const feltWidth = tableWidth - 38
+      const feltHeight = Math.round(tableWidth * 0.78) - 38
+      const fanWidth = screenWidth < 360 ? 56 : 72
+      const cardHeight = screenWidth < 360 ? 25 : 28
+      const nameplateHeight = 23
+      const bounds = Array.from({ length: 5 }, (_, index) => {
+        const pos = opponentSeatPosition(index, 5)
+        const x = pos.x * feltWidth
+        const y = pos.y * feltHeight
+        return {
+          left: x - fanWidth / 2,
+          right: x + fanWidth / 2,
+          top: y - cardHeight / 2,
+          bottom: y + cardHeight / 2 + nameplateHeight,
+        }
+      })
+      for (let i = 0; i < bounds.length; i++) {
+        for (let j = i + 1; j < bounds.length; j++) {
+          const a = bounds[i]
+          const b = bounds[j]
+          const horizontalOverlap = Math.min(a.right, b.right) - Math.max(a.left, b.left)
+          const verticalOverlap = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top)
+          expect(
+            horizontalOverlap <= 0 || verticalOverlap <= 0,
+            `Seat ${i} overlaps seat ${j} at ${screenWidth}px`,
+          ).toBe(true)
+        }
+      }
+    }
+  })
+
   it('places a heads-up opponent directly opposite the bottom seat', () => {
     expect(opponentSeatPosition(0, 1).x).toBeCloseTo(0.5, 8)
     expect(opponentSeatPosition(0, 1).y).toBeCloseTo(0.14, 8)

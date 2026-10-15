@@ -2,7 +2,7 @@ name: Casino Table Design Validation
 
 on:
   push:
-    branches: [fix/casino-poker-table-ui-20261014]
+    branches: [fix/casino-poker-table-ui-20261014, fix/casino-phone-six-seat-layout-20261015]
   workflow_dispatch:
 
 permissions:
