@@ -77,6 +77,7 @@ function seatStyle(
 
 function frames(width: number, opponentCount: number) {
   const tablet = width >= 768
+  const narrowPhone = width < 360
   const headsUp = opponentCount <= 1
   const fullTable = opponentCount >= 5
   const crowded = opponentCount >= 4
@@ -94,11 +95,13 @@ function frames(width: number, opponentCount: number) {
     : headsUp
       ? { width: 44, height: 62 }
       : fullTable
-        ? { width: 20, height: 28 }
+        ? narrowPhone
+          ? { width: 18, height: 25 }
+          : { width: 20, height: 28 }
         : crowded
           ? { width: 25, height: 35 }
           : { width: 30, height: 42 }
-  const overlap = Math.round(opponent.width * (headsUp ? 0.18 : fullTable ? 0.4 : 0.36))
+  const overlap = Math.round(opponent.width * (headsUp ? 0.18 : fullTable ? narrowPhone && !tablet ? 0.5 : 0.4 : 0.36))
   const you: Frame = tablet ? { width: 108, height: 152 } : { width: 74, height: 106 }
   const pile: Frame = tablet ? { width: 82, height: 116 } : { width: 42, height: 60 }
   return { tablet, opponent, overlap, you, pile }
@@ -182,7 +185,7 @@ export function GameTable({
         {opponents.map((opponent, index) => {
           const displayedCards = opponent.cards.length
           const fanWidth = Math.max(
-            size.tablet ? 94 : opponents.length >= 5 ? 72 : opponents.length >= 4 ? 86 : 94,
+            size.tablet ? 94 : opponents.length >= 5 ? width < 360 ? 56 : 72 : opponents.length >= 4 ? 86 : 94,
             size.opponent.width +
               Math.max(0, displayedCards - 1) * (size.opponent.width - size.overlap),
           )
