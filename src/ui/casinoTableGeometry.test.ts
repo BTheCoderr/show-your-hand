@@ -8,7 +8,7 @@ describe('casino poker/blackjack table furniture', () => {
       expect(frame.width).toBeLessThanOrEqual(screenWidth)
       expect(frame.width / frame.height).toBeGreaterThan(1.2)
       expect(frame.width / frame.height).toBeLessThan(1.6)
-      expect(frame.railRadius).toBeCloseTo(frame.height / 2, 0)
+      expect(frame.railRadius).toBe(Math.round(frame.height / 2))
       expect(frame.width).toBeGreaterThan(frame.height)
     })
   }
