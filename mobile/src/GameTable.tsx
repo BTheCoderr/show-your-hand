@@ -80,6 +80,9 @@ function frames(width: number, opponentCount: number) {
   const headsUp = opponentCount <= 1
   const fullTable = opponentCount >= 5
   const crowded = opponentCount >= 4
+  // With five opponents, the top-center seats are less than 80px apart on
+  // a 390px iPhone. Five ~100px-wide card fans collide even if the centers
+  // follow a perfect oval. Compact the *opponent* cards, never your own hand.
   const opponent: Frame = tablet
     ? headsUp
       ? { width: 74, height: 104 }
@@ -91,13 +94,13 @@ function frames(width: number, opponentCount: number) {
     : headsUp
       ? { width: 44, height: 62 }
       : fullTable
-        ? { width: 26, height: 36 }
+        ? { width: 20, height: 28 }
         : crowded
-          ? { width: 30, height: 42 }
-          : { width: 36, height: 50 }
-  const overlap = Math.round(opponent.width * (headsUp ? 0.18 : fullTable ? 0.28 : 0.36))
+          ? { width: 25, height: 35 }
+          : { width: 30, height: 42 }
+  const overlap = Math.round(opponent.width * (headsUp ? 0.18 : fullTable ? 0.4 : 0.36))
   const you: Frame = tablet ? { width: 108, height: 152 } : { width: 74, height: 106 }
-  const pile: Frame = tablet ? { width: 82, height: 116 } : { width: 48, height: 68 }
+  const pile: Frame = tablet ? { width: 82, height: 116 } : { width: 42, height: 60 }
   return { tablet, opponent, overlap, you, pile }
 }
 
@@ -179,7 +182,7 @@ export function GameTable({
         {opponents.map((opponent, index) => {
           const displayedCards = opponent.cards.length
           const fanWidth = Math.max(
-            94,
+            size.tablet ? 94 : opponents.length >= 5 ? 72 : opponents.length >= 4 ? 86 : 94,
             size.opponent.width +
               Math.max(0, displayedCards - 1) * (size.opponent.width - size.overlap),
           )
@@ -198,10 +201,15 @@ export function GameTable({
                 frame={size.opponent}
                 overlap={size.overlap}
               />
-              <View style={[styles.nameplate, opponent.active && styles.nameplateActive, opponent.selected && styles.nameplateSelected]}>
-                <Text style={styles.seatName} numberOfLines={1}>{opponent.name}</Text>
-                <Text style={styles.seatScore}>{opponent.score}</Text>
-                {opponent.active ? <Text style={styles.turnChip}>TURN</Text> : null}
+              <View style={[
+                styles.nameplate,
+                !size.tablet && opponents.length >= 5 && styles.nameplateCompact,
+                opponent.active && styles.nameplateActive,
+                opponent.selected && styles.nameplateSelected,
+              ]}>
+                <Text style={[styles.seatName, !size.tablet && opponents.length >= 5 && styles.seatTextCompact]} numberOfLines={1}>{opponent.name}</Text>
+                <Text style={[styles.seatScore, !size.tablet && opponents.length >= 5 && styles.seatTextCompact]}>{opponent.score}</Text>
+                {opponent.active && (size.tablet || opponents.length < 5) ? <Text style={styles.turnChip}>TURN</Text> : null}
               </View>
               {opponent.tag ? <Text style={styles.tag}>{opponent.tag}</Text> : null}
             </Pressable>
@@ -450,6 +458,15 @@ const styles = StyleSheet.create({
   nameplateActive: {
     borderColor: theme.orange,
   },
+  nameplateCompact: {
+    maxWidth: 72,
+    gap: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 3,
+  },
+  seatTextCompact: {
+    fontSize: 9,
+  },
   nameplateSelected: {
     backgroundColor: '#3a2414',
   },
@@ -482,7 +499,8 @@ const styles = StyleSheet.create({
   },
   center: {
     position: 'absolute',
-    top: '55%',
+    // Keep central draw/discard and status *inside* a short horizontal felt.
+    top: '47%',
     left: 0,
     right: 0,
     alignItems: 'center',
