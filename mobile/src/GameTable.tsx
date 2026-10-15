@@ -97,7 +97,7 @@ function frames(width: number, opponentCount: number) {
           : { width: 36, height: 50 }
   const overlap = Math.round(opponent.width * (headsUp ? 0.18 : fullTable ? 0.28 : 0.36))
   const you: Frame = tablet ? { width: 108, height: 152 } : { width: 74, height: 106 }
-  const pile: Frame = tablet ? { width: 82, height: 116 } : { width: 54, height: 76 }
+  const pile: Frame = tablet ? { width: 82, height: 116 } : { width: 48, height: 68 }
   return { tablet, opponent, overlap, you, pile }
 }
 
@@ -482,13 +482,13 @@ const styles = StyleSheet.create({
   },
   center: {
     position: 'absolute',
-    top: '48%',
+    top: '55%',
     left: 0,
     right: 0,
     alignItems: 'center',
     zIndex: 2,
   },
-  centerTablet: { top: '44%' },
+  centerTablet: { top: '51%' },
   piles: { flexDirection: 'row', gap: 16, alignItems: 'flex-start' },
   pile: { alignItems: 'center', gap: 4 },
   pileLabel: {
