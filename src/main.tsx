@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { App } from './App'
 import { isProductPath, ProductPage } from './ui/ProductPage'
 import './styles.css'
+import './tabletop-layout.css'
 
 const path = window.location.pathname
 const content = isProductPath(path) ? <ProductPage path={path} /> : <App />

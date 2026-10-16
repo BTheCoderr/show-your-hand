@@ -1,0 +1,311 @@
+/*
+ * Four-sided SHOW YOUR HAND tabletop concept.
+ * Presentation only: no card art or game mechanics are changed here.
+ * Seats rotate with the local viewer in clockwise order (tableSeats.ts).
+ */
+.syh-board {
+  isolation: isolate;
+  min-height: 790px;
+  border: clamp(10px, 1.6vw, 18px) solid #1c100c;
+  border-radius: clamp(32px, 5vw, 64px);
+  background:
+    radial-gradient(circle at 8% 14%, rgba(255, 65, 44, 0.14), transparent 28%),
+    radial-gradient(circle at 95% 88%, rgba(40, 194, 124, 0.11), transparent 26%),
+    radial-gradient(ellipse at 50% 40%, rgba(246, 181, 104, 0.16), transparent 70%),
+    repeating-linear-gradient(2deg, transparent 0 9px, rgba(24, 10, 5, 0.12) 10px 11px, transparent 12px 35px),
+    repeating-linear-gradient(92deg, #69391d 0px, #744021 35px, #653416 54px, #864b24 86px, #542a15 116px);
+  box-shadow:
+    inset 0 0 0 3px #aa7641,
+    inset 0 0 0 9px rgba(38, 17, 9, 0.44),
+    inset 0 0 100px rgba(19, 8, 5, 0.45),
+    0 10px 0 #100b09,
+    0 24px 48px rgba(0, 0, 0, 0.57);
+}
+
+.syh-board::before {
+  inset: 13px;
+  border: 2px solid rgba(255, 198, 114, 0.32);
+  border-radius: clamp(18px, 3.4vw, 42px);
+  box-shadow: inset 0 0 0 1px rgba(16, 6, 3, 0.34);
+}
+
+.syh-board::after {
+  inset: 20% 21%;
+  border: 1px solid rgba(245, 196, 120, 0.12);
+  border-radius: 46%;
+  background: radial-gradient(ellipse, rgba(20, 10, 5, 0.14), transparent 70%);
+}
+
+/* Dark leather chairs sit just inside the wood perimeter. */
+.syh-board .syh-seat,
+.syh-board .syh-you {
+  overflow: visible;
+}
+
+.syh-board .syh-seat::before,
+.syh-board .syh-you::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  width: min(190px, 95%);
+  height: 70px;
+  transform: translateX(-50%);
+  border: 3px solid rgba(155, 98, 57, 0.76);
+  border-radius: 28px 28px 14px 14px;
+  background: linear-gradient(145deg, #37302e, #110f10 46%, #272224 86%, #100f11);
+  box-shadow: inset 0 2px 5px rgba(255, 255, 255, 0.08), 0 9px 16px rgba(0, 0, 0, 0.42);
+  pointer-events: none;
+}
+
+.syh-board .syh-seat::before {
+  top: -12px;
+}
+
+.syh-board .syh-you::before {
+  bottom: -14px;
+  height: 84px;
+  border-radius: 16px 16px 30px 30px;
+}
+
+.syh-board .syh-seat {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  grid-template-rows: auto auto auto;
+}
+
+.syh-board .syh-seat .syh-nameplate {
+  grid-row: 1;
+  position: relative;
+  z-index: 2;
+  margin: 0 auto 13px !important;
+  border: 1px solid rgba(237, 178, 96, 0.45);
+  background: linear-gradient(180deg, #262020, #0a090b);
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+
+.syh-board .syh-seat .syh-row {
+  grid-row: 2;
+  min-height: 92px;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.syh-board .syh-seat .syh-tag {
+  max-width: 100%;
+}
+
+.syh-board .syh-seat.is-top {
+  top: 3%;
+}
+.syh-board .syh-seat.is-top-left {
+  top: 8%;
+  left: 12%;
+}
+.syh-board .syh-seat.is-top-right {
+  top: 8%;
+  right: 12%;
+}
+.syh-board .syh-seat.is-left {
+  top: 44%;
+  left: 3%;
+  transform: translateY(-50%);
+}
+.syh-board .syh-seat.is-right {
+  top: 44%;
+  right: 3%;
+  transform: translateY(-50%);
+}
+
+/* Side players' cards turn toward the table, like a real tabletop hand. */
+.syh-board .syh-seat.is-left .syh-row,
+.syh-board .syh-seat.is-right .syh-row {
+  transform: rotate(90deg);
+}
+.syh-board .syh-seat.is-left .syh-nameplate,
+.syh-board .syh-seat.is-right .syh-nameplate {
+  margin-bottom: 20px !important;
+}
+
+.syh-board .syh-table-mark {
+  color: rgba(255, 224, 169, 0.22);
+  font-size: clamp(1.1rem, 2.8vw, 2.4rem);
+  text-shadow: 0 2px 1px rgba(27, 10, 5, 0.4);
+}
+
+.syh-board .syh-center {
+  top: 48%;
+  width: min(390px, 47%);
+}
+.syh-board .syh-center .syh-card {
+  border-color: rgba(255, 236, 202, 0.93);
+  box-shadow: 3px 6px 0 rgba(29, 12, 6, 0.32), 0 15px 25px rgba(0, 0, 0, 0.3);
+}
+.syh-board .syh-pile > span {
+  padding: 3px 7px;
+  border-radius: 8px;
+  background: rgba(21, 11, 7, 0.73);
+  color: #fff2d9;
+  font-weight: 700;
+}
+.syh-board .syh-status {
+  justify-content: center;
+  flex-wrap: wrap;
+  border-color: rgba(233, 172, 92, 0.34);
+  background: rgba(21, 12, 10, 0.83);
+}
+.syh-board .syh-clockwise {
+  color: #ffd15c;
+}
+.syh-board .syh-you .syh-nameplate {
+  position: relative;
+  z-index: 2;
+  margin-bottom: 10px !important;
+  border-color: rgba(231, 166, 83, 0.46);
+  background: linear-gradient(180deg, #302323, #0d0a0b);
+}
+.syh-board .syh-you .syh-row.is-you {
+  position: relative;
+  z-index: 2;
+}
+.syh-board .syh-seat.is-active .syh-nameplate,
+.syh-board .syh-you.is-active .syh-nameplate {
+  border-color: #ffd75d;
+  box-shadow: 0 0 0 2px rgba(248, 112, 0, 0.43), 0 0 22px rgba(255, 174, 47, 0.6);
+}
+.syh-board .syh-seat .syh-card:not(:disabled):focus-visible,
+.syh-board .syh-you .syh-card:focus-visible,
+.syh-board .syh-center .syh-card:focus-visible {
+  outline: 3px solid #ffda57;
+  outline-offset: 3px;
+}
+
+/* On four-player tables, the second clockwise opponent is directly across. */
+.syh-board[data-player-count="4"] .syh-seat.is-top {
+  top: 3%;
+}
+.syh-board[data-player-count="4"] .syh-seat.is-left,
+.syh-board[data-player-count="4"] .syh-seat.is-right {
+  top: 46%;
+}
+
+@media (max-width: 820px) {
+  .syh-board {
+    height: clamp(570px, 76svh, 720px);
+    min-height: 0;
+    border-width: 9px;
+    border-radius: 33px;
+  }
+  .syh-board::before {
+    inset: 6px;
+    border-radius: 24px;
+  }
+  .syh-board::after {
+    inset: 25% 22%;
+  }
+  .syh-board .syh-seat {
+    width: 110px;
+  }
+  .syh-board .syh-seat::before {
+    top: -8px;
+    height: 48px;
+    border-width: 2px;
+  }
+  .syh-board .syh-you::before {
+    bottom: -8px;
+    height: 52px;
+    border-width: 2px;
+  }
+  .syh-board .syh-seat.is-top {
+    top: 4%;
+  }
+  .syh-board .syh-seat.is-top-left {
+    top: 7%;
+    left: 2%;
+  }
+  .syh-board .syh-seat.is-top-right {
+    top: 7%;
+    right: 2%;
+  }
+  .syh-board .syh-seat.is-left {
+    top: 39%;
+    left: -1%;
+  }
+  .syh-board .syh-seat.is-right {
+    top: 39%;
+    right: -1%;
+  }
+  .syh-board .syh-seat.is-left .syh-row,
+  .syh-board .syh-seat.is-right .syh-row {
+    transform: rotate(90deg);
+  }
+  .syh-board .syh-seat .syh-nameplate {
+    min-width: 78px;
+    max-width: 105px;
+    margin-bottom: 7px !important;
+    font-size: 0.62rem;
+  }
+  .syh-board .syh-seat .syh-row {
+    min-height: 62px;
+  }
+  .syh-board .syh-seat.is-left .syh-nameplate,
+  .syh-board .syh-seat.is-right .syh-nameplate {
+    margin-bottom: 12px !important;
+  }
+  .syh-board .syh-center {
+    top: 50%;
+    width: 160px;
+    gap: 9px;
+  }
+  .syh-board .syh-table-mark {
+    font-size: 0.86rem;
+  }
+  .syh-board .syh-status {
+    width: max-content;
+    max-width: 205px;
+    font-size: 0.64rem;
+  }
+  .syh-board .syh-you {
+    bottom: 4%;
+  }
+  .syh-board .syh-you .syh-nameplate {
+    margin-bottom: 8px !important;
+  }
+  .syh-board[data-player-count="4"] .syh-seat.is-left,
+  .syh-board[data-player-count="4"] .syh-seat.is-right {
+    top: 40%;
+  }
+}
+
+@media (max-width: 420px) {
+  .syh-board {
+    height: clamp(560px, 74svh, 670px);
+  }
+  .syh-board .syh-seat.is-top-left {
+    left: 1%;
+  }
+  .syh-board .syh-seat.is-top-right {
+    right: 1%;
+  }
+  .syh-board[data-player-count="5"] .syh-seat,
+  .syh-board[data-player-count="6"] .syh-seat {
+    width: 94px;
+  }
+  .syh-board .syh-center {
+    width: 148px;
+    top: 51%;
+  }
+  .syh-board .syh-you {
+    bottom: 3%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .syh-board .syh-seat.is-active .syh-nameplate,
+  .syh-board .syh-you.is-active .syh-nameplate {
+    animation: none;
+  }
+}

@@ -44,6 +44,7 @@ import {
 import type { Action, Color, GameState } from './game/types'
 import { COLORS } from './game/types'
 import { CardView } from './ui/CardView'
+import { clockwiseOpponents } from './ui/tableSeats'
 import { FirstVisitPrompt } from './ui/FirstVisitPrompt'
 import { InstallHelp } from './ui/InstallHelp'
 import { OnlineLobby } from './ui/OnlineLobby'
@@ -763,7 +764,7 @@ export function App() {
     actorId(state) === localPlayerId &&
     (state.phase.type === 'choose_action' || state.phase.type === 'choose_targets')
   const waiting = Boolean(actorId(state) && actorId(state) !== localPlayerId)
-  const opponents = state.players.filter((player) => player.id !== localPlayerId)
+  const opponents = clockwiseOpponents(state.players, localPlayerId)
   const topDiscardId = state.discardPile.at(-1)
   const topDiscard = topDiscardId ? state.catalog[topDiscardId] : undefined
   const canTakeDiscard =
@@ -1029,7 +1030,8 @@ export function App() {
                 <CardView
                   card={topDiscard}
                   faceDown={!topDiscard}
-                  label={canTakeDiscard ? 'Drag the numbered discard down toward your hand' : undefined}
+                  label={canTakeDiscard ? 'Tap or swipe down to take the numbered discard' : undefined}
+                   onClick={canTakeDiscard ? () => dispatch({ type: 'TAKE_DISCARD', playerId: localPlayerId }) : undefined}
                   gestureEnabled={Boolean(canTakeDiscard)}
                   onSwipe={(direction) => {
                     if (canTakeDiscard && direction === 'down') {
