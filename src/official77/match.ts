@@ -4,10 +4,9 @@ export const MATCH_POINT_GOAL_77 = 5
 
 export type MatchResolution77 =
   | { status: 'not-scoring'; newTotal: number; matchWon: false }
-  | { status: 'pending-one-point-rule'; newTotal: number; matchWon: false }
   | {
       status: 'scored'
-      pointsAwarded: 2 | 3 | 4 | 5
+      pointsAwarded: 1 | 2 | 3 | 4 | 5
       newTotal: number
       matchWon: boolean
       winReason: 'purple-instant' | 'five-accumulated-points' | null
@@ -30,9 +29,6 @@ export function resolveMatch77(
 ): MatchResolution77 {
   if (!Number.isSafeInteger(previousTotal) || previousTotal < 0) {
     throw new Error('Match score must be a nonnegative integer')
-  }
-  if (hand.status === 'pending-one-point-rule') {
-    return { status: 'pending-one-point-rule', newTotal: previousTotal, matchWon: false }
   }
   if (hand.status === 'no-score') {
     return { status: 'not-scoring', newTotal: previousTotal, matchWon: false }
