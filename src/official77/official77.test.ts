@@ -88,10 +88,30 @@ describe('approved ordinary hand scoring with Wilds', () => {
     })
   })
 
-  it('flags the unapproved mixed 1–5 rule instead of inventing a fifth regular color', () => {
+  it('awards 1 point for a regular 1–5 run even when one color repeats', () => {
     expect(evaluateHand77(cards('red-1-a', 'orange-2-a', 'yellow-3-a', 'green-4-a', 'red-5-a'))).toMatchObject({
-      status: 'pending-one-point-rule',
+      status: 'scored', points: 1, combo: 'run-mixed', instantMatchWin: false,
     })
+    expect(evaluateHand77(cards('green-1-a', 'green-2-a', 'red-3-a', 'red-4-a', 'red-5-a'))).toMatchObject({
+      status: 'scored', points: 1, combo: 'run-mixed',
+    })
+  })
+
+  it('lets Wild substitute for a regular number without requiring five unique colors', () => {
+    expect(evaluateHand77(cards('red-1-a', 'green-2-a', 'red-3-a', 'red-4-a', 'wild-1'))).toMatchObject({
+      status: 'scored', points: 1, combo: 'run-mixed',
+    })
+  })
+
+  it('never downgrades a same-color 1–5 hand to 1 point', () => {
+    expect(evaluateHand77(cards('yellow-1-a', 'yellow-2-a', 'yellow-3-a', 'yellow-4-a', 'yellow-5-a'))).toMatchObject({
+      status: 'scored', points: 4, combo: 'run-same-color',
+    })
+  })
+
+  it('rejects any mixed Purple run, even a sequence with otherwise valid numbers', () => {
+    expect(evaluateHand77(cards('purple-1', 'orange-2-a', 'yellow-3-a', 'green-4-a', 'red-5-a')))
+      .toEqual({ status: 'no-score' })
   })
 
   it('rejects five-card hands containing attack or defense cards', () => {
