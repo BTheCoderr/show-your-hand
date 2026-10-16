@@ -95,7 +95,7 @@
 }
 
 .syh-board .syh-seat .syh-tag {
-  grid-row: 3;
+  max-width: 100%;
 }
 
 .syh-board .syh-seat.is-top {
