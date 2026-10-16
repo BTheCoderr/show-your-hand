@@ -47,9 +47,16 @@ describe('both owner-approved match-win conditions', () => {
     }
   })
 
-  it('treats one-point color rule as unresolved, not as a win at four points', () => {
+  it('awards confirmed 1-point regular mixed run and wins upon reaching 5 cumulative points', () => {
     expect(resolveMatch77(score('red-1-a', 'orange-2-a', 'yellow-3-a', 'green-4-a', 'red-5-a'), 4))
-      .toEqual({ status: 'pending-one-point-rule', newTotal: 4, matchWon: false })
+      .toMatchObject({
+        status: 'scored', pointsAwarded: 1, newTotal: 5,
+        matchWon: true, winReason: 'five-accumulated-points',
+      })
+    expect(resolveMatch77(score('red-1-a', 'orange-2-a', 'yellow-3-a', 'green-4-a', 'red-5-a'), 0))
+      .toMatchObject({
+        status: 'scored', pointsAwarded: 1, newTotal: 1, matchWon: false,
+      })
   })
 
   it('rejects invalid score totals', () => {
