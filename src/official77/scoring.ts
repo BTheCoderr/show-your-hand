@@ -72,11 +72,11 @@ export function evaluateHand77(cards: readonly Card77[]): Evaluation77 {
   // There are exactly two physical Wild cards in the locked 77-card deck.
   if (wildCount > 2) return { status: 'no-score' }
 
-  let best: 0 | 1 | 2 | 3 | 4 = 0
+  const result: { best: 0 | 1 | 2 | 3 | 4 } = { best: 0 }
   const expand = (assigned: RegularAssignment[], left: number): void => {
     if (left === 0) {
       const outcome = assessAssignment(assigned)
-      if (outcome > best) best = outcome
+      if (outcome > result.best) result.best = outcome
       return
     }
     for (const color of REGULAR_COLORS) {
@@ -87,10 +87,10 @@ export function evaluateHand77(cards: readonly Card77[]): Evaluation77 {
   }
   expand(fixed, wildCount)
 
-  if (best === 4) return { ...CONFIRMED_LABELS[4] }
-  if (best === 3) return { ...CONFIRMED_LABELS[3] }
-  if (best === 2) return { ...CONFIRMED_LABELS[2] }
-  if (best === 1) {
+  if (result.best === 4) return { ...CONFIRMED_LABELS[4] }
+  if (result.best === 3) return { ...CONFIRMED_LABELS[3] }
+  if (result.best === 2) return { ...CONFIRMED_LABELS[2] }
+  if (result.best === 1) {
     return {
       status: 'pending-one-point-rule',
       reason: 'Five different regular colors are impossible with the locked four-color deck. Owner clarification required.',
