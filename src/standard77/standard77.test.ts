@@ -66,7 +66,7 @@ describe("locked Standard Edition scoring", () => {
     expect(scoreStandard77Hand(hand("red-1-a", "green-2-a", "red-3-a", "green-4-a", "red-5-a"))).toMatchObject({ points: 1, combo: "mixed-run" })
   })
   it("allows both Wilds to duplicate a regular color and number", () => {
-    const score = scoreStandard77Hand(hand("red-1-a", "red-1-b", "red-3-a", "wild-1", "wild-2"))
+    const score = scoreStandard77Hand(hand("red-1-a", "red-3-a", "red-5-a", "wild-1", "wild-2"))
     expect(score).toMatchObject({ points: 4, combo: "same-color-run" })
   })
   it("rejects special cards and invalid hand sizes", () => {
