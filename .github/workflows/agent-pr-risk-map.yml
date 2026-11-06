@@ -1,0 +1,34 @@
+name: Agent PR Risk Map
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  risk-map:
+    name: risk-map
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check PR sections and flag sensitive paths
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const number = context.issue.number;
+            const body = context.payload.pull_request?.body ?? '';
+            const required = ['What changed', 'Verification', 'Risk assessment', 'Human approval and rollback', 'After release'];
+            const headings = body.split(/\r?\n/).map(x => x.trim());
+            const missing = required.filter(s => !headings.includes('### ' + s));
+            const files = await github.paginate(github.rest.pulls.listFiles, { owner, repo, pull_number: number, per_page: 100 });
+            const flagged = files.map(f => f.filename).filter(path =>
+              /^(src\/game\/|src\/online\/|supabase\/|mobile\/|package(-lock)?\.json$|netlify\.toml$|\.github\/workflows\/show-your-hand-eas\.yml$)/.test(path)
+            );
+            core.info('Changed files: ' + files.length);
+            if (flagged.length) core.warning('Founder review needed on: ' + flagged.join(', ').slice(0, 1500));
+            if (missing.length) core.setFailed('Missing PR headings: ' + missing.join(', '));
+            else core.info('Risk-map description check passed; not a code security certification.');
