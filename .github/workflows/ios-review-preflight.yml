@@ -36,15 +36,15 @@ jobs:
       - name: Confirm browser and Edge game source parity
         run: npm run check:edge-sync
 
+      - name: Install native dependencies (needed by mobile contract tests)
+        working-directory: mobile
+        run: npm ci
+
       - name: Test shared engine and iOS RPC request shape
         run: npm test
 
       - name: Validate shared web bundle
         run: npm run build
-
-      - name: Install native dependencies
-        working-directory: mobile
-        run: npm ci
 
       - name: Type-check native iOS
         working-directory: mobile
