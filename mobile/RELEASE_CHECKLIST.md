@@ -1,73 +1,91 @@
-# iPhone release checklist
+# SHOW YOUR HAND — iOS release checklist
 
-This checklist applies to the `feature/mobile-expo-v0` mobile branch. The web app and Meetopia are separate projects. A green GitHub Action confirms TypeScript and JavaScript bundles, not a signed native iOS binary or physical-device functionality.
+Updated November 16, 2026. Scope: native iOS app branch `feature/mobile-expo-v0`. The browser app, App Store Connect submission, and production Supabase database are separate release surfaces.
 
-## Phone-only GitHub to Expo workflow
+## Non-negotiable release gates
 
-A manual-only GitHub Actions workflow lives at `.github/workflows/show-your-hand-eas.yml` on both `main` and `feature/mobile-expo-v0`. It always checks out and validates **`feature/mobile-expo-v0`**. No EAS build starts automatically when code is pushed.
+- [ ] Merge the approved Apple review remediation PR into the native branch.
+- [ ] Verify the actual version, build number and binary selected in App Store Connect; do not infer them from an old README. Builds 2/3/4 are referenced historically; a later build may already exist.
+- [ ] Verify the binary uses the same source commit being tested. Never claim new code is in a previously uploaded binary.
+- [ ] Verify the public privacy page actually reflects player safety IDs, reports, blocks and retention; merging a GitHub PR alone does not deploy it.
+- [ ] Check project identity: Expo account `bferrell514`, slug `show-your-hand-mobile`, bundle ID `com.bthedream.showyourhand`, EAS project ID `046d7083-6f3b-4b16-9f22-61894243e100`.
+- [ ] Verify game/rules/art parity. The live engine is still the **70-card beta**. A 77-card foundation exists, but do not advertise 77-card gameplay until the art, client, shared engine, Edge Function, tutorial and tests are all integrated.
+- [ ] Preserve proper credits: game created by Jamont Patrick, digital app developed by Baheem Ferrell. Check distribution authorization for every included asset.
+- [ ] Complete real-device QA and the recording before sending an Apple review response.
 
-1. Sign into the Expo account that owns Show Your Hand (`bferrell514`) at https://expo.dev/settings/access-tokens and create an access token for GitHub.
-2. In https://github.com/BTheCoderr/show-your-hand/settings/secrets/actions select **New repository secret**, set the name to `EXPO_TOKEN`, and paste the Expo token there. **Never paste it into a public issue, commit, screenshot, or ChatGPT conversation.**
-3. On your phone or desktop, open https://github.com/BTheCoderr/show-your-hand/actions/workflows/show-your-hand-eas.yml and tap **Run workflow**.
-4. Use **mode = preflight** to validate game tests, TypeScript, the iOS JS export, and project identity. This requires **no Expo token** and uses no EAS build credits.
-5. After storing `EXPO_TOKEN`, use **mode = check_expo_connection** to run `eas whoami` and verify Expo authentication. This is **read-only and starts no EAS build**.
-6. Only after you expressly decide to use your EAS build allowance, set **mode = build_ios_preview** and type `BUILD_IOS_PREVIEW` in the confirmation field. This requests `eas build --platform ios --profile preview --non-interactive --no-wait`. **EAS usage may incur charges.**
-7. If there is no `Run workflow` button, make sure GitHub Actions are enabled, the workflow exists on the default branch, and you are signed in with repository write permission. The workflow never requests a TestFlight submission or production release.
+## Confirmed production backend contract (read-only inspection, 2026-11-16)
 
-**Important:** Initial iOS credentials and internal distribution device registration may still need interactive setup in the Expo/Apple account. An access token doesn't bypass those requirements. The existing workflow queues a **preview** build, not an App Store binary; follow the TestFlight section below later. The currently connected GitHub tools here can edit/inspect GitHub workflows, but may not offer a direct manual-dispatch button. The GitHub website/app can do the manual dispatch.
+The project's Supabase endpoint in the native source is `iymdhcobwijfoupopljd`. Production has:
 
-## When back at the Mac
+- `syh_create_safe_room(p_safety_install_id uuid, p_display_name text)` — **two-player rooms**.
+- `syh_join_safe_room(p_code text, p_safety_install_id uuid, p_display_name text)`.
+- `syh_report_opponent`, `syh_block_opponent`, `syh_list_blocked_players` and `syh_unblock_player`.
+- Recorded migrations for player reporting/blocking and the RPC column-scope fix.
+
+**Not deployed:** `syh_create_safe_room(uuid,text,integer)` and the six-player database migration. The review-fix native branch therefore creates **two-player private rooms only**, and must not send `p_max_players`. This is intentional for the next App Review candidate, not removal of the separately approved six-player goal.
+
+The production Edge Function `show-your-hand-game` exists, but its presence does not prove all two-device gameplay. Test online creation, ready, play, report, block and unblock against production without modifying production data beyond the ordinary test sessions you intentionally create.
+
+## No-cost, no-build code validation
+
+At the project root, on the approved native branch:
 
 ```bash
-cd /Users/beforreal/show-your-hand
-git switch feature/mobile-expo-v0
-git pull --ff-only origin feature/mobile-expo-v0
+npm ci
+npm run check:edge-sync
+npm test
+npm run build
 cd mobile
-npm install
+npm ci
 npm run typecheck
 npx expo-doctor
+npx expo export --platform ios --output-dir dist-ios
 ```
 
-Check the branch and Expo project carefully: owner `bferrell514`, project `show-your-hand-mobile`, bundle ID `com.bthedream.showyourhand`. Do not build another app by accident.
+The root CI runs browser/game tests and a production-web build. Expo export verifies a JavaScript bundle, **not a signed iOS binary or a physical-device interaction**. Expo SDK 58 compatibility and Apple signing should be reviewed before committing to a production build.
 
-## Preview build: for testing, not TestFlight
+The manual GitHub workflow at `.github/workflows/show-your-hand-eas.yml` provides `preflight` and `check_expo_connection` options without an EAS build. Select `build_ios_preview` only with conscious credit/cost approval. Preview builds are not App Store submission binaries.
 
-1. Check your EAS usage and Apple signing profile before starting a cloud build; it may incur cost.
-2. `eas build --platform ios --profile preview`
-3. Install the resulting compatible preview app on a registered physical iPhone.
-4. Verify branding, card fronts/backs, and every screen's `Back` control (including direct join links).
-5. Complete a solo round and a full match, then quit and reopen mid-game to test resume.
-6. Verify timer resets on the next turn (including 1 CPU), not when choosing targets or when polling online.
-7. Create a private online room, invite a different phone/browser, ready up, play attacks, defend, score, rematch.
-8. Background/resume the phone and temporarily disconnect/reconnect Wi-Fi. The saved seat should remain available.
-9. Test the deliberate "Leave table" confirmation and verify a failed network request never silently discards a seat.
-10. Confirm that blue 1–5 and Shuffle still show their old art: no matching new designs were provided.
+## Physical-device validation (do before any resubmission)
 
-## Apple App Review Guideline 2.1: required evidence
+Test the exact candidate build on at least two physical iPhones, plus a supported physical iPad because `ios.supportsTablet` is enabled.
 
-See [APP_REVIEW_2_1.md](./APP_REVIEW_2_1.md) for the fact-checked purpose, access steps, external services, regional explanation, rights check, exact iPhone recording shot list, and an App Review response draft.
+- [ ] Fresh launch and relaunch; main menu, tutorial, all navigation and back buttons.
+- [ ] Solo modes against different CPU counts, attacks/defenses, draws, discard pickups, scored round, full first-to-five match, and resume.
+- [ ] Native 1v1 private create, join with room code, both ready, host deal, complete turns, round progression, reconnect, and rematch.
+- [ ] Report Player sends successfully, Block Player closes the room, blocked installations cannot join again, and unblocking restores room access.
+- [ ] No broken browser invitations: invite should tell the second person to use the iOS app, not the old web beta.
+- [ ] Settings, privacy, terms, support/feedback and Blocked Players load on the real device.
+- [ ] Test offline/online recovery, background/foreground transitions, and no data leaks in projections.
+- [ ] Confirm actual current app screenshots reflect in-app gameplay, not only logo or splash.
+- [ ] Complete the physical-device screen recording exactly as outlined in `APP_REVIEW_2_1.md`.
 
-**Do not resubmit solely on the strength of green TypeScript/export checks.** Apple's October 14 request requires a recording of the build actually being reviewed, captured from a current-OS **physical iPhone**, plus written answers in BOTH the Resolution Center reply and the App Review Information Notes field.
+## Build and review sequence
 
-The existing submission is iOS 1.0 / Expo 0.1.0 / build 2, submitted October 12. The October 13-14 mobile fixes are source changes, so build 2 does not contain them. Upload/select a newer signed production build if you want Apple to review those fixes. Verify the selected build number and test it on a physical device before replying.
+1. Finish and approve code PRs, verify backend compatibility, and complete no-build checks first.
+2. Confirm the EAS project, signing credentials, intended build number, and build usage/cost before initiating **one** justified release build.
+3. Make a signed `production` iOS build, deliver it to TestFlight, wait for processing, and validate that exact binary on physical devices.
+4. Select the **verified** binary for the App Store review submission in App Store Connect.
+5. Upload the screen recording and paste the factual six-part response in **both** the App Review reply and the App Review Information Notes field.
+6. Recheck privacy disclosures, screenshots, app permissions, territories, credits, and a real iPad test. Only then submit the version for review.
 
-**Native naming mitigation:** the mobile branch now uses fixed Player 1 / Player 2 labels in private rooms and masks remotely supplied names and names in move history. The browser counterpart still has custom names. Verify this behavior on the signed replacement build before stating to Apple that the native app contains no user-submitted names, posts or chat. Reporting/blocking controls are not implemented; do not claim that they exist.
-
-## TestFlight/App Store
-
-Only after physical tests and any necessary credential checks:
+Production EAS commands (do not run until explicitly approved):
 
 ```bash
+cd mobile
 eas build --platform ios --profile production
 eas submit --platform ios --profile production --latest
 ```
 
-You can use Apple's Transporter for manual IPA delivery instead of `eas submit`, but you do not need both. Expo EAS builds run on cloud machines, not locally in Xcode. Confirm EAS usage, Apple credentials, and the correct build number before starting.
+Do not use these commands simply because a TypeScript check or GitHub Action is green.
 
-After the upload completes, finish App Store Connect metadata, internal/external tester setup, privacy details, and Apple processing/review as applicable. Uploading the binary does not by itself release the app.
+## Current evidence status
 
-## Known limits
+- Production Supabase RPC existence and mismatch: **verified read-only** November 16.
+- iOS source remediation: **on a review branch until merged**.
+- Live privacy update: **on a separate review branch, not confirmed deployed**.
+- Current selected App Store Connect binary: **not verified**.
+- Physical iPhone/iPad QA: **not verified**.
+- Recording and App Review reply: **not completed**.
 
-- The native bundle has passed automated CI, but signing, Apple provisioning, physical-device interaction, and real production multiplayer have not been tested by CI.
-- The new art is available on the mobile branch only until merged/deployed elsewhere.
-- Card design color choices and missing blue/Shuffle artwork are not yet resolved; engine colors and established 70-card rules are unchanged.
+Do not claim the release is ready until all real-device and submission evidence above exists.
