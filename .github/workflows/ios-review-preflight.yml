@@ -1,0 +1,55 @@
+name: iOS App Review source preflight (no EAS build)
+
+on:
+  pull_request:
+    branches:
+      - feature/mobile-expo-v0
+    paths:
+      - "mobile/**"
+      - "src/**"
+      - "supabase/functions/**"
+      - "scripts/**"
+      - ".github/workflows/ios-review-preflight.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify-ios-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out proposed source
+        uses: actions/checkout@v4
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            mobile/package-lock.json
+
+      - name: Install shared game dependencies
+        run: npm ci
+
+      - name: Confirm browser and Edge game source parity
+        run: npm run check:edge-sync
+
+      - name: Test shared engine and iOS RPC request shape
+        run: npm test
+
+      - name: Validate shared web bundle
+        run: npm run build
+
+      - name: Install native dependencies
+        working-directory: mobile
+        run: npm ci
+
+      - name: Type-check native iOS
+        working-directory: mobile
+        run: npm run typecheck
+
+      - name: Export JavaScript for iOS (no signed build, no EAS credits)
+        working-directory: mobile
+        run: npx expo export --platform ios --output-dir dist-ios
