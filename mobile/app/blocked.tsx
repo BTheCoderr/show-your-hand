@@ -62,7 +62,7 @@ export default function BlockedPlayersScreen() {
         <Text style={styles.kicker}>ONLINE PLAYER SAFETY</Text>
         <Text style={styles.title}>BLOCKED PLAYERS</Text>
         <Text style={styles.info}>
-          These blocks prevent future room joins between the same app or browser
+          These blocks prevent future room joins between the same app
           installations. Without accounts, reinstalling the app can create a new
           identity. Existing safety reports are not deleted when you unblock.
         </Text>

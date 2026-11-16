@@ -30,7 +30,6 @@ import {
   setRoomOptions,
   startRoom,
   nativeJoinUrl,
-  webJoinUrl,
   type AuthoritativeResponse,
   type OnlineRoom,
   type OnlineSession,
@@ -77,7 +76,6 @@ export default function OnlineScreen() {
   const [busy, setBusy] = useState(false)
   const [restoring, setRestoring] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [tableSize, setTableSize] = useState(2)
 
   const localPlayer = room?.players.find(
     (player) => player.gamePlayerId === session?.gamePlayerId,
@@ -196,7 +194,7 @@ export default function OnlineScreen() {
 
   const handleCreate = () =>
     run(async () => {
-      const created = await createRoom('Player 1', tableSize)
+      const created = await createRoom('Player 1')
       setSession(created)
       setRoom(await getRoom(created))
     })
@@ -315,30 +313,16 @@ export default function OnlineScreen() {
     return (
       <SafeAreaView style={styles.safe} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.page}>
-          <Text style={styles.eyebrow}>PRIVATE MULTIPLAYER</Text>
+          <Text style={styles.eyebrow}>PRIVATE 1V1</Text>
           <Text style={styles.title}>ONLINE TABLE</Text>
           <Text style={styles.body}>
-            Create a private table for 2–6 players and share the code, or enter
-            a six-character code to take an open seat.
+            Create a private two-player table and share the code with a friend who has
+            the iOS app, or enter a six-character code to join their table.
           </Text>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <View style={styles.formCard}>
-            <Text style={styles.label}>TABLE SIZE</Text>
-            <View style={styles.countRow}>
-              {[2, 3, 4, 5, 6].map((size) => (
-                <Pressable
-                  key={size}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${size} players`}
-                  onPress={() => setTableSize(size)}
-                  style={[styles.countButton, tableSize === size && styles.countButtonActive]}
-                >
-                  <Text style={[styles.countText, tableSize === size && styles.countTextActive]}>{size}</Text>
-                </Pressable>
-              ))}
-            </View>
             <ActionButton
               label={busy ? 'CREATING…' : 'CREATE PRIVATE ROOM'}
               disabled={busy}
@@ -573,7 +557,7 @@ export default function OnlineScreen() {
             onPress={() =>
               void Share.share({
                 message:
-                  `Join my SHOW YOUR HAND room ${room.code}.\n\nWeb: ${webJoinUrl(room.code)}\nApp: ${nativeJoinUrl(room.code)}`,
+                  `Join my SHOW YOUR HAND private room ${room.code}.\n\nOpen the SHOW YOUR HAND iOS app and enter this code, or use the app link: ${nativeJoinUrl(room.code)}\n\nBoth players need the iOS app.`,
               })
             }
           />
@@ -754,19 +738,6 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 1.4,
   },
-  countRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  countButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: theme.line,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  countButtonActive: { borderColor: theme.orange, backgroundColor: '#3a2414' },
-  countText: { color: theme.text, fontWeight: '900' },
-  countTextActive: { color: theme.orange },
   input: {
     minHeight: 52,
     borderRadius: 12,
