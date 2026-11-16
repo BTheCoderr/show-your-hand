@@ -1,5 +1,5 @@
 import { MOBILE_STORAGE_KEYS } from '../../src/deviceStore'
-import { createSafeRoomParams } from './roomContract'
+import { createSafeRoomParams } from '../../src/online/mobileRoomContract'
 import { deleteSecureItem, getSecureItem, setSecureItem } from './secureStore'
 import type { Action, GameState } from '../../src/game/types'
 import { maskNamesForNative, seatLabel } from '../../src/online/mobileDisplay'
