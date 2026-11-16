@@ -8,6 +8,7 @@ export function isProductPath(pathname: string): pathname is ProductPath {
 }
 
 const LAST_UPDATED = 'September 30, 2026'
+const PRIVACY_LAST_UPDATED = 'November 16, 2026'
 
 export function ProductPage({ path }: { path: ProductPath }) {
   if (path === '/feedback') return <FeedbackPage />
@@ -84,18 +85,42 @@ export function ProductPage({ path }: { path: ProductPath }) {
       body: (
         <>
           <p>
-            SHOW YOUR HAND does not require an account for the current beta. Solo preferences and
-            local stats are stored in your browser. Online rooms use temporary room identifiers,
-            display names, room tokens, gameplay state, connection timestamps, and match statistics
-            so two devices can stay synchronized.
+            SHOW YOUR HAND does not require an account, email address, or login to play. Solo
+            preferences and statistics are stored locally in your browser or mobile app. On iOS,
+            local settings, solo saves, and private online seat credentials are saved on your device.
+          </p>
+          <h2>Private online games</h2>
+          <p>
+            To run multiplayer rooms we process room codes, player seat identifiers, gameplay state,
+            match statistics, and connection timestamps through Supabase. The iOS app also uses a
+            randomly issued, anonymous app-installation identifier to support player safety.
+            Private room tokens let you reconnect to your seat; never share these tokens. Invitation
+            codes and links do not intentionally include private seat tokens.
+          </p>
+          <h2>Reporting and blocking</h2>
+          <p>
+            In the iOS app, players can report an opponent by selecting a reason and optionally
+            entering up to 500 characters. Reports may contain a room ID, the reporting and
+            reported player and installation identifiers, the reason, any details supplied, and
+            moderation status and timestamps. These reports are not displayed to other players;
+            they are stored for authorized moderation review. Blocking records the two installation
+            identifiers and prevents those installations from joining one another's rooms. You can
+            remove a block in the iOS Settings screen. A block is not a verified-account ban and
+            may not persist after an app reinstall.
+          </p>
+          <h2>Retention and your choices</h2>
+          <p>
+            Temporary online rooms are subject to service cleanup. Safety reports and block
+            records may be retained separately even after a room closes; the current beta does not
+            have an automatic deletion schedule for those records. Unblocking removes the active
+            block but does not delete previous reports. Local app data can be cleared from your
+            device, but that does not necessarily delete server-side safety records.
           </p>
           <p>
-            Private room tokens are used to reconnect you to the same seat. Do not share them.
-            Invite links contain only the public room code, not your private room token.
-          </p>
-          <p>
-            Online beta records may be retained for reliability, security, playtesting, and product
-            improvement. Avoid entering sensitive personal information as your table name or feedback.
+            For privacy questions or to request a review of records associated with a room, use
+            our <a href="/feedback">feedback and support form</a>. Do not submit private seat
+            tokens, passwords, or sensitive personal information in that form. The current beta
+            does not include advertising, in-app purchases, or account-based user profiles.
           </p>
         </>
       ),
@@ -133,7 +158,7 @@ export function ProductPage({ path }: { path: ProductPath }) {
         <p className="syh-kicker">{content.kicker}</p>
         <h1>{content.title}</h1>
         {content.body}
-        <small>Last updated {LAST_UPDATED}</small>
+        <small>Last updated {path === '/privacy' ? PRIVACY_LAST_UPDATED : LAST_UPDATED}</small>
       </article>
     </main>
   )
