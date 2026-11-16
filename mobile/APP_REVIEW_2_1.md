@@ -1,102 +1,119 @@
-# App Review 2.1 response kit
+# SHOW YOUR HAND — Apple App Review 2.1 response kit
 
-SHOW YOUR HAND iOS version 1.0.0. The App Store review submission that Apple has is still build 3. Build 4, commit 39adcb9, was uploaded to TestFlight on October 14, 2026 and Apple marked that upload valid. Build 4 has not been submitted for App Review.
+Updated November 16, 2026. This is a working checklist and response draft, **not proof that Apple has accepted the app**.
 
-Build 4 is the first binary that contains Report Player, Block Player, and Settings → Blocked Players. Builds 2 and 3 do not. Do not tell Apple those controls are in the build currently in review.
+## Submission and build identity — confirm before replying
 
-Physical-device testing and the requested screen recording have not been completed. Do not send the draft notes below until a recording of build 4, captured on a physical iPhone, is attached.
+Apple's October 15, 2026 message requests a physical-device screen recording plus six written answers, in both the App Review reply and **App Review Information → Notes**. The historical repository notes mention builds 2, 3 and 4. More recent discussions mention build 5. **No current App Store Connect selected-build number or physical-device recording has been independently verified.** Do not quote any one build number until checking the actual binary selected in App Store Connect.
 
-## Reviewer-accessible purpose and audience
+The native development branch is `feature/mobile-expo-v0`. The Apple remediation PR is intended to merge into that branch before any new release candidate is built. No binary is created or submitted by changing this Markdown file.
 
-SHOW YOUR HAND is an original turn-based strategy card game for players who enjoy casual competitive card games. Players build a scoring hand of five cards, play number or special cards, use defenses, and try to reach five points before their opponents. Solo mode works against one to five computer-controlled opponents. Private online 1v1 lets two friends play using a short room code. It is entertainment, not gambling or a real-money competition.
+## Verified source and backend compatibility
 
-## How to access all main features
+- Game: SHOW YOUR HAND, an original turn-based card game, game created by Jamont Patrick and digital app developed by Baheem Ferrell.
+- Native app: Expo / React Native, bundle ID `com.bthedream.showyourhand`; account `bferrell514`.
+- Current release candidate deliberately provides **private two-player online matches**, rather than showing an unready 2–6-player selector.
+- Read-only production Supabase inspection on November 16, 2026 confirmed `syh_create_safe_room(p_safety_install_id uuid, p_display_name text)`, and the report, block, list and unblock RPCs. The 3-argument, six-player `syh_create_safe_room` overload is **not deployed**. Never send `p_max_players` from the current App Review candidate.
+- Safety migrations through the fix for player safety RPC column scope are recorded in production. The newer 6-player migration is not shown as deployed. A migration in source control alone is not evidence that it is active.
+- The current playable engine uses the **older 70-card beta rules**. The approved 77-card Standard Edition foundation remains a future integration and needs assets, browser, Edge Function, AI, tutorial and native parity before release.
+- The public website does not currently support the new safety-enabled native rooms, so **review online multiplayer with two iOS devices on the same candidate build**. The native invite should advertise its own app link/room code, not claim the web join works.
+- No phone tests, deployment tests, or report/block/unblock end-to-end results are attested by this document.
 
-No registration or login is currently used in this native app. No account deletion flow exists because users do not create accounts. No payment, paid unlock, subscription, or in-app purchase is implemented in the mobile source reviewed.
+## Apple's requested information
 
-1. Launch SHOW YOUR HAND.
-2. Tap HOW TO PLAY for an eight-step interactive tutorial. Finish it and return Home.
-3. Tap PLAY SOLO, choose 1 CPU (beginner mode optional), then DEAL THE CARDS. Tap a card to select/play, swipe up to play, use eligible numbered discard pickup or draw, respond to attacks when prompted, and declare a scoring five-card hand when available. Play until a round ends. The solo game saves locally for resume.
-4. Tap SETTINGS + STATS to test haptics, beginner settings, local statistics and the support, privacy and terms links.
-5. To test private online 1v1, use TWO physical iPhones that both have TestFlight build 4. On one iPhone tap ONLINE 1V1 and CREATE PRIVATE ROOM. The native app assigns fixed labels PLAYER 1 and PLAYER 2 instead of asking for usernames. On the second iPhone, enter the displayed six-character code. Both players tap READY UP, then the host taps DEAL THE MATCH. This requires an internet connection. The room code is temporary and must be created fresh during review.
-6. On the online table, tap REPORT PLAYER. Choose a reason, optionally add details, and send the report. Then tap BLOCK PLAYER and confirm. The current table closes. Create a new room and confirm the blocked installation cannot join. On the blocking iPhone, open SETTINGS + STATS → Blocked players, unblock, and confirm a new room can be joined.
-7. The public website at https://show-your-hand.netlify.app does not yet include this safety client. A browser on that site cannot join a room created by build 4. Use a second iPhone on build 4 for the online portion of review until the website is deployed.
+### 1. Physical-device recording and quality assurance
 
-No reviewer login credentials or sample files are required to play solo or access the tutorial. For multiplayer, there is no permanent demo room code; create a fresh private room as described.
+Record the **exact production/TestFlight build selected for App Review** on a supported physical iPhone running the latest available public iOS. Begin on the Home Screen and open the app while recording. Test and demonstrate:
 
-## Third-party and external services used
+1. Launch to Home; open HOW TO PLAY, work through an interactive step, return Home.
+2. Open PLAY SOLO, choose CPU opponents, deal, play/draw/pick up and respond to a special attack; reach a scored hand and demonstrate round progression. Demonstrate saved solo game recovery after relaunch.
+3. Open SETTINGS + STATS; show preferences, privacy, terms, support and Blocked Players.
+4. On two supported **physical iPhones** on the same exact build: create a private two-player room, enter the six-character code on the second phone, both tap READY UP, host deals, play a turn, and verify reconnect or rematch.
+5. Open REPORT PLAYER, select a report reason and submit; show the real success result. Open BLOCK PLAYER and confirm; verify the room closes.
+6. Attempt a new room between the same installations and show the blocked invitation fails. Navigate to SETTINGS + STATS → Blocked players → UNBLOCK; then verify a new two-player room can be joined.
+7. Verify no crash on either phone, and that privacy/legal/support links open correctly. Blur notifications, sensitive room tokens or personal data from recording.
 
-- Supabase Postgres and Supabase Edge Functions: private online room state, authoritative multiplayer actions, reconnect/rematch logic, private player reports, and installation-level blocks.
-- Netlify: hosts the optional browser version, shared invitation URL, support/feedback, privacy and terms pages. The live website does not yet contain the safety-enabled join client.
-- Expo / EAS: development/build/distribution tooling. Expo is not a login or paid service used by players.
-- Expo SecureStore: device-local persistence of solo saves, settings, a private online seat token, and an anonymous safety installation ID.
-- Platform haptics: optional device feedback.
-- No user-facing AI model, payment processor, advertisement network, external sports-data provider, or third-party audio streaming service is used in the reviewed mobile code.
+Because `ios.supportsTablet = true`, also test launch, tutorial, solo play and layout on an actual supported iPad. If iPad is not usable, address tablet support **before** submission rather than pretending it was tested.
 
-## Regional availability
+Attach the recording or share an accessible video URL in the App Review reply **and** in App Review Information → Notes. A link must be accessible to Apple without a private account.
 
-The application contains no location-specific gameplay or regional content differences in the inspected code. Core solo gameplay does not depend on geography. Multiplayer requires network access to its Supabase service and may be unavailable where the service or network is blocked. Confirm intended App Store territories and availability before sending.
+### 2. Purpose and audience
 
-## Regulated industry and rights
+SHOW YOUR HAND is a competitive strategy card game for people who enjoy casual turn-based card games. Players build five-card scoring hands, play action cards and defense cards, and race to five match points. Solo mode offers one to five computer opponents, and private online mode allows two players to compete using a room code. The game is entertainment only: it has no gambling or real-money prizes.
 
-The product is an original digital card game, not a regulated professional service, gambling product, lottery, or wagering app. Its game rules and card assets are maintained in the developer's own repository. The developer must confirm ownership or distribution rights for all artwork, logos, fonts and other included material before representing to Apple that no licenses are needed. Do not make unsupported legal ownership claims.
+### 3. How a reviewer accesses the app
 
-## Recording instructions (action required on a physical iPhone)
+No registration, login or account creation is required. Therefore there is no account deletion feature for accounts created within this app. No demo credentials or sample files are needed.
 
-Record the EXACT build selected for Apple review on a supported physical iPhone running the latest available public iOS version. Use Control Center > Screen Recording. Begin by launching the app from the Home Screen, not in a pre-opened game. Show:
+- From Home, tap HOW TO PLAY for the tutorial or PLAY SOLO for a local CPU match.
+- Tap SETTINGS + STATS for preferences, local statistics, privacy, terms, support and blocked players.
+- Tap ONLINE 1V1. On iPhone A choose CREATE PRIVATE ROOM; on iPhone B choose JOIN ROOM and enter the displayed six-character code. Both tap READY UP; the host taps DEAL THE MATCH.
+- In the room, use REPORT PLAYER and BLOCK PLAYER. On the blocking device, go to SETTINGS + STATS → Blocked players to unblock.
+- The room code is created on demand, not a permanent demo account. Use two iPhones running the selected review build; the public browser client is **not** a substitute for iPhone B.
 
-1. launch to Home
-2. HOW TO PLAY tutorial, including one interactive practice step
-3. return Home, PLAY SOLO, opponent selection, dealing, a few numbered and special-card turns, pickup, and scoring/round progression
-4. SETTINGS + STATS and support/legal links
-5. ONLINE 1V1 on two iPhones running build 4: create, join by code, both players ready, host deal, and at least one turn
-6. REPORT PLAYER, including a reason and optional details, then the success or error result
-7. BLOCK PLAYER with the confirmation alert, and both phones showing the table has ended
-8. a refused join between those installations, then SETTINGS + STATS → Blocked players → UNBLOCK, then a successful join
+The app has no in-app purchase, subscription, or paywalled content in the inspected native source. Online play requires connectivity.
 
-Turn on Do Not Disturb, use example names, and avoid exposing private room seat tokens, personal notifications and passwords. Upload the recording where App Review can access it and attach or link it in both the reply and App Review Information > Notes.
+### 4. External services and tools
 
-## Native online naming and player safety in build 4
+- **Supabase**: Postgres + Edge Functions for private multiplayer, authoritative actions, room sessions, player-safety reports and installation-level blocks.
+- **Netlify**: Hosts an optional, separate browser beta and the support, privacy and terms pages; the website cannot currently join safety-enabled native rooms.
+- **Expo/EAS**: Native development, build and distribution tooling, not an end-user account service.
+- **Expo SecureStore**: On-device storage of local preferences, solo saves, online seat tokens and the anonymous safety installation ID.
+- **Device haptics**: Optional local tactile feedback.
+- No end-user AI model, ad network, payment processor or paid features in the reviewed native source.
 
-The native app creates and joins rooms with fixed labels (Player 1 / Player 2). There is no native chat, public feed, post, or user media upload. Report details are optional text, capped at 500 characters, stored privately for moderation. They are not shown to the other player.
+### 5. Regional differences
 
-Report Player offers four reasons: harassment or threats, inappropriate name or content, cheating or exploits, and other. Block Player asks for confirmation, then the server marks the current room abandoned and refuses future joins between those two installations. Settings → Blocked players lists those blocks and can remove one. Unblocking restores joining and does not delete past reports.
+Gameplay rules and available modes do not vary by region in the inspected app code. Private multiplayer requires network access to Supabase and may fail on a network or in a region that blocks access. Confirm App Store territory settings before submitting.
 
-These blocks are tied to the app installation, not a verified account. Reinstalling the app can create a new installation ID and bypass a block. Do not describe this as a permanent user ban.
+### 6. Rights and regulation
 
-The live privacy page does not yet disclose anonymous installation IDs, moderation reports, or how long those records are kept. Update that disclosure before public release.
+This is a card game for entertainment, not a financial, medical, legal, lottery or gambling service. Credit **Game created by Jamont Patrick** and **Digital app developed by Baheem Ferrell**. Before making any representation about rights, have the game's creator/developer verify permission to distribute the specific card art, branding, audio, logos and fonts that are in the submitted binary. If Apple requests authorization, provide the appropriate signed approval or license; do not claim to have proof that has not been checked.
 
-## Physical QA signoff (fill with real results)
+## Privacy and moderation disclosure gate
 
-- iPhone model: NOT YET PROVIDED
-- iOS version: NOT YET PROVIDED
-- Build number actually tested: NOT YET PROVIDED. TestFlight has 1.0.0 (4); do not record build 3.
-- iPad model and iPadOS version: NOT YET PROVIDED (ios.supportsTablet = true)
-- No-crash launch, tutorial, solo full match, save/resume: NOT VERIFIED ON PHYSICAL DEVICE
-- Two-device online create/join/ready/play/reconnect/rematch: NOT VERIFIED ON PHYSICAL DEVICE
-- Report, block, refused rejoin, unblock, successful rejoin: NOT VERIFIED ON PHYSICAL DEVICE
-- Support, privacy and terms links: NOT VERIFIED ON PHYSICAL DEVICE
-- Physical-device screen recording attached: NO
+The iOS app uses an anonymous, per-installation identifier. Reports can include a selected reason, optional details, the room and related player/installation IDs, and moderation status. Blocked installations can be unblocked; reinstalling can create a new installation ID and evade a block. Blocks and reports may outlive rooms. The **live** privacy page must disclose this before public release. A GitHub privacy update does not update the site until its deployment is verified.
 
-## Paste into App Review reply / Notes after completing recording and QA
+## Record actual QA results here (never fill in speculatively)
+
+| Evidence | Verified result |
+| --- | --- |
+| Selected App Store Connect build number / version | NOT VERIFIED |
+| Git SHA and Expo EAS build link for that binary | NOT VERIFIED |
+| Physical iPhone model and current iOS version | NOT VERIFIED |
+| Second physical iPhone / iOS version | NOT VERIFIED |
+| Physical iPad / iPadOS version | NOT VERIFIED |
+| Solo complete match and relaunch/resume | NOT VERIFIED |
+| 2-device online create/join/ready/play/reconnect | NOT VERIFIED |
+| Report / block / refused rejoin / unblock | NOT VERIFIED |
+| Privacy / terms / support live URL tests | NOT VERIFIED |
+| Screenshots reflect actual current app | NOT VERIFIED |
+| Physical-device screen recording accessible to Apple | NO LINK PROVIDED |
+| Card art, branding and distribution rights checked | NOT VERIFIED |
+
+## Ready-to-paste reply and Review Notes template — send ONLY after verification
 
 Hello App Review Team,
 
-Thank you for the opportunity to provide more information for SHOW YOUR HAND (iOS 1.0).
+Thank you for reviewing SHOW YOUR HAND. We are providing the requested information for iOS version [VERSION], build [EXACT SELECTED BUILD].
 
-A physical-device screen recording of TestFlight build 4 is attached: [ATTACHMENT OR ACCESSIBLE LINK]. It begins at app launch and demonstrates the tutorial, solo gameplay, settings, private online 1v1 between two iPhones, Report Player, Block Player, a refused join, and Unblock. We tested this build on [DEVICE MODEL] running [iOS VERSION] and [IPAD DETAILS, IF SUPPORTED]. Do not send this sentence until that recording and those device tests exist.
+1. Recording: [PUBLICLY ACCESSIBLE RECORDING LINK OR ATTACHMENT]. The recording was captured on [PHYSICAL IPHONE MODEL] running iOS [VERSION] and shows launch, interactive tutorial, solo gameplay, private online room creation/joining and gameplay on two devices, Report Player, Block Player, and the blocked/unblocked join flow. We also tested [IPAD MODEL / IPADOS VERSION OR EXPLAIN TABLET AVAILABILITY]. [ONLY DESCRIBE FLOWS THAT WERE SUCCESSFULLY RECORDED.]
 
-Purpose and audience: SHOW YOUR HAND is an original strategy card game for players who enjoy casual competitive games. Players compete to build five-card scoring hands. It offers solo play against one to five computer opponents and private, invite-only online 1v1. It has no real-money wagering.
+2. Purpose and audience: SHOW YOUR HAND is an original turn-based strategy card game for casual competitive players. Players build scoring five-card hands, attack and defend with special cards, and compete to reach five points. It offers solo play against computer opponents and private online two-player matches. There is no real-money wagering.
 
-Access: No account or login is required. From Home, tap HOW TO PLAY for the tutorial, PLAY SOLO to begin a CPU match, SETTINGS + STATS for preferences, legal links, and Blocked players, or ONLINE 1V1 to create or join a private room. For online review, install build 4 on two iPhones, create a room on one, enter the six-character code on the other, tap READY on both, and have the host deal. The current public website cannot join a room created by this build. No permanent credentials or sample files are required. Online opponents use fixed seat labels. Report details are private moderation text. Blocking is per app installation and can be removed in Settings.
+3. Access: No registration or login is required; therefore there are no account credentials or account-deletion steps. Tap HOW TO PLAY for the tutorial, PLAY SOLO for a CPU match, SETTINGS + STATS for preferences and legal/support links, or ONLINE 1V1 for private multiplayer. On two iPhones using the submitted build, create a room on one, enter the six-character code on the other, tap READY on both, and have the host deal. Reporting, blocking and unblocking are available from the online game and Settings. No sample files or paid content are required.
 
-Services: The app uses Supabase for private game-room state, action validation, private reports, and installation blocks. Netlify hosts the optional web counterpart and support/legal pages. On-device storage holds the seat token and an anonymous safety ID. Expo/EAS is used to build and distribute the native app. It does not integrate payment, ads, or AI services.
+4. Services: Supabase provides multiplayer room state, action validation and private moderation records; Netlify hosts the separate browser beta and support/legal pages; Expo/EAS is used for distribution; and Expo SecureStore is used for on-device local data. The app does not offer ads, paid features or end-user AI services.
 
-Regions: No region-specific game rules or content are implemented; online play requires network access to the service.
+5. Regions: The inspected app uses the same gameplay and content in all intended territories. Internet access is required for online multiplayer.
 
-Rights and regulation: This is a fictional, original card-game product, with no gambling, financial, health, or other regulated services. [CONFIRM ARTWORK AND BRAND OWNERSHIP/RIGHTS BEFORE SENDING.]
+6. Regulation/rights: SHOW YOUR HAND is an entertainment card game, not a regulated or gambling service. Game created by Jamont Patrick; digital app developed by Baheem Ferrell. [ADD THE VERIFIED AUTHORIZATION OR ART/BRAND RIGHTS EXPLANATION IF NEEDED.]
 
-Please let us know if any additional review steps would help.
+Please let us know if further information would assist your review.
 
 Thank you,
 SHOW YOUR HAND Team
+
+---
+
+**Submission gate:** Check the selected binary, validate every line above against that binary, attach the recording, update App Review Information → Notes, then reply. **Do not submit this template with placeholders or unverified claims.**
