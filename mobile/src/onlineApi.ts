@@ -1,4 +1,5 @@
 import { MOBILE_STORAGE_KEYS } from '../../src/deviceStore'
+import { createSafeRoomParams } from './roomContract'
 import { deleteSecureItem, getSecureItem, setSecureItem } from './secureStore'
 import type { Action, GameState } from '../../src/game/types'
 import { maskNamesForNative, seatLabel } from '../../src/online/mobileDisplay'
@@ -248,10 +249,10 @@ export async function createRoom(displayName: string): Promise<OnlineSession> {
   // Production RPC syh_create_safe_room(uuid,text) currently creates 2-seat rooms.
   // Do not send p_max_players until the separately reviewed six-player
   // migration and server-authoritative game engine are deployed together.
-  const rows = await rpc<JoinRow[]>('syh_create_safe_room', {
-    p_safety_install_id: await loadSafetyIdentity(),
-    p_display_name: displayName,
-  })
+  const rows = await rpc<JoinRow[]>(
+    'syh_create_safe_room',
+    createSafeRoomParams(await loadSafetyIdentity(), displayName),
+  )
   const row = rows[0]
   if (!row) throw new Error('Room creation returned no session.')
   const session = sessionFrom(row)
