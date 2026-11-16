@@ -244,12 +244,13 @@ function sessionFrom(row: JoinRow): OnlineSession {
   }
 }
 
-export async function createRoom(displayName: string, maxPlayers = 2): Promise<OnlineSession> {
-  const seats = Math.min(6, Math.max(2, Math.round(maxPlayers)))
+export async function createRoom(displayName: string): Promise<OnlineSession> {
+  // Production RPC syh_create_safe_room(uuid,text) currently creates 2-seat rooms.
+  // Do not send p_max_players until the separately reviewed six-player
+  // migration and server-authoritative game engine are deployed together.
   const rows = await rpc<JoinRow[]>('syh_create_safe_room', {
     p_safety_install_id: await loadSafetyIdentity(),
     p_display_name: displayName,
-    p_max_players: seats,
   })
   const row = rows[0]
   if (!row) throw new Error('Room creation returned no session.')
