@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createSafeRoomParams } from '../../mobile/src/roomContract'
+import { createSafeRoomParams } from './mobileRoomContract'
 
 describe('iOS production multiplayer contract', () => {
   it('sends exactly the two deployed safe-room RPC arguments', () => {
