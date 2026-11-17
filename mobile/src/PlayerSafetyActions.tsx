@@ -60,10 +60,18 @@ export function PlayerSafetyActions({
             void (async () => {
               try {
                 await blockOpponent(session, opponent.id)
-                await onBlocked()
-                Alert.alert('Player blocked', 'Your table has ended. Manage blocks in Settings.')
               } catch (error) {
                 Alert.alert('Could not block player', error instanceof Error ? error.message : 'Try again.')
+                setSubmitting(false)
+                return
+              }
+              try {
+                await onBlocked()
+                Alert.alert('Player blocked', 'Your table has ended. Manage blocks in Settings.')
+              } catch {
+                // The block succeeded on the server even if a follow-up room refresh fails.
+                // Never tell the user their block failed or encourage a duplicate request.
+                Alert.alert('Player blocked', 'Your block was saved. The room could not refresh; reopen Online to check the table.')
               } finally {
                 setSubmitting(false)
               }
