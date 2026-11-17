@@ -184,6 +184,9 @@ export default function SettingsScreen() {
         <Text style={styles.note}>
           Online stats live with the room session and stay server-authoritative.
         </Text>
+        <Text style={styles.note}>
+          Game created by Jamont Patrick.{'\n'}Digital app developed by Baheem Ferrell.
+        </Text>
       </ScrollView>
     </SafeAreaView>
   )
