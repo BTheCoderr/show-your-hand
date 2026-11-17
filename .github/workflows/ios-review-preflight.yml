@@ -1,6 +1,15 @@
 name: iOS App Review source preflight (no EAS build)
 
 on:
+  push:
+    branches:
+      - feature/mobile-expo-v0
+    paths:
+      - "mobile/**"
+      - "src/**"
+      - "supabase/functions/**"
+      - "scripts/**"
+      - ".github/workflows/ios-review-preflight.yml"
   pull_request:
     branches:
       - feature/mobile-expo-v0

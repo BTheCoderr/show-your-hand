@@ -4,10 +4,10 @@ Updated November 16, 2026. Scope: native iOS app branch `feature/mobile-expo-v0`
 
 ## Non-negotiable release gates
 
-- [ ] Merge the approved Apple review remediation PR into the native branch.
+- [x] Apple review remediation PR #31 merged into `feature/mobile-expo-v0` as commit `052a66c70be3d80d112037b5f1ad87d6096e80db`.
 - [ ] Verify the actual version, build number and binary selected in App Store Connect; do not infer them from an old README. Builds 2/3/4 are referenced historically; a later build may already exist.
 - [ ] Verify the binary uses the same source commit being tested. Never claim new code is in a previously uploaded binary.
-- [ ] Verify the public privacy page actually reflects player safety IDs, reports, blocks and retention; merging a GitHub PR alone does not deploy it.
+- [x] Privacy disclosure PR #30 merged to `main` and Netlify reported a successful production deploy of commit `aad40d71c5794f7aad8508c72e4501dbf9c94ac8` on November 16, 2026. [ ] Independently confirm the actual live page content and support form in a browser.
 - [ ] Check project identity: Expo account `bferrell514`, slug `show-your-hand-mobile`, bundle ID `com.bthedream.showyourhand`, EAS project ID `046d7083-6f3b-4b16-9f22-61894243e100`.
 - [ ] Verify game/rules/art parity. The live engine is still the **70-card beta**. A 77-card foundation exists, but do not advertise 77-card gameplay until the art, client, shared engine, Edge Function, tutorial and tests are all integrated.
 - [ ] Preserve proper credits: game created by Jamont Patrick, digital app developed by Baheem Ferrell. Check distribution authorization for every included asset.
@@ -44,7 +44,7 @@ npx expo export --platform ios --output-dir dist-ios
 
 The root CI runs browser/game tests and a production-web build. Expo export verifies a JavaScript bundle, **not a signed iOS binary or a physical-device interaction**. Expo SDK 58 compatibility and Apple signing should be reviewed before committing to a production build.
 
-The manual GitHub workflow at `.github/workflows/show-your-hand-eas.yml` provides `preflight` and `check_expo_connection` options without an EAS build. Select `build_ios_preview` only with conscious credit/cost approval. Preview builds are not App Store submission binaries.
+The manual GitHub workflow at `.github/workflows/show-your-hand-eas.yml` offers `preflight` and `check_expo_connection` at no EAS build cost, plus explicitly confirmed `build_ios_preview` (internal) or `build_ios_production` (TestFlight-capable). The workflow exists on default `main` and targets the fixed `feature/mobile-expo-v0` source; verify the final source SHA in its run logs. Neither build mode submits the app. Build modes can consume EAS credits and must not be initiated just because CI is green.
 
 ## Physical-device validation (do before any resubmission)
 
@@ -82,8 +82,8 @@ Do not use these commands simply because a TypeScript check or GitHub Action is 
 ## Current evidence status
 
 - Production Supabase RPC existence and mismatch: **verified read-only** November 16.
-- iOS source remediation: **on a review branch until merged**.
-- Live privacy update: **on a separate review branch, not confirmed deployed**.
+- iOS source remediation: **merged into the native branch** on November 16; previous PR #31 preflight green.
+- Live privacy update: **Netlify production deploy confirmed** on November 16; browser-side content spot check remains pending.
 - Current selected App Store Connect binary: **not verified**.
 - Physical iPhone/iPad QA: **not verified**.
 - Recording and App Review reply: **not completed**.
